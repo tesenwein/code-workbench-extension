@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import type { ArchCard, ArchApi, OpenFileFn } from '../types';
+import type { ArchCard, ArchApi } from '../types';
 import { decodeEntities } from '../htmlEntities';
 
 // ---------------------------------------------------------------------------
@@ -52,184 +52,10 @@ function useArchCards(api: ArchApi, repoPath: string | null, reloadKey: number |
 }
 
 // ---------------------------------------------------------------------------
-// Card editor
+// Cards are edited by opening their `<slug>.json` file in the host's normal
+// editor (see ArchApi.openCard); the panel only lists and previews them, so
+// there is no in-webview card-editor form.
 // ---------------------------------------------------------------------------
-
-interface EditorProps {
-  card: Partial<ArchCard> & { name: string };
-  onSave: (card: Partial<ArchCard> & { name: string }) => Promise<unknown>;
-  onDelete?: () => Promise<void>;
-  onClose: () => void;
-}
-
-function tagsValue(arr: string[] | undefined): string {
-  return (arr ?? []).join(', ');
-}
-
-function parseTags(val: string): string[] {
-  return val
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
-function CardEditor({ card, onSave, onDelete, onClose }: EditorProps) {
-  const [name, setName] = useState(card.name ?? '');
-  const [description, setDescription] = useState(card.description ?? '');
-  const [files, setFiles] = useState(tagsValue(card.files));
-  const [guidelines, setGuidelines] = useState(tagsValue(card.guidelines));
-  const [antiPatterns, setAntiPatterns] = useState(tagsValue(card.anti_patterns));
-  const [decisions, setDecisions] = useState(tagsValue(card.decisions));
-  const [dependsOn, setDependsOn] = useState(tagsValue(card.dependsOn));
-  const [saving, setSaving] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
-  const save = useCallback(async () => {
-    setSaving(true);
-    try {
-      await onSave({
-        ...card,
-        name,
-        description,
-        files: parseTags(files),
-        guidelines: parseTags(guidelines),
-        anti_patterns: parseTags(antiPatterns),
-        decisions: parseTags(decisions),
-        dependsOn: parseTags(dependsOn),
-      });
-      onClose();
-    } finally {
-      setSaving(false);
-    }
-  }, [
-    card,
-    name,
-    description,
-    files,
-    guidelines,
-    antiPatterns,
-    decisions,
-    dependsOn,
-    onSave,
-    onClose,
-  ]);
-
-  return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-        padding: 12,
-        overflow: 'auto',
-        flex: 1,
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-        <span style={{ fontWeight: 600, fontSize: 13, flex: 1 }}>
-          {card.slug ? `Edit: ${card.slug}` : 'New Component'}
-        </span>
-        <button onClick={onClose} style={btnStyle('secondary')}>
-          Cancel
-        </button>
-        {onDelete && !confirmDelete && (
-          <button onClick={() => setConfirmDelete(true)} style={btnStyle('danger')}>
-            Delete
-          </button>
-        )}
-        {onDelete && confirmDelete && (
-          <>
-            <span style={{ fontSize: 11, color: 'var(--vscode-errorForeground)' }}>Confirm?</span>
-            <button
-              onClick={async () => {
-                await onDelete();
-                onClose();
-              }}
-              style={btnStyle('danger')}
-            >
-              Yes, Delete
-            </button>
-            <button onClick={() => setConfirmDelete(false)} style={btnStyle('secondary')}>
-              No
-            </button>
-          </>
-        )}
-        <button onClick={save} disabled={saving || !name.trim()} style={btnStyle('primary')}>
-          {saving ? 'Saving…' : 'Save'}
-        </button>
-      </div>
-
-      <Field label="Name">
-        <input value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} />
-      </Field>
-      <Field label="Description">
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={3}
-          style={{ ...inputStyle, resize: 'vertical' }}
-        />
-      </Field>
-      <Field label="Key Files (comma-separated)">
-        <input
-          value={files}
-          onChange={(e) => setFiles(e.target.value)}
-          style={inputStyle}
-          placeholder="src/foo.ts, src/bar.ts"
-        />
-      </Field>
-      <Field label="Guidelines (comma-separated)">
-        <input
-          value={guidelines}
-          onChange={(e) => setGuidelines(e.target.value)}
-          style={inputStyle}
-        />
-      </Field>
-      <Field label="Anti-patterns (comma-separated)">
-        <input
-          value={antiPatterns}
-          onChange={(e) => setAntiPatterns(e.target.value)}
-          style={inputStyle}
-        />
-      </Field>
-      <Field label="Decisions (comma-separated)">
-        <input
-          value={decisions}
-          onChange={(e) => setDecisions(e.target.value)}
-          style={inputStyle}
-        />
-      </Field>
-      <Field label="Depends On (slugs, comma-separated)">
-        <input
-          value={dependsOn}
-          onChange={(e) => setDependsOn(e.target.value)}
-          style={inputStyle}
-          placeholder="mcp-core, task-system"
-        />
-      </Field>
-    </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <span style={{ fontSize: 11, color: 'var(--vscode-descriptionForeground)' }}>{label}</span>
-      {children}
-    </div>
-  );
-}
-
-const inputStyle: React.CSSProperties = {
-  background: 'var(--vscode-input-background)',
-  color: 'var(--vscode-input-foreground)',
-  border: '1px solid var(--vscode-input-border, #555)',
-  borderRadius: 3,
-  padding: '4px 6px',
-  fontSize: 12,
-  width: '100%',
-  boxSizing: 'border-box',
-};
 
 function btnStyle(variant: 'primary' | 'secondary' | 'danger'): React.CSSProperties {
   const base: React.CSSProperties = {
@@ -438,8 +264,6 @@ interface Props {
   reloadKey?: number;
   /** Suppress the pane-header title when the host chrome already shows it. */
   hideHeaderTitle?: boolean;
-  /** Open a file in the host editor — wires the card's Key Files to the editor. */
-  onOpenFile?: OpenFileFn;
   /** Programmatically focus a card by slug (e.g. a deep link from elsewhere). */
   focusSlug?: string | null;
   onFocusSlugHandled?: () => void;
@@ -450,20 +274,29 @@ export function ArchPanel({
   api,
   reloadKey,
   hideHeaderTitle,
-  onOpenFile,
   focusSlug,
   onFocusSlugHandled,
 }: Props) {
-  const { cards, loading, upsert, remove } = useArchCards(api, repoPath, reloadKey);
+  const { cards, loading, upsert } = useArchCards(api, repoPath, reloadKey);
   const [query, setQuery] = useState('');
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
 
+  // Selecting a card opens its `<slug>.json` file in the host's normal editor
+  // (highlighting it in the list for feedback) — there is no in-webview form.
+  const selectCard = useCallback(
+    (slug: string) => {
+      setSelectedSlug(slug);
+      void api.openCard(slug);
+    },
+    [api],
+  );
+
   useEffect(() => {
     if (focusSlug && cards.length > 0) {
-      setSelectedSlug(focusSlug);
+      selectCard(focusSlug);
       onFocusSlugHandled?.();
     }
-  }, [focusSlug, cards.length, onFocusSlugHandled]);
+  }, [focusSlug, cards.length, onFocusSlugHandled, selectCard]);
 
   const filteredCards = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -485,60 +318,13 @@ export function ArchPanel({
         .includes(q),
     );
   }, [cards, query]);
-  const [editing, setEditing] = useState<(Partial<ArchCard> & { name: string }) | null>(null);
 
-  const selectedCard = selectedSlug ? cards.find((c) => c.slug === selectedSlug) : null;
-
-  const DETAIL_MIN = 180;
-  const DETAIL_MAX = 600;
-  const [detailWidth, setDetailWidth] = useState(260);
-  const resizeStartX = useRef<number | null>(null);
-  const resizeStartW = useRef(260);
-  const handleResizerMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      resizeStartX.current = e.clientX;
-      resizeStartW.current = detailWidth;
-      document.body.style.cursor = 'col-resize';
-      const onMove = (ev: MouseEvent) => {
-        if (resizeStartX.current === null) return;
-        const delta = resizeStartX.current - ev.clientX;
-        setDetailWidth(Math.max(DETAIL_MIN, Math.min(DETAIL_MAX, resizeStartW.current + delta)));
-      };
-      const onUp = () => {
-        resizeStartX.current = null;
-        document.body.style.cursor = '';
-        window.removeEventListener('mousemove', onMove);
-        window.removeEventListener('mouseup', onUp);
-      };
-      window.addEventListener('mousemove', onMove);
-      window.addEventListener('mouseup', onUp);
-    },
-    [detailWidth],
-  );
-
-  const openEdit = useCallback((card?: ArchCard) => {
-    setEditing(card ? { ...card } : { name: '' });
-  }, []);
-
-  const closeEdit = useCallback(() => setEditing(null), []);
-
-  if (editing) {
-    return (
-      <CardEditor
-        card={editing}
-        onSave={upsert}
-        onDelete={
-          editing.slug
-            ? ((_slug) => async () => {
-                await remove(_slug);
-              })(editing.slug)
-            : undefined
-        }
-        onClose={closeEdit}
-      />
-    );
-  }
+  // Create a new component card (with defaults), then open its file to edit.
+  const addCard = useCallback(async () => {
+    const saved = await upsert({ name: 'New Component' });
+    setSelectedSlug(saved.slug);
+    await api.openCard(saved.slug);
+  }, [upsert, api]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
@@ -561,137 +347,30 @@ export function ArchPanel({
           resultCount={filteredCards.length}
           hasQuery={query.trim().length > 0}
         />
-        <button onClick={() => openEdit()} style={{ ...btnStyle('primary'), padding: '2px 8px' }}>
+        <button
+          onClick={() => void addCard()}
+          title="Add component"
+          style={{ ...btnStyle('primary'), padding: '2px 8px' }}
+        >
           +
         </button>
       </div>
 
-      {/* Content */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        {/* Left: component list */}
-        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          {loading && (
-            <div style={{ padding: 8, fontSize: 12, color: 'var(--vscode-descriptionForeground)' }}>
-              Loading…
-            </div>
-          )}
-          {!loading && filteredCards.length === 0 && query.trim() ? (
-            <div
-              style={{ padding: 16, color: 'var(--vscode-descriptionForeground)', fontSize: 12 }}
-            >
-              No components match “{query.trim()}”.
-            </div>
-          ) : (
-            <ListView
-              cards={filteredCards}
-              selectedSlug={selectedSlug}
-              onSelect={setSelectedSlug}
-            />
-          )}
-        </div>
-
-        {/* Resizer */}
-        {selectedCard && (
-          <div
-            onMouseDown={handleResizerMouseDown}
-            title="Drag to resize"
-            style={{
-              flex: '0 0 6px',
-              cursor: 'col-resize',
-              background: 'var(--vscode-widget-border, #333)',
-            }}
-          />
-        )}
-
-        {/* Right: card detail + edit button */}
-        {selectedCard && (
-          <div
-            style={{
-              flex: `0 0 ${detailWidth}px`,
-              overflow: 'auto',
-              padding: 10,
-              fontSize: 12,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-              <span style={{ fontWeight: 600, flex: 1 }}>{decodeEntities(selectedCard.name)}</span>
-              <button onClick={() => openEdit(selectedCard)} style={btnStyle('secondary')}>
-                Edit
-              </button>
-            </div>
-            <p style={{ color: 'var(--vscode-descriptionForeground)', margin: '0 0 8px' }}>
-              {decodeEntities(selectedCard.description)}
-            </p>
-            {selectedCard.files.length > 0 && (
-              <Section
-                title="Files"
-                items={selectedCard.files}
-                onOpenFile={onOpenFile}
-                repoPath={repoPath}
-              />
-            )}
-            {selectedCard.guidelines.length > 0 && (
-              <Section title="Guidelines" items={selectedCard.guidelines} />
-            )}
-            {selectedCard.anti_patterns.length > 0 && (
-              <Section title="Anti-patterns" items={selectedCard.anti_patterns} />
-            )}
-            {selectedCard.decisions.length > 0 && (
-              <Section title="Decisions" items={selectedCard.decisions} />
-            )}
-            {selectedCard.dependsOn.length > 0 && (
-              <Section title="Depends On" items={selectedCard.dependsOn} />
-            )}
+      {/* Content — component list; clicking a row opens the card file */}
+      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        {loading && (
+          <div style={{ padding: 8, fontSize: 12, color: 'var(--vscode-descriptionForeground)' }}>
+            Loading…
           </div>
         )}
+        {!loading && filteredCards.length === 0 && query.trim() ? (
+          <div style={{ padding: 16, color: 'var(--vscode-descriptionForeground)', fontSize: 12 }}>
+            No components match “{query.trim()}”.
+          </div>
+        ) : (
+          <ListView cards={filteredCards} selectedSlug={selectedSlug} onSelect={selectCard} />
+        )}
       </div>
-    </div>
-  );
-}
-
-function Section({
-  title,
-  items,
-  onOpenFile,
-  repoPath,
-}: {
-  title: string;
-  items: string[];
-  /** When provided alongside repoPath, list items open in the host editor. */
-  onOpenFile?: OpenFileFn;
-  repoPath?: string | null;
-}) {
-  const clickable = title === 'Files' && !!onOpenFile && !!repoPath;
-  return (
-    <div style={{ marginBottom: 8 }}>
-      <div
-        style={{ fontWeight: 600, color: 'var(--vscode-descriptionForeground)', marginBottom: 3 }}
-      >
-        {title}
-      </div>
-      <ul style={{ margin: 0, paddingLeft: 16 }}>
-        {items.map((item, i) => (
-          <li key={i} style={{ marginBottom: 2 }}>
-            {clickable ? (
-              <span
-                onClick={() => onOpenFile!(`${repoPath}/${item}`, item.split('/').pop() ?? item)}
-                title={`Open ${item}`}
-                style={{
-                  cursor: 'pointer',
-                  color: 'var(--vscode-textLink-foreground)',
-                  textDecoration: 'none',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
-                onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
-              >
-                {item}
-              </span>
-            ) : (
-              decodeEntities(item)
-            )}
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }

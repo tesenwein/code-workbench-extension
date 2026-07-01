@@ -132,4 +132,6 @@ export interface ArchApi {
   list: () => Promise<ArchCard[]>;
   upsert: (card: Partial<ArchCard> & { name: string }) => Promise<ArchCard>;
   remove: (slug: string) => Promise<void>;
+  /** Open the card's `<slug>.json` file in the host's normal editor. */
+  openCard: (slug: string) => Promise<void>;
 }

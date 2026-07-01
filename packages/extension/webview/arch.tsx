@@ -11,6 +11,7 @@ const api: ArchApi = {
   list: () => bridge.call('list'),
   upsert: (card) => bridge.call('upsert', card),
   remove: (slug) => bridge.call('remove', slug) as Promise<void>,
+  openCard: (slug) => bridge.call('openCard', slug) as Promise<void>,
 };
 
 function App() {
@@ -26,13 +27,7 @@ function App() {
   }, []);
 
   return (
-    <ArchPanel
-      repoPath={repoPath}
-      api={api}
-      reloadKey={reloadKey}
-      hideHeaderTitle
-      onOpenFile={(loc, _name, line) => void bridge.call('openFile', loc, line)}
-    />
+    <ArchPanel repoPath={repoPath} api={api} reloadKey={reloadKey} hideHeaderTitle />
   );
 }
 

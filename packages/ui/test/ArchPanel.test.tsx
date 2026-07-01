@@ -23,6 +23,7 @@ function mockApi(cards: ArchCard[]): ArchApi {
     list: vi.fn(async () => cards),
     upsert: vi.fn(),
     remove: vi.fn(async () => {}),
+    openCard: vi.fn(async () => {}),
   };
 }
 

@@ -1,7 +1,13 @@
 import * as vscode from 'vscode';
 import { reactWebviewHtml } from './reactWebview';
 import { attachRpc, type RpcContext } from './webviewRpc';
-import { readAllArchCards, upsertArchCard, deleteArchCard, archDirPath } from './archHost';
+import {
+  readAllArchCards,
+  upsertArchCard,
+  deleteArchCard,
+  archDirPath,
+  archCardPath,
+} from './archHost';
 import type { ArchCard } from './archHost';
 
 /**
@@ -50,12 +56,13 @@ export class ArchViewProvider implements vscode.WebviewViewProvider {
           const root = this.getRepoRoot();
           if (root) await deleteArchCard(root, String(slug));
         },
-        openFile: async (loc, line) => {
-          const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(String(loc)));
-          const ln = typeof line === 'number' ? Math.max(0, line - 1) : 0;
-          await vscode.window.showTextDocument(doc, {
-            selection: new vscode.Range(ln, 0, ln, 0),
-          });
+        openCard: async (slug) => {
+          const root = this.getRepoRoot();
+          if (!root) throw new Error('Open a git repository first.');
+          const doc = await vscode.workspace.openTextDocument(
+            vscode.Uri.file(archCardPath(root, String(slug))),
+          );
+          await vscode.window.showTextDocument(doc, { preview: false });
         },
       },
       (rpc: RpcContext) => {
