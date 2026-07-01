@@ -1,0 +1,41 @@
+{
+  "slug": "shared-git-utils",
+  "name": "Shared Git Utils",
+  "description": "Shared git helpers consumed by the VS Code extension. Hand-written ESM+CJS package (no build step), following the same dual-format convention as @code-workbench/mcp-core. Currently exposes the robust `git worktree remove` core that handles Windows lock failures, timeouts, and the \"still-locked → detach + queue for later\" rescue path.",
+  "files": [
+    "packages/git-utils/package.json",
+    "packages/git-utils/remove-worktree.mjs",
+    "packages/git-utils/remove-worktree.cjs",
+    "packages/git-utils/remove-worktree.d.ts",
+    "packages/git-utils/remove-worktree.d.cts"
+  ],
+  "guidelines": [
+    "Caller injects `runGit` (already bound to the repo cwd) so the same execution path / WSL handling / timeout semantics as the rest of their codebase apply.",
+    "Caller owns pre-cleanup (close watchers, kill terminals inside the worktree) and post-cleanup (cache invalidation, UI refresh). This module only owns the git+fs dance.",
+    "PendingDeletionStore is an injected interface — the extension uses VS Code globalState. It rescues locked Windows directories.",
+    "Set detachOnLock=false for distro/WSL worktrees whose `.git` pointer isn't readable from the host filesystem.",
+    "Maintain ESM (.mjs) and CJS (.cjs) source manually in lockstep — keep them in semantic sync (matches mcp-core convention; no build step)."
+  ],
+  "anti_patterns": [
+    "Don't put VS Code imports here — this package must stay runtime-agnostic.",
+    "Don't add a tsc build step just for this package; keep the hand-maintained dual-format convention used by mcp-core.",
+    "Don't swallow non-lock errors — only EBUSY/EPERM/ENOTEMPTY/'Permission denied'/'failed to delete'/timeout/'is not a working tree' fall through to the manual-rm path; anything else must propagate."
+  ],
+  "decisions": [
+    "Extracted into a shared package so the VS Code extension uses the robust removal path instead of a naive `git worktree remove --force; fs.rm` that lacked timeouts, retries, detach-on-lock, and pending-deletion recovery.",
+    "Dependency injection (runGit + pendingDeletions) chosen over importing concrete git runners — keeps the package free of VS Code coupling and lets the consumer keep its existing gitRaw quirks.",
+    "Reload-dance for deleting the currently-open worktree stays in the VS Code extension layer (vscode-specific concern); after reload, the resume path uses this shared core so retry/detach/pending-deletion gains apply there too."
+  ],
+  "tags": [
+    "git-utils",
+    "worktree",
+    "remove-worktree",
+    "robust-removal",
+    "windows-lock",
+    "pending-deletion",
+    "force-detach"
+  ],
+  "dependsOn": [],
+  "updatedAt": "2026-06-03T04:57:14.375Z",
+  "createdAt": "2026-05-27T03:49:36.115Z"
+}

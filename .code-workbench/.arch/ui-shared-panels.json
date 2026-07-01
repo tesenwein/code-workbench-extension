@@ -1,0 +1,63 @@
+{
+  "slug": "ui-shared-panels",
+  "name": "Shared UI Panels",
+  "description": "The @code-workbench/ui workspace package — host-agnostic React panel components (Tasks, Dead Code, Duplicates, Type Safety, Architecture) plus the component CSS. Consumed by the VS Code extension's React webviews (and historically the Electron app renderer) so the panels look identical across surfaces.",
+  "files": [
+    "packages/ui/src/index.ts",
+    "packages/ui/src/types.ts",
+    "packages/ui/src/styles.css",
+    "packages/ui/src/components/primitives.tsx",
+    "packages/ui/src/components/ScanPanel.tsx",
+    "packages/ui/src/components/DeadCodePanel.tsx",
+    "packages/ui/src/components/DuplicatesPanel.tsx",
+    "packages/ui/src/components/TypeEscapePanel.tsx",
+    "packages/ui/src/components/TasksPanel.tsx",
+    "packages/ui/src/components/ArchPanel.tsx",
+    "packages/ui/src/components/ArchGraph.tsx",
+    "packages/extension/webview/tasks.tsx",
+    "packages/extension/webview/arch.tsx",
+    "packages/extension/webview/bridge.ts"
+  ],
+  "guidelines": [
+    "Components are host-agnostic: all IO arrives via injected props (ScanPaneApi / TasksApi / ArchApi adapters), never window.api or a store.",
+    "Use plain CSS classes from styles.css — no Tailwind — so the same component renders in the extension's esbuild webview build (and the app's Vite build).",
+    "Design tokens (--bg-*, --clay*, --fg-*) are supplied by the host; styles.css ships component classes only. Components that paint with the clay tokens (e.g. ArchGraph) must use literal CSS fallbacks like var(--clay, #d97757) so they render even if a token is missing.",
+    "The host provides data via a small adapter: the extension wraps each panel with a postMessage RPC adapter (bridge.ts); the panels themselves never know the transport.",
+    "In the VS Code extension webviews, pass hideHeaderTitle (and hideHeaderRefresh for scan panels) — the WebviewView chrome shows the pane name and a view/title command provides the refresh action; the in-panel header would duplicate them.",
+    "Host-triggered scans go through the scanSignal prop: bump the number to run a scan (initial value ignored).",
+    "Scan panels (DeadCodePanel, DuplicatesPanel, TypeEscapePanel) wrap the generic ScanPanel — they differ only in row rendering, labels, and the feature key; do not re-implement the tab/scan/ack shell. See [[type-escape-detection]].",
+    "TasksPanel's PaneHeader holds only the title + host actions (headerExtra focus toggle, + add, ↻ refresh). The task search input lives in a dedicated .task-search-row at the top of the body (inside the !collapsed block), NOT in the header — keep it there so the title isn't squeezed and search is hidden when the pane collapses.",
+    "ArchPanel is driven by an injected ArchApi (list/upsert/remove) and a host-bumped reloadKey; ArchGraph is a self-contained force-directed SVG nodes view that needs no host data beyond the cards array. The on-disk arch store lives in the extension host — see [[arch-view]]."
+  ],
+  "anti_patterns": [
+    "Importing window.api, a Zustand store, or VS Code APIs into a ui component.",
+    "Adding Tailwind utility classes — the extension webview build has no Tailwind.",
+    "Redefining design tokens inside styles.css.",
+    "Re-implementing the scan/tab/ack shell in a new scan panel — wrap ScanPanel instead.",
+    "Putting the task search input back into the PaneHeader — it squeezes the title (flex:1) down to an ellipsis and leaves search visible while collapsed."
+  ],
+  "decisions": [
+    "The extension's old vanilla-JS webview scripts were replaced by React bundles rendering these shared components.",
+    "ui ships raw .tsx/.css source; the host bundler compiles it (esbuild for the extension webviews).",
+    "Task search was moved out of the TasksPanel header into a fixed .task-search-row at the top of the body (2026-06) so the 'Tasks' title renders in full.",
+    "The Architecture panel (ArchPanel + ArchGraph) was added to the shared package (2026-06), ported from the removed Electron app's ArchWikiPane/ArchGraph; see [[arch-view]]."
+  ],
+  "tags": [
+    "ui",
+    "shared components",
+    "react",
+    "panels",
+    "design system",
+    "webview",
+    "type-safety",
+    "task search",
+    "search bar",
+    "architecture",
+    "arch graph"
+  ],
+  "dependsOn": [
+    "extension-core"
+  ],
+  "updatedAt": "2026-06-30T04:19:37.939Z",
+  "createdAt": "2026-05-22T07:48:55.756Z"
+}

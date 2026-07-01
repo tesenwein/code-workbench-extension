@@ -1,0 +1,55 @@
+{
+  "slug": "dead-code-detection",
+  "name": "Dead Code Detection",
+  "description": "Workspace scanner for unused exports, unused locals, and commented-out code blocks. Analysed via dead-code-detect.mjs (TypeScript compiler API). The host runs the scan and persists results to <repo>/.code-workbench/dead-code-findings.json; the cw-dead-code MCP tool reads that file and applies acks at read time. Surfaced as the VS Code extension's DeadCodeView React webview (rendering the shared @code-workbench/ui DeadCodePanel) and the MCP tool detect_dead_code.",
+  "files": [
+    "packages/mcp-core/dead-code-detect.mjs",
+    "packages/mcp-core/dead-code-server.mjs",
+    "packages/mcp-core/scan-runner.cjs",
+    "packages/mcp-core/scan-state.cjs",
+    "packages/mcp-core/findings-store.cjs",
+    "packages/ui/src/components/DeadCodePanel.tsx",
+    "packages/ui/src/components/ScanPanel.tsx",
+    "packages/extension/src/deadCodeView.ts",
+    "packages/extension/src/scanViewProvider.ts",
+    "packages/extension/src/scanHost.ts"
+  ],
+  "guidelines": [
+    "Scan execution, ack, exclude, and findings persistence are delegated to shared-scan-service (scan-runner/scan-state/findings-store); the extension host keeps only path/binary resolution",
+    "Host scan callsites pass persistTo: repoPath so the Rescan button is the canonical entry point that produces the findings file the MCP tool reads",
+    "CLI entry-point guard must use pathToFileURL(process.argv[1]).href",
+    "The pane UI is the shared ui DeadCodePanel/ScanPanel — the extension wraps it with its own ScanPaneApi adapter; do not re-implement the tab/scan shell",
+    "Import DeadCodeItem from @code-workbench/ui (or mcp-core/scan-types)",
+    "The detect_dead_code MCP tool reads findings + applies acks at read time; response includes generatedAt and stale (>24h). force_scan: true is the explicit inline-scan escape hatch."
+  ],
+  "anti_patterns": [
+    "Inline readJsonArray/writeJsonArray in host code — use scan-state/findings-store instead",
+    "Pass repoPath directly to fs APIs without locToFsPath — WSL repos will fail",
+    "Define groupFingerprint locally — it lives in scan-runner.cjs",
+    "Re-implement the scan panel UI — use the shared ui ScanPanel",
+    "Make detect_dead_code run a fresh inline scan on every call — it should read the persisted findings; force_scan: true is the explicit opt-in"
+  ],
+  "decisions": [
+    "The extension host is a thin adapter delegating scan/ack/exclude/persist to shared-scan-service",
+    "The scan panel UI moved into @code-workbench/ui; the extension's DeadCodeView is now a React webview rather than a vanilla-JS script",
+    "Host-writes / MCP-reads: detect_dead_code reads <repo>/.code-workbench/dead-code-findings.json by default. force_scan: true preserves the legacy inline-scan path for headless use."
+  ],
+  "tags": [
+    "dead code",
+    "unused exports",
+    "unused locals",
+    "commented-out code",
+    "scan pane",
+    "findings",
+    "force_scan",
+    "wsl",
+    "windows"
+  ],
+  "dependsOn": [
+    "mcp-core",
+    "shared-scan-service",
+    "ui-shared-panels"
+  ],
+  "updatedAt": "2026-05-26T08:28:19.226Z",
+  "createdAt": "2026-05-19T12:16:22.033Z"
+}

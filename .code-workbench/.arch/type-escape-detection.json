@@ -1,0 +1,68 @@
+{
+  "slug": "type-escape-detection",
+  "name": "Type-Escape Detection",
+  "description": "Workspace scanner for TypeScript type-safety escape hatches: `as` casts (excluding `as const`), explicit `any` annotations, non-null `!` assertions, and @ts-ignore/@ts-expect-error directives — the patterns code uses to silence the compiler rather than fix a type error. Analysed purely syntactically via type-escape-detect.mjs (TypeScript compiler API, per-file source AST, no type checker). Host UIs run the scan and persist results to <repo>/.code-workbench/type-escapes-findings.json; the cw-type-safety MCP tool reads that file and applies acks at read time. The detect_type_escapes tool also has a branch-scoped, info-only diff_only mode (filters to files changed vs base_ref, default 'develop') and returns a byKind count breakdown. Surfaced as the VS Code extension's TypeEscapeView React webview (rendering the shared @code-workbench/ui TypeEscapePanel) and the MCP tool detect_type_escapes.",
+  "files": [
+    "packages/mcp-core/type-escape-detect.mjs",
+    "packages/mcp-core/type-safety-server.mjs",
+    "packages/mcp-core/stdio-server.mjs",
+    "packages/mcp-core/skills/cw-type-safety.cjs",
+    "packages/extension/src/typeEscapeView.ts",
+    "packages/extension/webview/typeescapes.tsx",
+    "packages/ui/src/components/TypeEscapePanel.tsx"
+  ],
+  "guidelines": [
+    "Feature key is 'type-escapes' across scan-state, findings-store, and ScanFeature unions (mcp-core + ui). Findings file: <repo>/.code-workbench/type-escapes-findings.json; ack/exclude: type-escapes-ack.json / type-escapes-exclude.json",
+    "Categories map 1:1 to the kind enum: 'as-cast' | 'any-type' | 'non-null' | 'ts-ignore' (no kind→category remap, unlike dead-code)",
+    "Fingerprint is content-based (kind:file:name:content snippet), never line-based — acks survive edits",
+    "Runs through the shared scan service: runTypeEscapeScan in scan-runner.cjs, persistTo: repoPath; the cw-type-safety MCP server reads with readFindings and applies acks at read time (force_scan: true is the inline escape hatch)",
+    "Detector is purely syntactic (ts.createSourceFile per file, no program/type-checker) so it is fast and config-free; only scans .ts/.tsx/.mts/.cts",
+    "TypeEscapeItem carries an extra `content` field (normalized snippet) beyond the dead-code shape; declared in scan-types.d.ts/.d.cts and ui/types.ts",
+    "The extension host adapter must resolve repoPath via repoFsPath() before any fs/path call (WSL repos)",
+    "The extension renders the shared TypeEscapePanel; do not re-implement the scan/tab shell — wrap ScanPanel like DeadCodePanel",
+    "diff_only is a branch-scoped INFO-ONLY mode (diffOnlyReport in type-safety-server.mjs): scans inline, filters findings to files from gitChangedFiles(baseRef) (committed base...HEAD + working-tree + untracked, forward-slashed), then returns directly. It deliberately does NOT call writeFindings and does NOT apply acks — it is an ephemeral report of what the branch introduced, not the canonical backlog. force_scan is ignored when diff_only is set",
+    "Every detect_type_escapes response includes a byKind count map (all four categories, zero-filled via byKindCounts)"
+  ],
+  "anti_patterns": [
+    "Do not flag `as const` as an as-cast — it is a safe literal-narrowing assertion and is explicitly skipped",
+    "Do not fingerprint on startLine — use the content snippet so acks survive line shifts",
+    "Do not make the MCP tool scan inline by default — read the host-written findings file; force_scan: true is the escape hatch",
+    "Do not re-implement the scan panel/ack/exclude loop — reuse the shared ScanPanel (UI) and ScanViewProvider<T> (extension)",
+    "Do not add a kind→category remap — type-escape categories ARE the kinds",
+    "Do not persist a findings file or apply acks in diff_only mode — it is a partial branch slice, not the canonical full scan; writing it would clobber the real backlog and acks don't apply to an ephemeral report",
+    "Do not exit the stdio server on stdin 'end' while async handlers are in flight — startStdioServer tracks inFlight and only exits once stdin closed AND all handlers settled (a force_scan was being killed mid-scan before this fix)"
+  ],
+  "decisions": [
+    "Own MCP server cw-type-safety (type-safety-server.mjs) mirroring cw-dead-code, rather than a cw-ast tool — matches the dead-code precedent and gives a dedicated pane. Registered in server-manifest STATIC_MCP_SERVERS + SERVERS_NEEDING_REPO_PATH (needs CODE_WORKBENCH_REPO_PATH).",
+    "Detector follows the dead-code-detect.mjs precedent: same CLI flags (--root/--exclude-dirs/--categories), same symlink+basename CLI-entry guard, lazy-loaded in the MCP server to keep startup fast",
+    "Purely syntactic AST scan (no type checker) chosen for speed and zero-config — trades some precision (cannot resolve whether an `any` is truly unsafe) for not needing tsconfig/module resolution",
+    "diff_only added as an info-only branch report so the tool answers 'what type escapes did THIS branch introduce' for PR review, without polluting the persisted full-repo backlog or acks; base_ref defaults to 'develop' to match the repo's PR base convention",
+    "Companion skill cw-type-safety added to BUNDLED_SKILLS (skills/cw-type-safety.cjs) mirroring cw-dead-code, documenting the diff_only PR-review workflow"
+  ],
+  "tags": [
+    "type-escape",
+    "type-safety",
+    "any",
+    "as-cast",
+    "non-null",
+    "ts-ignore",
+    "ts-expect-error",
+    "cw-type-safety",
+    "detect_type_escapes",
+    "typescript",
+    "diff_only",
+    "diff scope",
+    "byKind",
+    "stdio-server",
+    "branch scoped"
+  ],
+  "dependsOn": [
+    "shared-scan-service",
+    "mcp-core",
+    "mcp-config",
+    "ui-shared-panels",
+    "skills-bundle"
+  ],
+  "updatedAt": "2026-05-28T04:49:27.235Z",
+  "createdAt": "2026-05-28T04:33:25.068Z"
+}

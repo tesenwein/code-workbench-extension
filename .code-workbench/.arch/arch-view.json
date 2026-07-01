@@ -1,0 +1,54 @@
+{
+  "slug": "arch-view",
+  "name": "Architecture View",
+  "description": "VS Code WebviewView sidebar panel (\"Architecture\") that renders the architecture wiki as a force-directed component graph (nodes view) plus search, a list view, and a card detail/editor. Hosts the shared @code-workbench/ui ArchPanel React component and answers its list/upsert/remove/openFile RPC calls against the repo's .code-workbench/.arch/<slug>.json cards — the SAME store the bundled arch MCP server (arch-server.mjs) reads and writes, so cards Claude authors via seed-arch/arch_upsert and cards edited in the panel are one and the same files. Ported from the removed Electron app's ArchWikiPane + ArchGraph.",
+  "files": [
+    "packages/extension/src/archView.ts",
+    "packages/extension/src/archHost.ts",
+    "packages/extension/webview/arch.tsx",
+    "packages/extension/src/reactWebview.ts",
+    "packages/extension/src/webviewRpc.ts",
+    "packages/ui/src/components/ArchPanel.tsx",
+    "packages/ui/src/components/ArchGraph.tsx"
+  ],
+  "guidelines": [
+    "Arch cards are JSON files under .code-workbench/.arch/<slug>.json — the same store the arch MCP server (arch-server.mjs) uses; never invent a parallel store. archHost.ts reads/writes them with an atomic tmp+rename, a per-file write lock, and a safe-slug + path-traversal guard, so a panel edit and a concurrent MCP write can't corrupt a card.",
+    "The panel UI is the shared ui ArchPanel (graph + search + list + editor) rendered via a React webview; do not hand-write panel markup. Pass hideHeaderTitle — the WebviewView chrome already shows the 'Architecture' pane name.",
+    "archHost.ts declares its own ArchCard interface (structurally identical to the ui ArchCard). Host src/ code must NOT import the type from the JSX @code-workbench/ui barrel: the extension's src tsconfig has no jsx set and excludes webview/, so importing the barrel pulls .tsx into a non-jsx program and fails the build. Mirror this exactly the way DeadCodeItem is duplicated between mcp-core and ui.",
+    "Push live updates with a vscode.FileSystemWatcher on the arch dir (RelativePattern '*.json') that posts an 'arch-changed' event, so cards written by seed-arch / the arch MCP appear without a manual refresh. Dispose the watcher on view dispose and re-point it on workspace-folder change via onRepoChanged().",
+    "The webview entry must stay in lockstep across three places: esbuild.mjs entryPoints ('webview/arch'), the WebviewEntry union in reactWebview.ts ('arch'), and ArchViewProvider.viewId / the package.json view id ('codeWorkbench.arch') + view/title refresh command.",
+    "Open card 'Key Files' in the editor via the openFile RPC handler (vscode.workspace.openTextDocument); the file paths are repo-relative so the webview joins them onto repoPath, exactly as the scan panels do."
+  ],
+  "anti_patterns": [
+    "Do not implement arch-card CRUD anywhere but archHost.ts, and keep its on-disk format byte-compatible with arch-server.mjs (same fields, atomic write) so the panel and the MCP server never clobber each other's files.",
+    "Do not import @code-workbench/ui (a JSX package) from extension host src/ code — only the webview/*.tsx entries may; host code uses the local ArchCard interface in archHost.ts.",
+    "Do not rebuild the arch graph/search/editor as vanilla-JS webview HTML — render the shared ui ArchPanel/ArchGraph.",
+    "Do not leak the FileSystemWatcher: dispose it on view dispose and before re-pointing it, or repo switches accumulate watchers."
+  ],
+  "decisions": [
+    "The Architecture panel was ported from the removed Electron app's ArchWikiPane + ArchGraph into the shared ui package so it renders identically; the Electron useArchWiki/window.api hook was replaced by an injected ArchApi adapter wired over the webview postMessage RPC bridge (webviewRpc.ts / bridge.ts).",
+    "Live refresh uses a VS Code FileSystemWatcher instead of the Electron app's chokidar + coalesce watcher; event debouncing is delegated to VS Code's watcher.",
+    "ArchGraph keeps its deterministic force-directed layout (seeded by slug hash) and reads the clay design tokens with literal fallbacks, so it needs no host data beyond the cards array.",
+    "Card 'Key Files' are clickable and open in the editor via the host openFile RPC — a new affordance over the Electron original."
+  ],
+  "tags": [
+    "architecture",
+    "arch wiki",
+    "graph",
+    "nodes view",
+    "ArchPanel",
+    "ArchGraph",
+    "force-directed",
+    "webview",
+    "search",
+    "component map"
+  ],
+  "dependsOn": [
+    "extension-core",
+    "ui-shared-panels",
+    "arch-server",
+    "mcp-core"
+  ],
+  "updatedAt": "2026-06-30T04:19:16.595Z",
+  "createdAt": "2026-06-30T04:19:16.595Z"
+}

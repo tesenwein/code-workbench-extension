@@ -1,0 +1,20 @@
+{
+  "slug": "git-utils",
+  "name": "Git Utilities (VS Code extension)",
+  "description": "Async wrappers around the git CLI used by the VS Code extension package (NOT the Electron workbench app — that has its own git layer in app-exec-git / app-worktrees). Exports: gitRaw (with timeoutMs support), listWorktrees, addWorktree, removeWorktree, mergedWorktrees, countUncommitted, aheadBehind, findRepoRoot, findRepoKey, plus the Worktree interface. Re-exports buildRepoKey and repoNameFromCommonDir from @code-workbench/mcp-core/repo-key. `removeWorktree` delegates to @code-workbench/git-utils/remove-worktree for the robust removal flow (timeout + retry + force-detach + pending-deletion rescue).</description>\n<parameter name=\"files\">[\"packages/extension/src/git.ts\"]",
+  "files": ["packages/extension/src/git.ts"],
+  "guidelines": [
+    "gitRaw accepts an optional `timeoutMs` and surfaces timeouts as `Error('Timed out after Nms: git ...')` so the shared removeWorktreeRobust core recognises them and falls back to manual rm.",
+    "removeWorktree takes an optional PendingDeletionStore; the extension passes a globalState-backed store from extension.ts (PENDING_DELETIONS_KEY) so Windows-locked directories survive a window reload and are retried on next activation."
+  ],
+  "anti_patterns": [
+    "Don't reintroduce the inline `git worktree remove --force; fs.rm` fallback — it lacks timeout, retry, detach-on-lock, and pending-deletion recovery. Always go through shared-git-utils."
+  ],
+  "decisions": [
+    "Worktree-removal robustness lives in @code-workbench/git-utils so the Electron app and the VS Code extension share one implementation — see [[shared-git-utils]]."
+  ],
+  "dependsOn": ["shared-git-utils"],
+  "updatedAt": "2026-05-27T03:49:47.276Z",
+  "createdAt": "2026-05-19T04:49:52.485Z",
+  "tags": ["git", "worktree", "vscode-extension", "git-cli", "remove-worktree"]
+}

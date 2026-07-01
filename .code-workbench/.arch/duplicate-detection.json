@@ -1,0 +1,64 @@
+{
+  "slug": "duplicate-detection",
+  "name": "Duplicate Code Detection",
+  "description": "Cross-package clone/duplicate detection via clone-detect.mjs (tree-sitter). The host runs the scan and persists results to <repo>/.code-workbench/duplicates-findings.json; the cw-ast MCP tool find_duplicates reads that file and applies acks + post-filters at read time. Surfaced as cw-ast MCP tools and the VS Code extension's DuplicatesView React webview, which renders the shared @code-workbench/ui DuplicatesPanel.",
+  "files": [
+    "packages/mcp-core/clone-detect.mjs",
+    "packages/mcp-core/ast-core.mjs",
+    "packages/mcp-core/ast-server.mjs",
+    "packages/mcp-core/scan-runner.cjs",
+    "packages/mcp-core/scan-state.cjs",
+    "packages/mcp-core/findings-store.cjs",
+    "packages/ui/src/components/DuplicatesPanel.tsx",
+    "packages/ui/src/components/ScanPanel.tsx",
+    "packages/extension/src/duplicatesView.ts",
+    "packages/extension/src/scanViewProvider.ts",
+    "packages/extension/src/scanHost.ts",
+    "packages/extension/esbuild.mjs"
+  ],
+  "guidelines": [
+    "groupFingerprint lives in scan-runner.cjs — import from there; do not redefine it",
+    "groupFingerprint hashes members' deduplicated normHash, not line positions — acks survive edits elsewhere in the file",
+    "clone-detect.mjs emits normHash per member; consumers strip it from public output after fingerprinting",
+    "Scan execution, ack, exclude, and findings persistence delegate to shared-scan-service; the extension host keeps only path/binary resolution",
+    "Host scan callsites pass persistTo: repoPath so the Rescan button is the canonical entry point that produces the findings file the MCP tool reads",
+    "Directory exclusion is basename-match; --exclude-dirs comma-list passed to clone-detect CLI",
+    "The pane UI is the shared ui DuplicatesPanel/ScanPanel — the extension wraps it with its own ScanPaneApi adapter",
+    "Import DuplicateGroup from @code-workbench/ui (or mcp-core/scan-types)",
+    "ast-core.mjs resolves tree-sitter wasm relative to the bundled detector — esbuild.mjs must copy grammar + web-tree-sitter wasm into dist/mcp-server/grammars/ or the extension scan silently returns []",
+    "ast-core.locateFile checks WEB_TREE_SITTER_DIR, GRAMMARS_DIR, then the detector dir — covers both source-tree and bundled .vsix layouts",
+    "find_duplicates MCP tool reads findings + applies acks at read time, then post-filters by min_lines/similarity/include_structural/langs/limit over the persisted set. Response includes generatedAt + stale (>24h). force_scan: true is the explicit inline-scan escape hatch."
+  ],
+  "anti_patterns": [
+    "Redefine groupFingerprint outside scan-runner.cjs — causes ack-list divergence",
+    "Make a fingerprint depend on line numbers",
+    "Leak normHash into the public DuplicateGroup.members shape",
+    "Inline readJsonArray/writeJsonArray in host code — use scan-state/findings-store instead",
+    "Re-implement the scan panel UI — use the shared ui ScanPanel",
+    "Ship a JS-only bundle of clone-detect without its tree-sitter wasm assets — getParser() returns null and the scan silently finds nothing",
+    "Make find_duplicates run a fresh inline detectClones on every call — it should read the persisted findings; force_scan: true is the explicit opt-in"
+  ],
+  "decisions": [
+    "groupFingerprint centralized into scan-runner.cjs",
+    "Group identity is content-based: hash of members' deduplicated normHash, not line positions",
+    "Tree-sitter grammar + runtime wasm are copied into dist/mcp-server/grammars/ by esbuild.mjs so the packaged extension's duplicate scan works for any project",
+    "Host-writes / MCP-reads: find_duplicates reads <repo>/.code-workbench/duplicates-findings.json by default. Filters are post-filters over the persisted set so toggling them does not require a rescan. force_scan: true preserves the legacy inline-scan path."
+  ],
+  "dependsOn": [
+    "mcp-core",
+    "shared-scan-service",
+    "ui-shared-panels"
+  ],
+  "updatedAt": "2026-05-26T08:28:34.830Z",
+  "createdAt": "2026-05-19T09:42:22.279Z",
+  "tags": [
+    "duplicate",
+    "clone",
+    "clone-detect",
+    "dedup",
+    "tree-sitter",
+    "fingerprint",
+    "findings",
+    "force_scan"
+  ]
+}

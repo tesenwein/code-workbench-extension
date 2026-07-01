@@ -1,0 +1,6 @@
+{
+  "theme": "dark",
+  "syncEnabled": true,
+  "leftPanelWidth": 393,
+  "aiProvider": "openai"
+}

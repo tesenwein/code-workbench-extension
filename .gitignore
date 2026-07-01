@@ -1,0 +1,90 @@
+# Dependencies
+node_modules/
+src/node_modules/
+.vscode
+release/
+
+# pnpm
+.pnpm-store/
+
+# npm (migrated to pnpm)
+package-lock.json
+
+# Build outputs
+dist/
+src/dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Environment variables
+.env.local
+.env.*.local
+.env.runtime
+
+# Vite cache (companion)
+companion/vite-cache/
+
+# Database
+*.db
+*.sqlite
+db-backups/
+
+# Logs
+/logs/
+.run/
+*.log
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Generated data at repo root (not src/data); allow tracking data/user-assets/.gitkeep only
+/data/*
+!/data/user-assets/
+/data/user-assets/*
+!/data/user-assets/.gitkeep
+assets/book-assets/*
+!assets/book-assets/.gitkeep
+# Legacy user-assets path (pre–DATA_DIR); remove folder after migrate-user-assets-to-data
+assets/user-assets/*
+tmp/
+
+# Private books (local only, not committed)
+src/books-private/
+
+# Prisma (migrations are checked in so deploy/teammates stay in sync)
+
+companion/.vite-cache/
+
+# Codex local workspace data
+.codex
+.codex/
+
+# LM Studio models (large GGUF files, not tracked)
+models/
+
+# Claude Code worktrees (local agent scratch space, never tracked)
+.claude/worktrees/
+
+# Chrome extension signing key (NEVER commit — used to derive a stable extension ID)
+chrome-extension/key.pem
+chrome-extension/*.pem
+chrome-extension/storygpt-extension-*.zip
+
+# Pi deploy state (local only)
+.deployed-version
+.claude
+
+# Local secrets (encrypted API-key blobs — machine-specific, never commit)
+local/
+!local/.gitkeep

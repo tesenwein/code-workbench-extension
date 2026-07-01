@@ -1,0 +1,35 @@
+{
+  "name": "code-workbench-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Code Workbench — VS Code extension and shared MCP core",
+  "license": "MIT",
+  "author": "Theo Esenwein <theo@esenwein.ch>",
+  "packageManager": "pnpm@10.11.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "pnpm -r test",
+    "dev:extension": "pnpm --filter ./packages/extension watch",
+    "dist": "pnpm run dist:extension",
+    "dist:extension": "pnpm --filter ./packages/extension dist",
+    "install:extension": "code --install-extension release/extension/code-workbench-0.1.0.vsix --force",
+    "reinstall:extension": "pnpm run dist:extension && pnpm run install:extension"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.5.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.4",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.61.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "react": "^19.2.7",
+      "react-dom": "^19.2.7"
+    }
+  }
+}

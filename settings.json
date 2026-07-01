@@ -1,0 +1,15 @@
+{
+  "defaults": {
+    "model": "default",
+    "effort": 1,
+    "yolo": false
+  },
+  "prompts": [],
+  "claudeCommand": "claude",
+  "claudeYoloArgs": "--dangerously-skip-permissions",
+  "openOnStartup": true,
+  "syncEnabled": true,
+  "syncRemoteUrl": "",
+  "syncBranch": "main",
+  "syncIntervalSeconds": 120
+}

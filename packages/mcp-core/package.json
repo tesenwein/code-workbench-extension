@@ -1,0 +1,129 @@
+{
+  "name": "@code-workbench/mcp-core",
+  "version": "1.0.0",
+  "description": "Shared MCP servers and task-management core for Code Workbench (notify + tasks + AST)",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./repo-key": {
+      "require": {
+        "types": "./repo-key.d.cts",
+        "default": "./repo-key.cjs"
+      },
+      "import": {
+        "types": "./repo-key.d.ts",
+        "default": "./repo-key.mjs"
+      }
+    },
+    "./task-format": {
+      "require": {
+        "types": "./task-format.d.cts",
+        "default": "./task-format.cjs"
+      },
+      "import": {
+        "types": "./task-format.d.ts",
+        "default": "./task-format.mjs"
+      }
+    },
+    "./task-store": {
+      "require": {
+        "types": "./task-store.d.cts",
+        "default": "./task-store.cjs"
+      },
+      "import": {
+        "types": "./task-store.d.ts",
+        "default": "./task-store.mjs"
+      }
+    },
+    "./skills": {
+      "require": {
+        "types": "./skills.d.cts",
+        "default": "./skills.cjs"
+      },
+      "import": {
+        "types": "./skills.d.ts",
+        "default": "./skills.mjs"
+      }
+    },
+    "./scan-state": {
+      "require": {
+        "types": "./scan-state.d.cts",
+        "default": "./scan-state.cjs"
+      },
+      "import": {
+        "types": "./scan-state.d.ts",
+        "default": "./scan-state.mjs"
+      }
+    },
+    "./findings-store": {
+      "require": {
+        "types": "./findings-store.d.cts",
+        "default": "./findings-store.cjs"
+      },
+      "import": {
+        "types": "./findings-store.d.ts",
+        "default": "./findings-store.mjs"
+      }
+    },
+    "./scan-runner": {
+      "require": {
+        "types": "./scan-runner.d.cts",
+        "default": "./scan-runner.cjs"
+      },
+      "import": {
+        "types": "./scan-runner.d.ts",
+        "default": "./scan-runner.mjs"
+      }
+    },
+    "./scan-types": {
+      "require": {
+        "types": "./scan-types.d.cts"
+      },
+      "import": {
+        "types": "./scan-types.d.ts"
+      }
+    },
+    "./text-rank": {
+      "types": "./text-rank.d.ts",
+      "default": "./text-rank.mjs"
+    },
+    "./server-manifest": {
+      "require": {
+        "types": "./server-manifest.d.cts",
+        "default": "./server-manifest.cjs"
+      },
+      "import": {
+        "types": "./server-manifest.d.ts",
+        "default": "./server-manifest.mjs"
+      }
+    },
+    "./static-mcp-register": {
+      "require": {
+        "types": "./static-mcp-register.d.cts",
+        "default": "./static-mcp-register.cjs"
+      },
+      "import": {
+        "types": "./static-mcp-register.d.ts",
+        "default": "./static-mcp-register.mjs"
+      }
+    },
+    "./servers/tasks": "./tasks-server.mjs",
+    "./servers/notify": "./notify-server.mjs",
+    "./servers/arch": "./arch-server.mjs",
+    "./servers/ast": "./ast-server.mjs",
+    "./servers/dead-code": "./dead-code-server.mjs",
+    "./servers/type-safety": "./type-safety-server.mjs",
+    "./servers/code": "./code-server.mjs",
+    "./servers/code-search": "./code-search.mjs",
+    "./servers/clone-detect": "./clone-detect.mjs",
+    "./dead-code-detect.mjs": "./dead-code-detect.mjs",
+    "./clone-detect.mjs": "./clone-detect.mjs",
+    "./type-escape-detect.mjs": "./type-escape-detect.mjs"
+  },
+  "dependencies": {
+    "@xenova/transformers": "^2.17.2",
+    "typescript": "^6.0.3",
+    "web-tree-sitter": "^0.26.9"
+  }
+}

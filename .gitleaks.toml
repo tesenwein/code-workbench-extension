@@ -1,0 +1,16 @@
+# Gitleaks configuration for code-workbench-monorepo
+# Extends the default ruleset and adds allowlists for known false positives.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Global allowlist — build artifacts and packaged binaries"
+# Build outputs are gitignored and never committed. They contain minified
+# third-party bundles (tokenizers, schedulers, etc.) whose high-entropy
+# identifiers trip the generic-api-key rule but are not secrets.
+paths = [
+  '''release/.*''',
+  '''.*\.asar$''',
+  '''(^|/)dist/.*''',
+  '''(^|/)node_modules/.*''',
+]

@@ -1,0 +1,23 @@
+# Dependencies & build output
+node_modules
+**/node_modules
+dist
+**/dist
+release
+
+# Generated declaration files
+**/*.d.ts
+**/*.d.cts
+
+# Lockfiles
+pnpm-lock.yaml
+
+# Workbench data (git-tracked, but generated/managed — not source)
+.code-workbench/
+repos/
+preferences.json
+settings.json
+
+# mcp-core is maintained in an intentionally different committed style;
+# never reformat it with the repo-wide Prettier config.
+packages/mcp-core/

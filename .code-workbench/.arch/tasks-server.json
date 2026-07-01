@@ -1,0 +1,46 @@
+{
+  "slug": "tasks-server",
+  "name": "Tasks MCP Server",
+  "description": "The cw-tasks MCP stdio handler (tasks-server.mjs) that exposes the workspace task board to Claude sessions: task_list, task_create, task_update, task_delete, task_find_similar. All persistence goes through the shared task-store; this module owns the TOOL SURFACE, the per-session worktree SCOPING of task_list, and the text RENDERING of the board. Spawned behind the unified cw-code endpoint (code-server.mjs routes tools/call verbatim to handle()). Per-session identity comes from env: CODE_WORKBENCH_REPO_KEY (bucket), CODE_WORKBENCH_REPO_PATH (main repo), CODE_WORKBENCH_WORKTREE_PATH (the worktree the session runs in → WORKTREE_KEY); each falls back to walking up from cwd, so it works for any project the workbench opens.",
+  "files": [
+    "packages/mcp-core/tasks-server.mjs"
+  ],
+  "guidelines": [
+    "task_list default scope (no `worktree` arg — how cw-work calls it) returns tasks whose ROOT-ancestor worktree key === this session's WORKTREE_KEY, PLUS unassigned tasks (root worktree key === \"\") rendered as root-level `[unassigned]`. An explicit `worktree` arg is a deliberate narrowing: it returns exactly that worktree and EXCLUDES the unassigned backlog. `worktree: \"\"` (or a session with no WORKTREE_KEY) makes wantKey falsy, skips the `if (wantKey)` filter, and returns ALL tasks (the everything-view).",
+    "Scope subtasks by their ROOT ancestor's worktree, never their own — a subtask always has worktree null (enforced by task-store). Walk parentId over the UNFILTERED rawTasks (with a `seen` cycle guard) so status/worktree filtering can't break the lineage walk.",
+    "The renderer only descends from root tasks, so after filtering, prune any subtask whose parent didn't survive (or is an orphan) to a fixed point BEFORE computing total/limit — otherwise unrenderable tasks inflate `total` and the '(N more)' truncation footer. The prune is render-invariant: it only removes tasks that could never appear.",
+    "Only ROOT tasks carry the `[unassigned]` marker (depth===0 with falsy worktree); subtasks inherit the root's assignment and stay unmarked. The cw-work skill must skip at root granularity (skip an `[unassigned]` root AND its subtasks), not by the per-line marker.",
+    "The cw-work skill is the contract partner: it may SEE unassigned tasks but must not auto-start them unless the user explicitly asks; claiming one means task_update worktree=<this worktree's root folder basename> (the server lowercases it). Keep the tool descriptions and the skill text in sync when scoping changes."
+  ],
+  "anti_patterns": [
+    "Do not filter subtasks by their own `worktree` field — it is always null; use the root-ancestor worktree via the parentId walk.",
+    "Do not count tasks toward total/limit that the renderer can't show (subtasks of a filtered-out or deleted parent) — prune them first, or the truncation footer lies and a real task can be silently dropped past the limit.",
+    "Do not make an explicit `worktree` arg include the unassigned backlog — that path is an exact narrowing; only the default scope mixes in unassigned.",
+    "Do not run `prettier --write` on this file (or any packages/mcp-core/*.mjs/.cjs) — the package is committed in a double-quote / ~80-col style that does NOT match the repo .prettierrc.json (singleQuote, 100-col); reformatting produces a huge spurious diff. Match the surrounding style by hand.",
+    "Do not add task persistence logic here — all reads/writes go through @code-workbench/mcp-core/task-store."
+  ],
+  "decisions": [
+    "task_list surfaces the unassigned backlog in the default worktree scope (marked `[unassigned]`) so cw-work and the user can see shared, unclaimed work from any worktree session — mirroring the desktop app / extension task panels, which already render their own 'Unassigned' group from raw task.worktree. The cw-work skill enforces 'visible but not auto-started'.",
+    "Worktree scoping uses the stable worktreeKey (lowercased basename) from task-format so the same logical worktree matches across machines after a cross-machine git sync.",
+    "Kept as a separate component from task-store: task-store owns .md file I/O + CRUD; this server owns the MCP tool surface, worktree scoping, and board rendering."
+  ],
+  "tags": [
+    "cw-tasks",
+    "task_list",
+    "task board",
+    "worktree scoping",
+    "unassigned tasks",
+    "shared backlog",
+    "cw-work skill",
+    "WORKTREE_KEY",
+    "MCP tasks server",
+    "subtask scoping"
+  ],
+  "dependsOn": [
+    "task-store",
+    "mcp-core",
+    "mcp-config"
+  ],
+  "updatedAt": "2026-06-03T03:52:14.939Z",
+  "createdAt": "2026-06-03T03:52:14.939Z"
+}

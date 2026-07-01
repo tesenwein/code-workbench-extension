@@ -1,0 +1,8 @@
+packages:
+  - packages/*
+
+# Native deps allowed to run install/build scripts (pnpm 10 blocks them by
+# default). transformers.js pulls onnxruntime-node + sharp for local inference.
+onlyBuiltDependencies:
+  - sharp
+  - onnxruntime-node

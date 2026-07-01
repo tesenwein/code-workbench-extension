@@ -1,0 +1,20 @@
+{
+  "name": "@code-workbench/git-utils",
+  "version": "1.0.0",
+  "description": "Shared git helpers for Code Workbench (robust worktree removal, etc.)",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./remove-worktree": {
+      "require": {
+        "types": "./remove-worktree.d.cts",
+        "default": "./remove-worktree.cjs"
+      },
+      "import": {
+        "types": "./remove-worktree.d.ts",
+        "default": "./remove-worktree.mjs"
+      }
+    }
+  }
+}

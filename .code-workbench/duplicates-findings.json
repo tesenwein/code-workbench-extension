@@ -1,0 +1,895 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": 1781344240612,
+  "root": "C:/Users/theo/Code/code-workbench-monorepo",
+  "groups": [
+    {
+      "cloneType": "structural",
+      "similarity": 0.938,
+      "count": 2,
+      "fingerprint": "d74520f1c126bee7",
+      "members": [
+        {
+          "file": "packages/app/src/renderer/components/TasksPane.tsx",
+          "name": "NewTaskForm",
+          "kind": "function",
+          "startLine": 263,
+          "endLine": 384,
+          "lines": 122
+        },
+        {
+          "file": "packages/ui/src/components/TasksPanel.tsx",
+          "name": "NewTaskForm",
+          "kind": "function",
+          "startLine": 541,
+          "endLine": 664,
+          "lines": 124
+        }
+      ]
+    },
+    {
+      "cloneType": "structural",
+      "similarity": 0.95,
+      "count": 2,
+      "fingerprint": "adbe56fe7fd4db82",
+      "members": [
+        {
+          "file": "packages/app/src/renderer/components/TasksPane.tsx",
+          "name": "SubtaskRow",
+          "kind": "function",
+          "startLine": 97,
+          "endLine": 208,
+          "lines": 112
+        },
+        {
+          "file": "packages/ui/src/components/TasksPanel.tsx",
+          "name": "SubtaskRow",
+          "kind": "function",
+          "startLine": 86,
+          "endLine": 186,
+          "lines": 101
+        }
+      ]
+    },
+    {
+      "cloneType": "structural",
+      "similarity": 0.978,
+      "count": 2,
+      "fingerprint": "8f66e52ccc003860",
+      "members": [
+        {
+          "file": "packages/ui/src/components/DeadCodePanel.tsx",
+          "name": "ItemRow",
+          "kind": "function",
+          "startLine": 41,
+          "endLine": 113,
+          "lines": 73
+        },
+        {
+          "file": "packages/ui/src/components/TypeEscapePanel.tsx",
+          "name": "ItemRow",
+          "kind": "function",
+          "startLine": 43,
+          "endLine": 116,
+          "lines": 74
+        }
+      ]
+    },
+    {
+      "cloneType": "renamed",
+      "similarity": 1,
+      "count": 3,
+      "fingerprint": "f928b6032a1d07cd",
+      "members": [
+        {
+          "file": "packages/ui/src/components/DeadCodePanel.tsx",
+          "name": "DeadCodePanel",
+          "kind": "function",
+          "startLine": 115,
+          "endLine": 159,
+          "lines": 45
+        },
+        {
+          "file": "packages/ui/src/components/DuplicatesPanel.tsx",
+          "name": "DuplicatesPanel",
+          "kind": "function",
+          "startLine": 101,
+          "endLine": 145,
+          "lines": 45
+        },
+        {
+          "file": "packages/ui/src/components/TypeEscapePanel.tsx",
+          "name": "TypeEscapePanel",
+          "kind": "function",
+          "startLine": 118,
+          "endLine": 162,
+          "lines": 45
+        }
+      ]
+    },
+    {
+      "cloneType": "exact",
+      "similarity": 1,
+      "count": 2,
+      "fingerprint": "977aaab8e7760939",
+      "members": [
+        {
+          "file": "packages/git-utils/remove-worktree.cjs",
+          "name": "removeWorktreeRobust",
+          "kind": "function",
+          "startLine": 18,
+          "endLine": 66,
+          "lines": 49
+        },
+        {
+          "file": "packages/git-utils/remove-worktree.mjs",
+          "name": "removeWorktreeRobust",
+          "kind": "function",
+          "startLine": 43,
+          "endLine": 106,
+          "lines": 64
+        }
+      ]
+    },
+    {
+      "cloneType": "exact",
+      "similarity": 1,
+      "count": 2,
+      "fingerprint": "49fcef6199dcf9eb",
+      "members": [
+        {
+          "file": "packages/mcp-core/static-mcp-register.cjs",
+          "name": "registerStaticServersInto",
+          "kind": "function",
+          "startLine": 48,
+          "endLine": 102,
+          "lines": 55
+        },
+        {
+          "file": "packages/mcp-core/static-mcp-register.mjs",
+          "name": "registerStaticServersInto",
+          "kind": "function",
+          "startLine": 69,
+          "endLine": 123,
+          "lines": 55
+        }
+      ]
+    },
+    {
+      "cloneType": "renamed",
+      "similarity": 1,
+      "count": 3,
+      "fingerprint": "de7b0baa70cbdbbc",
+      "members": [
+        {
+          "file": "packages/app/src/renderer/components/DeadCodePane.tsx",
+          "name": "DeadCodePane",
+          "kind": "function",
+          "startLine": 31,
+          "endLine": 66,
+          "lines": 36
+        },
+        {
+          "file": "packages/app/src/renderer/components/DuplicatesPane.tsx",
+          "name": "DuplicatesPane",
+          "kind": "function",
+          "startLine": 30,
+          "endLine": 65,
+          "lines": 36
+        },
+        {
+          "file": "packages/app/src/renderer/components/TypeEscapePane.tsx",
+          "name": "TypeEscapePane",
+          "kind": "function",
+          "startLine": 31,
+          "endLine": 66,
+          "lines": 36
+        }
+      ]
+    },
+    {
+      "cloneType": "renamed",
+      "similarity": 1,
+      "count": 2,
+      "fingerprint": "f034b5f1213e3f8a",
+      "members": [
+        {
+          "file": "packages/app/src/renderer/components/TasksPane.tsx",
+          "name": "AddSubtaskForm",
+          "kind": "function",
+          "startLine": 212,
+          "endLine": 261,
+          "lines": 50
+        },
+        {
+          "file": "packages/ui/src/components/TasksPanel.tsx",
+          "name": "AddSubtaskForm",
+          "kind": "function",
+          "startLine": 190,
+          "endLine": 246,
+          "lines": 57
+        }
+      ]
+    },
+    {
+      "cloneType": "structural",
+      "similarity": 0.939,
+      "count": 2,
+      "fingerprint": "41d9369c748bc1ea",
+      "members": [
+        {
+          "file": "packages/app/src/main/workspaceInit.ts",
+          "name": "initProjectWorkspace",
+          "kind": "function",
+          "startLine": 99,
+          "endLine": 142,
+          "lines": 44
+        },
+        {
+          "file": "packages/extension/src/workspaceInit.ts",
+          "name": "initProjectWorkspace",
+          "kind": "function",
+          "startLine": 215,
+          "endLine": 272,
+          "lines": 58
+        }
+      ]
+    },
+    {
+      "cloneType": "structural",
+      "similarity": 0.907,
+      "count": 10,
+      "fingerprint": "0ba3f545b96d18a1",
+      "members": [
+        {
+          "file": "packages/app/src/shared/loc.test.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 13,
+          "endLine": 33,
+          "lines": 21
+        },
+        {
+          "file": "packages/app/src/shared/loc.test.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 19,
+          "endLine": 24,
+          "lines": 6
+        },
+        {
+          "file": "packages/app/src/shared/loc.test.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 26,
+          "endLine": 32,
+          "lines": 7
+        },
+        {
+          "file": "packages/app/src/shared/loc.test.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 46,
+          "endLine": 56,
+          "lines": 11
+        },
+        {
+          "file": "packages/app/src/shared/loc.test.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 51,
+          "endLine": 55,
+          "lines": 5
+        },
+        {
+          "file": "packages/app/src/shared/loc.test.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 58,
+          "endLine": 73,
+          "lines": 16
+        },
+        {
+          "file": "packages/app/src/shared/loc.test.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 67,
+          "endLine": 72,
+          "lines": 6
+        },
+        {
+          "file": "packages/app/src/shared/loc.test.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 75,
+          "endLine": 80,
+          "lines": 6
+        },
+        {
+          "file": "packages/app/src/shared/loc.test.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 121,
+          "endLine": 129,
+          "lines": 9
+        },
+        {
+          "file": "packages/app/src/shared/loc.test.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 122,
+          "endLine": 128,
+          "lines": 7
+        }
+      ]
+    },
+    {
+      "cloneType": "renamed",
+      "similarity": 1,
+      "count": 2,
+      "fingerprint": "29416f89dee3d411",
+      "members": [
+        {
+          "file": "packages/mcp-core/dead-code-server.mjs",
+          "name": "handle",
+          "kind": "function",
+          "startLine": 278,
+          "endLine": 318,
+          "lines": 41
+        },
+        {
+          "file": "packages/mcp-core/type-safety-server.mjs",
+          "name": "handle",
+          "kind": "function",
+          "startLine": 386,
+          "endLine": 426,
+          "lines": 41
+        }
+      ]
+    },
+    {
+      "cloneType": "structural",
+      "similarity": 0.861,
+      "count": 3,
+      "fingerprint": "64f30b19632572c4",
+      "members": [
+        {
+          "file": "packages/app/src/renderer/components/FocusBar.tsx",
+          "name": "FocusBar",
+          "kind": "function",
+          "startLine": 13,
+          "endLine": 24,
+          "lines": 12
+        },
+        {
+          "file": "packages/app/src/renderer/components/FullscreenBlocker.tsx",
+          "name": "FullscreenBlocker",
+          "kind": "function",
+          "startLine": 14,
+          "endLine": 36,
+          "lines": 23
+        },
+        {
+          "file": "packages/app/src/renderer/components/PreferencesModal.tsx",
+          "name": "Field",
+          "kind": "function",
+          "startLine": 872,
+          "endLine": 915,
+          "lines": 44
+        }
+      ]
+    },
+    {
+      "cloneType": "structural",
+      "similarity": 0.889,
+      "count": 2,
+      "fingerprint": "6624cd52976274c9",
+      "members": [
+        {
+          "file": "packages/mcp-core/dead-code-server.mjs",
+          "name": "toolDetectDeadCode",
+          "kind": "function",
+          "startLine": 95,
+          "endLine": 127,
+          "lines": 33
+        },
+        {
+          "file": "packages/mcp-core/type-safety-server.mjs",
+          "name": "toolDetectTypeEscapes",
+          "kind": "function",
+          "startLine": 171,
+          "endLine": 216,
+          "lines": 46
+        }
+      ]
+    },
+    {
+      "cloneType": "structural",
+      "similarity": 0.909,
+      "count": 7,
+      "fingerprint": "5e34b17af4bf742d",
+      "members": [
+        {
+          "file": "packages/app/src/main/exec-git.test.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 13,
+          "endLine": 27,
+          "lines": 15
+        },
+        {
+          "file": "packages/app/src/main/exec-git.test.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 14,
+          "endLine": 21,
+          "lines": 8
+        },
+        {
+          "file": "packages/app/src/main/exec-git.test.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 29,
+          "endLine": 45,
+          "lines": 17
+        },
+        {
+          "file": "packages/app/src/main/exec-git.test.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 30,
+          "endLine": 38,
+          "lines": 9
+        },
+        {
+          "file": "packages/app/src/main/security.test.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 11,
+          "endLine": 16,
+          "lines": 6
+        },
+        {
+          "file": "packages/app/src/shared/gitError.test.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 38,
+          "endLine": 46,
+          "lines": 9
+        },
+        {
+          "file": "packages/app/src/shared/loc.test.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 82,
+          "endLine": 94,
+          "lines": 13
+        }
+      ]
+    },
+    {
+      "cloneType": "structural",
+      "similarity": 1,
+      "count": 2,
+      "fingerprint": "0d37a04cea5842a3",
+      "members": [
+        {
+          "file": "packages/mcp-core/scan-runner.cjs",
+          "name": "runDeadCodeScan",
+          "kind": "function",
+          "startLine": 81,
+          "endLine": 117,
+          "lines": 37
+        },
+        {
+          "file": "packages/mcp-core/scan-runner.cjs",
+          "name": "runTypeEscapeScan",
+          "kind": "function",
+          "startLine": 173,
+          "endLine": 210,
+          "lines": 38
+        }
+      ]
+    },
+    {
+      "cloneType": "renamed",
+      "similarity": 1,
+      "count": 3,
+      "fingerprint": "94ea30731a874449",
+      "members": [
+        {
+          "file": "packages/extension/webview/deadcode.tsx",
+          "name": "App",
+          "kind": "function",
+          "startLine": 18,
+          "endLine": 41,
+          "lines": 24
+        },
+        {
+          "file": "packages/extension/webview/duplicates.tsx",
+          "name": "App",
+          "kind": "function",
+          "startLine": 18,
+          "endLine": 41,
+          "lines": 24
+        },
+        {
+          "file": "packages/extension/webview/typeescapes.tsx",
+          "name": "App",
+          "kind": "function",
+          "startLine": 18,
+          "endLine": 41,
+          "lines": 24
+        }
+      ]
+    },
+    {
+      "cloneType": "exact",
+      "similarity": 1,
+      "count": 2,
+      "fingerprint": "a1b5dc22815f8d03",
+      "members": [
+        {
+          "file": "packages/mcp-core/static-mcp-register.cjs",
+          "name": "registerStaticServersDual",
+          "kind": "function",
+          "startLine": 104,
+          "endLine": 138,
+          "lines": 35
+        },
+        {
+          "file": "packages/mcp-core/static-mcp-register.mjs",
+          "name": "registerStaticServersDual",
+          "kind": "function",
+          "startLine": 139,
+          "endLine": 173,
+          "lines": 35
+        }
+      ]
+    },
+    {
+      "cloneType": "structural",
+      "similarity": 0.938,
+      "count": 2,
+      "fingerprint": "e84fbc2edbc62482",
+      "members": [
+        {
+          "file": "packages/app/src/renderer/components/TasksPane.tsx",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 1102,
+          "endLine": 1128,
+          "lines": 27
+        },
+        {
+          "file": "packages/ui/src/components/TasksPanel.tsx",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 895,
+          "endLine": 934,
+          "lines": 40
+        }
+      ]
+    },
+    {
+      "cloneType": "structural",
+      "similarity": 0.942,
+      "count": 2,
+      "fingerprint": "b7a43dbe21baa3a9",
+      "members": [
+        {
+          "file": "packages/app/src/renderer/components/AccordionRow.tsx",
+          "name": "AccordionRow",
+          "kind": "function",
+          "startLine": 23,
+          "endLine": 60,
+          "lines": 38
+        },
+        {
+          "file": "packages/ui/src/components/primitives.tsx",
+          "name": "AccordionRow",
+          "kind": "function",
+          "startLine": 100,
+          "endLine": 125,
+          "lines": 26
+        }
+      ]
+    },
+    {
+      "cloneType": "structural",
+      "similarity": 0.911,
+      "count": 3,
+      "fingerprint": "d89a19f7806441e0",
+      "members": [
+        {
+          "file": "packages/app/src/renderer/components/DiffPane.tsx",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 325,
+          "endLine": 348,
+          "lines": 24
+        },
+        {
+          "file": "packages/app/src/renderer/components/DiffPane.tsx",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 353,
+          "endLine": 372,
+          "lines": 20
+        },
+        {
+          "file": "packages/app/src/renderer/components/FileBrowser.tsx",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 920,
+          "endLine": 939,
+          "lines": 20
+        }
+      ]
+    },
+    {
+      "cloneType": "structural",
+      "similarity": 0.966,
+      "count": 2,
+      "fingerprint": "c6ac01f4242e44bc",
+      "members": [
+        {
+          "file": "packages/app/src/renderer/hooks/usePaneDrag.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 51,
+          "endLine": 82,
+          "lines": 32
+        },
+        {
+          "file": "packages/app/src/renderer/hooks/usePaneDrag.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 51,
+          "endLine": 82,
+          "lines": 32
+        }
+      ]
+    },
+    {
+      "cloneType": "renamed",
+      "similarity": 1,
+      "count": 2,
+      "fingerprint": "5a485b27d6c652e1",
+      "members": [
+        {
+          "file": "packages/app/src/main/deadCode.ts",
+          "name": "registerDeadCodeHandlers",
+          "kind": "function",
+          "startLine": 10,
+          "endLine": 39,
+          "lines": 30
+        },
+        {
+          "file": "packages/app/src/main/typeEscapes.ts",
+          "name": "registerTypeEscapeHandlers",
+          "kind": "function",
+          "startLine": 10,
+          "endLine": 39,
+          "lines": 30
+        }
+      ]
+    },
+    {
+      "cloneType": "structural",
+      "similarity": 0.953,
+      "count": 3,
+      "fingerprint": "2a654a252853475b",
+      "members": [
+        {
+          "file": "packages/app/src/shared/fsValidation.test.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 4,
+          "endLine": 26,
+          "lines": 23
+        },
+        {
+          "file": "packages/app/src/shared/loc.test.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 96,
+          "endLine": 119,
+          "lines": 24
+        },
+        {
+          "file": "packages/app/src/shared/preferences.test.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 10,
+          "endLine": 21,
+          "lines": 12
+        }
+      ]
+    },
+    {
+      "cloneType": "structural",
+      "similarity": 0.886,
+      "count": 2,
+      "fingerprint": "08ed4c3838d21562",
+      "members": [
+        {
+          "file": "packages/app/src/renderer/components/EditorDockGrid.tsx",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 328,
+          "endLine": 360,
+          "lines": 33
+        },
+        {
+          "file": "packages/app/src/renderer/components/TerminalDockGrid.tsx",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 480,
+          "endLine": 503,
+          "lines": 24
+        }
+      ]
+    },
+    {
+      "cloneType": "structural",
+      "similarity": 0.978,
+      "count": 2,
+      "fingerprint": "0dc4dcc8f64d37d7",
+      "members": [
+        {
+          "file": "packages/extension/src/sessionsView.ts",
+          "name": "onMessage",
+          "kind": "method",
+          "startLine": 212,
+          "endLine": 235,
+          "lines": 24
+        },
+        {
+          "file": "packages/extension/src/worktreesView.ts",
+          "name": "onMessage",
+          "kind": "method",
+          "startLine": 177,
+          "endLine": 203,
+          "lines": 27
+        }
+      ]
+    },
+    {
+      "cloneType": "renamed",
+      "similarity": 1,
+      "count": 3,
+      "fingerprint": "cd2f9f123c56ece5",
+      "members": [
+        {
+          "file": "packages/extension/src/deadCodeView.ts",
+          "name": "DeadCodeViewProvider",
+          "kind": "class",
+          "startLine": 6,
+          "endLine": 21,
+          "lines": 16
+        },
+        {
+          "file": "packages/extension/src/duplicatesView.ts",
+          "name": "DuplicatesViewProvider",
+          "kind": "class",
+          "startLine": 6,
+          "endLine": 21,
+          "lines": 16
+        },
+        {
+          "file": "packages/extension/src/typeEscapeView.ts",
+          "name": "TypeEscapeViewProvider",
+          "kind": "class",
+          "startLine": 6,
+          "endLine": 21,
+          "lines": 16
+        }
+      ]
+    },
+    {
+      "cloneType": "exact",
+      "similarity": 1,
+      "count": 2,
+      "fingerprint": "15991710745ff90b",
+      "members": [
+        {
+          "file": "packages/git-utils/remove-worktree.cjs",
+          "name": "rmWithRetry",
+          "kind": "function",
+          "startLine": 68,
+          "endLine": 90,
+          "lines": 23
+        },
+        {
+          "file": "packages/git-utils/remove-worktree.mjs",
+          "name": "rmWithRetry",
+          "kind": "function",
+          "startLine": 115,
+          "endLine": 137,
+          "lines": 23
+        }
+      ]
+    },
+    {
+      "cloneType": "structural",
+      "similarity": 0.855,
+      "count": 2,
+      "fingerprint": "bd6ff916df78fa39",
+      "members": [
+        {
+          "file": "packages/app/src/renderer/components/FileBrowser.tsx",
+          "name": "runSearch",
+          "kind": "function",
+          "startLine": 945,
+          "endLine": 966,
+          "lines": 22
+        },
+        {
+          "file": "packages/app/src/renderer/components/FileBrowser.tsx",
+          "name": "runReplace",
+          "kind": "function",
+          "startLine": 968,
+          "endLine": 991,
+          "lines": 24
+        }
+      ]
+    },
+    {
+      "cloneType": "renamed",
+      "similarity": 1,
+      "count": 3,
+      "fingerprint": "96b2c1923318cc20",
+      "members": [
+        {
+          "file": "packages/app/src/renderer/components/PreferencesModal.tsx",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 401,
+          "endLine": 415,
+          "lines": 15
+        },
+        {
+          "file": "packages/app/src/renderer/components/PreferencesModal.tsx",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 633,
+          "endLine": 647,
+          "lines": 15
+        },
+        {
+          "file": "packages/app/src/renderer/components/PreferencesModal.tsx",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 770,
+          "endLine": 784,
+          "lines": 15
+        }
+      ]
+    },
+    {
+      "cloneType": "structural",
+      "similarity": 0.985,
+      "count": 2,
+      "fingerprint": "c70061e8bf175917",
+      "members": [
+        {
+          "file": "packages/app/src/renderer/components/TasksPane.tsx",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 1107,
+          "endLine": 1125,
+          "lines": 19
+        },
+        {
+          "file": "packages/ui/src/components/TasksPanel.tsx",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 907,
+          "endLine": 931,
+          "lines": 25
+        }
+      ]
+    }
+  ]
+}

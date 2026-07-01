@@ -1,0 +1,39 @@
+{
+  "slug": "extension-core",
+  "name": "Extension Core",
+  "description": "The VS Code extension entry point. Activates the workbench, detects the git repo root, wires up all sidebar views, registers every command, and owns the lifecycle of the SessionManager and all VS Code disposables.",
+  "files": [
+    "packages/extension/src/extension.ts",
+    "packages/extension/package.json",
+    "packages/extension/tsconfig.json"
+  ],
+  "guidelines": [
+    "Register all commands and providers inside activate() and push them to ctx.subscriptions so they are torn down on deactivate.",
+    "Every registered command needs a matching contributes.commands entry in package.json.",
+    "Detect repoRoot via findRepoRoot/findRepoKey and propagate it to SessionManager and providers whenever workspace folders change.",
+    "Defer any worktree removal that requires a folder switch by persisting intent to globalState under PENDING_REMOVAL_KEY and completing it on the next activate().",
+    "When workspace folders change, notify every provider that caches repoRoot (e.g. archProvider.onRepoChanged()) so watchers re-point and panels reload."
+  ],
+  "anti_patterns": [
+    "Do not store per-session or per-worktree state directly in extension.ts — route it through SessionManager.",
+    "Do not call removeWorktree directly; always go through performWorktreeRemoval so terminal/task cleanup runs atomically."
+  ],
+  "decisions": [
+    "Worktree removal of the active worktree is deferred across a window reload (switch folder first, persist removal intent, finish on next activate) because the VS Code extension host is killed when the workspace folder changes."
+  ],
+  "dependsOn": [
+    "session-manager",
+    "worktrees-view",
+    "tasks-view",
+    "sessions-view",
+    "arch-view",
+    "git-utils",
+    "workspace-init",
+    "skills-bundle",
+    "global-prefs",
+    "shared-scan-service"
+  ],
+  "updatedAt": "2026-06-30T04:19:48.712Z",
+  "createdAt": "2026-05-19T04:49:08.809Z",
+  "tags": []
+}

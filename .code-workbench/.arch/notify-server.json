@@ -1,0 +1,22 @@
+{
+  "slug": "notify-server",
+  "name": "Notify Server",
+  "description": "Local HTTP/IPC server that receives push notifications from Claude sessions running inside terminals (via the cw-notify MCP tool). Surfaces notify_chat_title, notify_done, notify_needs_input, and notify_info events back into the VS Code UI.",
+  "files": ["packages/extension/src/notifications.ts"],
+  "guidelines": [
+    "The notify port is dynamic (assigned at startup) and passed to each session via the MCP config env; never hardcode it.",
+    "Handle onTitle events by delegating to SessionManager.applyRemoteTitle so the terminal tab and persisted title stay in sync."
+  ],
+  "anti_patterns": [
+    "Bind the TCP server to 0.0.0.0 on non-Windows — bind to 127.0.0.1 except on Windows where WSL sessions require 0.0.0.0.",
+    "Accept incoming payloads without authentication — every payload must include a per-launch shared secret token (CODE_WORKBENCH_NOTIFY_TOKEN) validated server-side before processing."
+  ],
+  "decisions": [
+    "2026-05-19: Bind address is now 127.0.0.1 on non-Windows, 0.0.0.0 only on Windows (WSL adapter requirement).",
+    "2026-05-19: Per-launch notifyToken = randomBytes(32).hex generated at startup, injected into MCP env as CODE_WORKBENCH_NOTIFY_TOKEN, and validated on every incoming line in startServer."
+  ],
+  "dependsOn": [],
+  "updatedAt": "2026-05-19T13:33:08.459Z",
+  "createdAt": "2026-05-19T04:50:08.140Z",
+  "tags": []
+}

@@ -1,0 +1,4 @@
+{
+  "customStartupPrompt": "Keep the Arch up to date. this is a IDE so we need to make sure, it works for other projects as well",
+  "defaultModel": "opus"
+}

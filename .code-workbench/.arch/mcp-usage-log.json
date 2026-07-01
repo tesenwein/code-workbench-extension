@@ -1,0 +1,24 @@
+{
+  "slug": "mcp-usage-log",
+  "name": "MCP Usage Log",
+  "description": "Aggregate per-tool call counter shared by all workbench MCP servers. Each server records every tools/call into a single machine-wide JSON file.",
+  "files": ["packages/mcp-core/usage-log.mjs"],
+  "guidelines": [
+    "recordToolUse(server, tool) is fire-and-forget — never await it, never let it throw.",
+    "Counts aggregate into ~/.code-workbench/local/mcp-usage.json (CODE_WORKBENCH_HOME overrides home).",
+    "Call recordToolUse once per tools/call, right after extracting the tool name.",
+    "Writes are atomic (temp file + rename) and serialized per-process via a promise chain."
+  ],
+  "anti_patterns": [
+    "Do not block or fail a tool call on usage-logging errors.",
+    "Do not store per-call detail (args, timestamps, history) — counts only by design."
+  ],
+  "decisions": [
+    "Global per-user file, not per-repo: sidesteps that cw-ast/cw-notify often lack a repo path.",
+    "Lost increments from cross-process read-modify-write races are accepted — counters tolerate it."
+  ],
+  "tags": ["mcp-usage", "tool-tracking", "usage-log", "mcp-core", "telemetry"],
+  "dependsOn": [],
+  "updatedAt": "2026-05-21T05:01:39.778Z",
+  "createdAt": "2026-05-21T05:01:39.778Z"
+}

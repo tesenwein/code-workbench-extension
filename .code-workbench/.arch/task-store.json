@@ -1,0 +1,44 @@
+{
+  "slug": "task-store",
+  "name": "Task Store",
+  "description": "Single source of truth for task `.md` file I/O, parsing, and CRUD. Lives in the @code-workbench/mcp-core package and is shared by the Electron main process, the VS Code extension, and the cw-tasks MCP server via a CJS module (task-store.cjs) and an ESM shim (task-store.mjs). Task files live at `~/.code-workbench/repos/<bucket>/tasks/<id>.md` where bucket is derived from the repo key.",
+  "files": [
+    "packages/mcp-core/task-store.cjs",
+    "packages/mcp-core/task-store.mjs",
+    "packages/mcp-core/task-format.cjs",
+    "packages/mcp-core/task-format.mjs"
+  ],
+  "guidelines": [
+    "All task CRUD must go through task-store — never implement parallel file logic in a consumer (extension, app, or MCP server).",
+    "On WSL, pass CODE_WORKBENCH_HOME (the host app's home translated to a WSL path) so the Linux and Windows sides resolve the same task bucket.",
+    "The .mjs files are thin ESM shims over the canonical .cjs module — keep logic only in the .cjs source.",
+    "Consumers import via the @code-workbench/mcp-core/task-store and /task-format package specifiers.",
+    "listTasks/readDir keep an in-process parse cache keyed by file path + (mtimeMs, size): a list stats every .md and re-reads/re-parses only files whose mtime or size changed, reusing cached parses for the rest. Writes flow through this module and bump mtime, so the cache is self-invalidating — do not add manual cache busting. Task objects returned by readDir/listTasks may be shared cached references; never mutate them in place.",
+    "These .cjs/.mjs files use a different committed style than the root .prettierrc — never run prettier --write on them; hand-edit to match the surrounding 2-space/double-quote style."
+  ],
+  "anti_patterns": [
+    "Do not read/write task .md files directly from the extension or app — always call task-store functions.",
+    "Do not duplicate task-format parsing logic in consumers — import task-format.",
+    "Do not assume os.homedir() is correct in WSL environments — check CODE_WORKBENCH_HOME first.",
+    "Do not mutate a task returned from readDir/listTasks — it may be a cached shared reference (the parse cache reuses it across calls); construct a new object instead.",
+    "Do not re-list the whole board to apply a single change in a tight loop — the renderer-side watcher is debounced (see app-main); rely on one coalesced reload."
+  ],
+  "decisions": [
+    "CommonJS was chosen so both CJS consumers (extension, Electron main) and ESM MCP servers can share one implementation via a thin shim.",
+    "Bucket name is derived from the repo key (sanitized checkout basename) so the same board is shared across all worktrees of a repo.",
+    "2026-06-03: readDir gained an mtime/size parse cache so reloading a large unchanged board re-parses nothing (measured ~29ms→4ms for 405 tasks); per-field frontmatter regexes in task-format.cjs are now compiled once at module scope (FIELD_REGEX) instead of once per file. Pairs with the app's debounced tasks watcher (see app-main) that collapses an agent's MCP write burst into a single reload."
+  ],
+  "dependsOn": [
+    "mcp-core",
+    "git-utils"
+  ],
+  "updatedAt": "2026-06-03T05:30:32.102Z",
+  "createdAt": "2026-05-19T10:41:37.149Z",
+  "tags": [
+    "tasks",
+    "task-store",
+    "cache",
+    "performance",
+    "parse"
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "slug": "arch-server",
+  "name": "Arch MCP Server",
+  "description": "MCP stdio server (arch-server.mjs) that exposes the architecture wiki to Claude sessions. Cards are stored as JSON files under `<repo>/.code-workbench/.arch/<slug>.json` and are tracked by git. Provides arch_list, arch_get, arch_search (BM25-ranked), and arch_upsert tools. Repo path is injected via CODE_WORKBENCH_REPO_PATH or resolved by walking up from cwd. Source lives in the @code-workbench/mcp-core package.",
+  "files": [
+    "packages/mcp-core/arch-server.mjs",
+    "packages/mcp-core/text-rank.mjs",
+    ".code-workbench/.arch/"
+  ],
+  "guidelines": [
+    "Cards are plain JSON — keep them human-readable and git-diffable; avoid binary or compressed formats.",
+    "Use arch_search (BM25) for keyword lookups rather than arch_list + manual filtering.",
+    "Always set CODE_WORKBENCH_REPO_PATH when spawning the server — falling back to cwd walk is a best-effort safety net, not the primary mechanism.",
+    "Card slugs are auto-derived from the name via slugify(); use explicit slug only when the name would produce a collision or ugly slug.",
+    "Edit the server in packages/mcp-core; both the extension (esbuild bundle) and app (electron-builder) pick it up on next build."
+  ],
+  "anti_patterns": [
+    "Accept a caller-supplied slug and use it verbatim in path.join — always validate slug against /^[a-z0-9-]+$/ and assert the resolved path stays inside archDir (path traversal prevention).",
+    "Write arch card JSON files with a plain writeFile — use write-to-temp-then-rename (atomic) wrapped in withArchLock (serialized) to prevent concurrent-write corruption.",
+    "Ignore ENOENT on card lookup and let the error propagate silently."
+  ],
+  "decisions": [
+    "2026-05-19: assertSafeSlug(/^[a-z0-9-]+$/) + safeArchCardPath (resolves and bounds-checks) added in both arch.ts and arch-server.mjs.",
+    "2026-05-19: writeArch/writeArchCard now write to a randomBytes temp file then fs.rename for atomicity; withArchLock serializes concurrent writes per card path."
+  ],
+  "dependsOn": ["mcp-config", "mcp-core"],
+  "updatedAt": "2026-05-19T13:32:49.560Z",
+  "createdAt": "2026-05-19T10:41:47.969Z",
+  "tags": []
+}

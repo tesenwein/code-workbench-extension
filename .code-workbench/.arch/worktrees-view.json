@@ -1,0 +1,22 @@
+{
+  "slug": "worktrees-view",
+  "name": "Worktrees View",
+  "description": "VS Code WebviewView sidebar panel that lists all git worktrees for the current repo with status badges, session counts, and per-worktree color coding. Hosts the worktree commands (create, remove, switch, set color, open in new window).",
+  "files": [
+    "packages/extension/src/worktreesView.ts",
+    "packages/extension/src/commands/worktreeCommands.ts"
+  ],
+  "guidelines": [
+    "Refresh on window focus and on document save so dirty/ahead-behind badges stay current without polling.",
+    "Worktree removal of the active worktree must persist intent via PENDING_REMOVAL_KEY and switch the workspace folder first — see extension-core deferred removal pattern."
+  ],
+  "anti_patterns": [
+    "Do not poll git status on a timer — only refresh on user-visible events (focus, save, command)."
+  ],
+  "decisions": [
+    "Uses retainContextWhenHidden so the webview state survives panel collapse without a full re-render."
+  ],
+  "dependsOn": ["session-manager", "git-utils"],
+  "updatedAt": "2026-05-19T04:49:32.185Z",
+  "createdAt": "2026-05-19T04:49:32.185Z"
+}

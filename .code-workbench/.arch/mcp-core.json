@@ -1,0 +1,60 @@
+{
+  "slug": "mcp-core",
+  "name": "MCP Core Package",
+  "description": "The @code-workbench/mcp-core workspace package — the single source of truth for all MCP stdio servers (notify, tasks, arch, ast/code-search/clone-detect) and the shared task-store, task-format, repo-key, skills, text-rank, usage-log, and stdio-server modules. Both the VS Code extension and the Electron app consume this one package; there are no committed copies of the server code anywhere else.",
+  "files": [
+    "packages/mcp-core/package.json",
+    "packages/mcp-core/notify-server.mjs",
+    "packages/mcp-core/tasks-server.mjs",
+    "packages/mcp-core/arch-server.mjs",
+    "packages/mcp-core/ast-server.mjs",
+    "packages/mcp-core/stdio-server.mjs",
+    "packages/mcp-core/usage-log.mjs",
+    "packages/mcp-core/dead-code-detect.mjs",
+    "packages/mcp-core/clone-detect.mjs",
+    "packages/mcp-core/code-search.mjs",
+    "packages/mcp-core/semantic-search.mjs",
+    "packages/mcp-core/file-walk.mjs",
+    "packages/mcp-core/task-store.cjs",
+    "packages/mcp-core/task-format.cjs",
+    "packages/mcp-core/repo-key.cjs",
+    "packages/mcp-core/skills.cjs",
+    "packages/mcp-core/grammars"
+  ],
+  "guidelines": [
+    "MCP server .mjs files are spawned as standalone `node <file>` processes — keep imports to node: builtins, relative imports within mcp-core, or declared external npm dependencies.",
+    "External npm deps ARE allowed. When adding one: (a) add it to mcp-core/package.json deps, and (b) if the consuming server is app-only (e.g. ast-server), add an explicit electron-builder `extraResources` copy entry in app/package.json — the default filter excludes node_modules (see the web-tree-sitter entry as the pattern).",
+    "Before adding a dep to a server the extension ALSO bundles (notify/tasks/arch — see extension/esbuild.mjs entryPoints), confirm esbuild can bundle it or mark it external. ast-server is NOT bundled by the extension, so its deps are app-only.",
+    "Extension-bundled detectors (clone-detect.mjs, dead-code-detect.mjs) walk files via file-walk.mjs, never code-search.mjs — code-search pulls in semantic-search.mjs / @xenova/transformers, whose native .node binaries esbuild cannot bundle.",
+    "file-walk.mjs is the dependency-free home for repo-walk utilities (walkFiles, SKIP_DIRS, MAX_FILE_BYTES, SUPPORTED_EXTS); code-search.mjs re-exports them for back-compat.",
+    "Each shared lib has a .cjs implementation, a .mjs ESM shim, and .d.cts/.d.ts declarations — they travel together; tsc consumers use the .cjs via the package exports `require` condition.",
+    "Every server entrypoint must be listed in the package.json `exports` map under ./servers/<name> so bundlers and consumers can resolve it by specifier (not raw path).",
+    "Edit a server here once — both consumers pick it up on their next build; never patch a built copy.",
+    "All servers that hand-roll JSON-RPC stdio must use startStdioServer() from stdio-server.mjs — do not duplicate the readline boilerplate.",
+    "Every server's tools/call handler calls recordToolUse() from usage-log.mjs once per call to feed the shared MCP usage counter.",
+    "Detector scripts (dead-code-detect.mjs, clone-detect.mjs) bundle the `typescript` library, which uses CJS globals — the extension esbuild ESM banner must shim `require`, `__filename`, and `__dirname`."
+  ],
+  "anti_patterns": [
+    "Do not add a synced/copied duplicate of these files into another package — the old sync-to.mjs script was removed precisely to kill that pattern.",
+    "Do not add a dep to an extension-bundled server (notify/tasks/arch) without verifying the esbuild bundle still works — native modules (.node binaries) cannot be esbuild-bundled and must be marked external + shipped separately.",
+    "Do not import code-search.mjs from an extension-bundled detector — it transitively drags @xenova/transformers + onnxruntime/sharp .node binaries into the esbuild bundle and breaks the build; use file-walk.mjs.",
+    "Do not import a server file by raw relative path from a consumer — go through the @code-workbench/mcp-core package specifier.",
+    "Do not inline the JSON-RPC readline loop in a new server — import startStdioServer from stdio-server.mjs instead."
+  ],
+  "decisions": [
+    "mcp-core is the single source of MCP server code; the sync-to.mjs copy script was deleted once both consumers resolved the package directly.",
+    "External npm dependencies are permitted in mcp-core servers; cost is packaging — app-only deps need an extraResources copy entry, extension-bundled servers need esbuild to handle the dep.",
+    "Repo-walk utilities live in dependency-free file-walk.mjs so extension-bundled detectors never transitively import the optional @xenova/transformers semantic-search stack."
+  ],
+  "tags": [
+    "mcp-core",
+    "mcp",
+    "shared package",
+    "single source of truth",
+    "monorepo",
+    "esbuild"
+  ],
+  "dependsOn": [],
+  "updatedAt": "2026-05-21T05:02:16.702Z",
+  "createdAt": "2026-05-19T12:00:32.534Z"
+}

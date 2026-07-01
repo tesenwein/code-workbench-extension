@@ -1,0 +1,23 @@
+{
+  "slug": "global-prefs",
+  "name": "Global Preferences",
+  "description": "Manages user-level preferences persisted to ~/.code-workbench/settings.json (outside VS Code settings). Covers claude command path, yolo args, default model/effort/yolo, custom system prompt injections, and open-on-startup. Provides sync and async loaders plus a file watcher for live reload.",
+  "files": [
+    "packages/extension/src/globalPrefs.ts",
+    "packages/extension/src/globalPrefsPanel.ts",
+    "packages/extension/src/globalPrefsPanelHtml.ts"
+  ],
+  "guidelines": [
+    "Prefer globalPrefs values over VS Code workspace config for claude command and yolo args — global prefs win.",
+    "Use watchGlobalPrefs() to keep SessionManager.globalPrefs in sync; never cache a stale copy across sessions."
+  ],
+  "anti_patterns": [
+    "Do not store workbench-level user preferences in VS Code settings — they would silently differ per workspace. Use the shared ~/.code-workbench/settings.json."
+  ],
+  "decisions": [
+    "Stored outside VS Code to be accessible to the Electron app and other tooling that reads the same config directory."
+  ],
+  "dependsOn": [],
+  "updatedAt": "2026-05-19T04:49:47.994Z",
+  "createdAt": "2026-05-19T04:49:47.994Z"
+}

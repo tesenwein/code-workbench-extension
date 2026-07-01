@@ -1,0 +1,62 @@
+{
+  "slug": "mcp-config",
+  "name": "MCP Config Builder",
+  "description": "The per-session MCP wiring for the VS Code extension (mcp.ts / McpConfigBuilder). Generates a per-session MCP JSON config + system-prompt text file on disk and passes them to the Claude CLI. The workbench is the sole MCP injector for any project it opens. As of 2026-05 ALL workbench MCP tools are exposed behind ONE unified stdio endpoint, `cw-code` (packages/mcp-core/code-server.mjs), instead of one process per concern. code-server.mjs imports the six server modules (notify, tasks, arch, ast, dead-code, type-safety) — each refactored into a library that exports `{ TOOLS, handle }` and no longer self-starts — merges their tool lists, and routes each tools/call to the owning module's handle (which still does its own recordToolUse). Per-session context is the UNION of env vars on the one process; tools whose context is absent degrade gracefully (notify_* drop silently with no port, analysis tools fall back to cwd with no repo path).",
+  "files": [
+    "packages/mcp-core/code-server.mjs",
+    "packages/extension/src/mcp.ts",
+    "packages/extension/src/workbenchPrompt.ts",
+    "packages/extension/esbuild.mjs",
+    "packages/mcp-core/server-manifest.mjs",
+    "packages/mcp-core/static-mcp-register.mjs"
+  ],
+  "guidelines": [
+    "There is ONE MCP endpoint key: `cw-code`. The launcher emits a single mcpServers entry pointing at code-server.mjs with the union of env vars and a union alwaysAllow list. Never re-add per-concern endpoints (cw-ast, cw-tasks, etc.) to the launcher.",
+    "To add a new tool group: write its module in mcp-core exporting `{ TOOLS, handle }` (no startStdioServer call — only code-server.mjs starts the transport), add it to the MODULES array in code-server.mjs with a group name, and add its tools to the launcher alwaysAllow list. Tool names must stay globally unique across modules.",
+    "The six sub-server modules are LIBRARY modules — they must NOT call startStdioServer or define a local send(). Auto-starting breaks the esbuild bundle, where all modules collapse to one import.meta.url and every guard fires at once.",
+    "Per-feature disabling is done via the CODE_WORKBENCH_DISABLED_GROUPS env var (comma list of group names: notify,tasks,arch,ast,dead-code,type-safety) read by code-server.mjs — the extension maps its mcp.*.enabled flags to this. There is no longer a separate process to omit.",
+    "Env is unified on the one process: CODE_WORKBENCH_NOTIFY_PORT/SESSION_ID/NOTIFY_TOKEN (notify), CODE_WORKBENCH_HOME/WORKTREE_PATH/REPO_KEY (tasks), CODE_WORKBENCH_REPO_PATH (analysis scan root, prefers worktree). Each module reads only what it needs at import time.",
+    "Config and prompt files are written to ctx.globalStorageUri/mcp/session-<id>.{json,txt}; delete both on session close. All extension-host disk I/O uses fs.promises (async), never fs.*Sync.",
+    "MCP server keys use the cw- prefix — never the old cwb- prefix.",
+    "The server .mjs files are build outputs in the extension (dist/mcp-server/); to change behavior edit packages/mcp-core and rebuild.",
+    "esbuild.mjs bundles only code-server.mjs (plus the detector scripts dead-code-detect/type-escape-detect/clone-detect and code-search, which scan-runner spawns separately) — its dynamic detector imports are inlined because splitting is off, so the one bundle is self-contained. Tree-sitter grammar + web-tree-sitter .wasm must still be copied into dist/mcp-server/grammars/.",
+    "Static external registration writes a single cw-code entry into project/user .claude.json via @code-workbench/mcp-core/static-mcp-register, driven by server-manifest STATIC_MCP_SERVERS (now a one-element list). CODE_WORKBENCH_REPO_PATH is injected when a repo path is available; analysis tools work, session-only tools stay inert."
+  ],
+  "anti_patterns": [
+    "Do not re-introduce per-concern MCP endpoints (cw-ast, cw-notify, cw-tasks, cw-arch, cw-dead-code, cw-type-safety) — everything is unified behind cw-code.",
+    "Do not call startStdioServer (or define a local send) in the six sub-server modules — under esbuild bundling all modules share one import.meta.url and every main-guard fires, racing on stdin (symptom: the bundled server reports only one module's tools).",
+    "Do not hardcode absolute paths to server scripts — resolve relative to ctx.extensionPath.",
+    "Do not share config files across sessions; each session gets its own file so env vars (repoKey, notifyPort) are independent.",
+    "Do not use synchronous fs in mcp.ts — it runs on the extension host and blocks the UI thread.",
+    "Do not use the legacy cwb- prefix for MCP server keys.",
+    "Do not add a tool whose name collides with an existing tool in another module — routing is by unique tool name.",
+    "Do not ship a tree-sitter consumer bundle without its .wasm assets — it loads but parses nothing."
+  ],
+  "decisions": [
+    "2026-05: collapsed the six per-concern MCP servers into ONE unified endpoint, cw-code (code-server.mjs), to stop injecting multiple stdio processes/endpoints. Each former server became a library exporting { TOOLS, handle }; code-server merges them and routes by tool name. Tool names were kept unchanged so skills/prompts keep working.",
+    "The unified server honors the extension's per-feature toggles via CODE_WORKBENCH_DISABLED_GROUPS rather than by spawning/omitting processes.",
+    "The extension's MCP server is esbuild-bundled from @code-workbench/mcp-core into dist/mcp-server/code-server.mjs; the individual *-server entrypoints were removed from esbuild.mjs.",
+    "MCP server keys were renamed from cwb- to cw- in commit cca53a4.",
+    "esbuild.mjs copies tree-sitter grammar + web-tree-sitter runtime wasm into dist/mcp-server/grammars/ so cw-ast/clone-detect run from the packaged extension.",
+    "cw-type-safety added (2026-05) as a read-only scan tool group; with the unification its tools live inside cw-code. See [[type-escape-detection]] and [[shared-scan-service]]."
+  ],
+  "dependsOn": ["mcp-core"],
+  "updatedAt": "2026-05-30T04:05:24.553Z",
+  "createdAt": "2026-05-19T04:49:26.452Z",
+  "tags": [
+    "mcp",
+    "mcp config",
+    "cw-",
+    "cw-code",
+    "unified endpoint",
+    "single endpoint",
+    "aggregator",
+    "code-server",
+    "session config",
+    "esbuild",
+    "server registration",
+    "feature flags",
+    "DISABLED_GROUPS",
+    "web-tree-sitter"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "slug": "sessions-view",
+  "name": "Sessions View",
+  "description": "VS Code WebviewView sidebar panel that lists open and saved Claude/shell sessions for the active worktree. Shows live activity indicators (blink), session icons, and exposes rename/close/set-icon context menu actions.",
+  "files": ["packages/extension/src/sessionsView.ts"],
+  "guidelines": [
+    "Subscribe to both onDidChange (structural changes) and onBlink (activity flicker) to avoid refreshing idle rows unnecessarily.",
+    "Session icon codicons are configurable per-session and persisted; new icon takes effect on next terminal open since VS Code has no live iconPath setter."
+  ],
+  "anti_patterns": [
+    "Do not trigger a full tree refresh on every blink tick — only refresh active session rows to avoid idle-row flicker."
+  ],
+  "decisions": [
+    "Uses retainContextWhenHidden to preserve webview state across panel collapse."
+  ],
+  "dependsOn": ["session-manager"],
+  "updatedAt": "2026-05-19T04:49:42.231Z",
+  "createdAt": "2026-05-19T04:49:42.231Z"
+}

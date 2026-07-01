@@ -1,0 +1,19 @@
+{
+  "slug": "workspace-init",
+  "name": "Workspace Init",
+  "description": "Bootstraps a worktree for Code Workbench use: creates .code-workbench/ structure, writes per-worktree VS Code color customizations for the status bar, and sets up any required config files. Also called when worktree color preferences change.",
+  "files": ["packages/extension/src/workspaceInit.ts"],
+  "guidelines": [
+    "writeWorktreeWorkspaceColors must strip legacy color keys (activity bar, side bar) from existing settings.json on every write to converge old checkouts on the current scoped palette.",
+    "Init operations should be idempotent — re-running must not overwrite user edits to files that already exist."
+  ],
+  "anti_patterns": [
+    "Do not tint activity bar or side bar — only the status bar strip is colored. Legacy keys must be actively removed."
+  ],
+  "decisions": [
+    "Per-worktree color is written into the worktree's .vscode/settings.json so the color persists even if the user reopens without the extension active."
+  ],
+  "dependsOn": ["git-utils"],
+  "updatedAt": "2026-05-19T04:49:58.333Z",
+  "createdAt": "2026-05-19T04:49:58.333Z"
+}

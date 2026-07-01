@@ -1,0 +1,33 @@
+{
+  "slug": "session-manager",
+  "name": "Session Manager",
+  "description": "Manages the lifecycle of Claude and shell terminal sessions. Persists session state per-repo in VS Code globalState, launches terminals with generated MCP config, tracks live terminal activity for the blink indicator, and handles per-worktree preferences (model, effort, yolo, color).",
+  "files": [
+    "packages/extension/src/sessions.ts",
+    "packages/extension/src/sessionTypes.ts",
+    "packages/extension/src/sessionLaunch.ts",
+    "packages/extension/src/sessionsView.ts"
+  ],
+  "guidelines": [
+    "All session state is stored under a single REPOS_KEY in globalState keyed by git common-dir so all worktrees of the same repo share one bucket.",
+    "Normalize worktree paths via normalizeWtPath before any equality check (handles trailing slash, case folding, platform separators).",
+    "Run migrateLegacyIntoRepo once per repo to absorb old v1/v2 workspaceState data into the repo bucket."
+  ],
+  "anti_patterns": [
+    "Do not use workspaceState for new session/prefs storage — it fragments across folder-identity windows. Always use globalState REPOS_KEY.",
+    "Do not assume Terminal.name stays in sync automatically; sync it on focus/state change events via syncTerminalNames()."
+  ],
+  "decisions": [
+    "Activity indicator uses a blink timer at 500 ms intervals driven by onDidWriteTerminalData (proposed API); the feature degrades gracefully if the API is unavailable.",
+    "setActiveWorktree opens a new VS Code window rather than mutating the current workspace, so each window owns exactly one worktree."
+  ],
+  "dependsOn": [
+    "mcp-config",
+    "notify-server",
+    "git-utils",
+    "global-prefs",
+    "workspace-init"
+  ],
+  "updatedAt": "2026-05-19T04:49:18.435Z",
+  "createdAt": "2026-05-19T04:49:18.435Z"
+}

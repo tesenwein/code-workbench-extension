@@ -1,0 +1,16 @@
+{
+  "enableAllProjectMcpServers": true,
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_name // empty' | { read -r t; [ -z \"$t\" ] && exit 0; f=\"${CLAUDE_PROJECT_DIR:-.}/.code-workbench/local/tool-usage-stats.json\"; [ -f \"$f\" ] || echo '{\"counts\":{}}' > \"$f\"; tmp=$(mktemp); jq --arg t \"$t\" '.updatedAt=(now|strftime(\"%Y-%m-%dT%H:%M:%SZ\")) | .counts[$t]=((.counts[$t]//0)+1)' \"$f\" > \"$tmp\" && mv \"$tmp\" \"$f\"; } 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}

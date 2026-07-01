@@ -1,0 +1,889 @@
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { PaneHeader } from './primitives';
+import type { WorkspaceTask, NewWorkspaceTask, TasksApi } from '../types';
+
+/* Platform-independent worktree identifier — last path segment, lowercased.
+ * Mirrors worktreeKey() in @code-workbench/mcp-core/task-format. */
+function worktreeKey(p: string | null | undefined): string {
+  if (!p) return '';
+  const seg =
+    p
+      .replace(/[\\/]+$/, '')
+      .split(/[\\/]/)
+      .pop() ?? '';
+  return seg.toLowerCase();
+}
+
+const PRIORITY_COLORS: Record<WorkspaceTask['priority'], string> = {
+  high: '#e05c5c',
+  medium: '#d4942a',
+  low: '#5c9de0',
+};
+
+const STATUS_LABELS: Record<WorkspaceTask['status'], string> = {
+  open: 'open',
+  'in-progress': 'in progress',
+  done: 'done',
+};
+
+// Stable reference for "no subtasks" so memoized TaskRows don't re-render just
+// because `childMap.get(id) ?? []` produced a fresh empty array each render.
+const NO_SUBTASKS: WorkspaceTask[] = [];
+
+function buildChildMap(tasks: WorkspaceTask[]): Map<string, WorkspaceTask[]> {
+  const map = new Map<string, WorkspaceTask[]>();
+  for (const t of tasks) {
+    if (t.parentId) {
+      if (!map.has(t.parentId)) map.set(t.parentId, []);
+      map.get(t.parentId)!.push(t);
+    }
+  }
+  return map;
+}
+
+function groupByEpic(
+  tasks: WorkspaceTask[],
+): Array<{ epic: string | null; tasks: WorkspaceTask[] }> {
+  const order: (string | null)[] = [];
+  const buckets = new Map<string | null, WorkspaceTask[]>();
+  for (const t of tasks) {
+    const key = t.epic ?? null;
+    if (!buckets.has(key)) {
+      buckets.set(key, []);
+      order.push(key);
+    }
+    buckets.get(key)!.push(t);
+  }
+  order.sort((a, b) => (a === null ? -1 : b === null ? 1 : 0));
+  return order.map((epic) => ({ epic, tasks: buckets.get(epic)! }));
+}
+
+function groupByWorktree(
+  tasks: WorkspaceTask[],
+): Array<{ worktree: string | null; tasks: WorkspaceTask[] }> {
+  const map = new Map<string | null, WorkspaceTask[]>();
+  for (const t of tasks) {
+    const key = t.worktree ? worktreeKey(t.worktree) : null;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(t);
+  }
+  return [...map.entries()]
+    .sort(([a], [b]) => (a === null ? -1 : b === null ? 1 : a.localeCompare(b)))
+    .map(([worktree, wtTasks]) => ({ worktree, tasks: wtTasks }));
+}
+
+function parseTags(input: string): string[] {
+  return input
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+// ── SubtaskRow ────────────────────────────────────────────────────────────────
+
+const SubtaskRow = React.memo(function SubtaskRow({
+  task,
+  onUpdate,
+  onDelete,
+}: {
+  task: WorkspaceTask;
+  onUpdate: (id: string, patch: Partial<WorkspaceTask>) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(task.title);
+  const escapedRef = useRef(false);
+
+  useEffect(() => {
+    setTitle(task.title);
+  }, [task.title]);
+
+  const handleSave = async () => {
+    if (escapedRef.current) {
+      escapedRef.current = false;
+      return;
+    }
+    const trimmed = title.trim();
+    if (!trimmed) {
+      setTitle(task.title);
+      setEditing(false);
+      return;
+    }
+    await onUpdate(task.id, { title: trimmed });
+    setEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      escapedRef.current = true;
+      setTitle(task.title);
+      setEditing(false);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      void handleSave();
+    }
+  };
+
+  return (
+    <div className={`task-subtask-row${task.status === 'done' ? ' task-row-done' : ''}`}>
+      <span className="task-subtask-indent" />
+      <span
+        className="task-subtask-check"
+        title={task.status === 'done' ? 'Mark open' : 'Mark done'}
+        onClick={(e) => {
+          e.stopPropagation();
+          void onUpdate(task.id, {
+            status: task.status === 'done' ? 'open' : 'done',
+          });
+        }}
+      >
+        {task.status === 'done' ? '✓' : '○'}
+      </span>
+      {editing ? (
+        <input
+          className="task-input task-subtask-input"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          autoFocus
+          onFocus={() => {
+            escapedRef.current = false;
+          }}
+          onBlur={() => void handleSave()}
+          onKeyDown={handleKeyDown}
+          onClick={(e) => e.stopPropagation()}
+        />
+      ) : (
+        <span
+          className="task-subtask-title"
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            setEditing(true);
+          }}
+          title="Double-click to edit"
+        >
+          {task.title}
+        </span>
+      )}
+      <span className={`task-status-chip task-status-${task.status}`}>
+        {STATUS_LABELS[task.status]}
+      </span>
+      <button
+        className="task-delete-btn task-subtask-delete"
+        title="Delete subtask"
+        onClick={(e) => {
+          e.stopPropagation();
+          void onDelete(task.id);
+        }}
+      >
+        ✕
+      </button>
+    </div>
+  );
+});
+
+// ── AddSubtaskForm ────────────────────────────────────────────────────────────
+
+function AddSubtaskForm({
+  onSubmit,
+  onCancel,
+}: {
+  onSubmit: (title: string) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [title, setTitle] = useState('');
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    ref.current?.focus();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) return;
+    await onSubmit(title.trim());
+    setTitle('');
+  };
+
+  return (
+    <form
+      className="task-subtask-add-form"
+      onSubmit={(e) => {
+        e.stopPropagation();
+        void handleSubmit(e);
+      }}
+      onKeyDown={(e) => {
+        e.stopPropagation();
+        if (e.key === 'Escape') onCancel();
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <span className="task-subtask-indent" />
+      <input
+        ref={ref}
+        className="task-input task-subtask-input"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Subtask title…"
+      />
+      <button type="submit" className="task-action-btn task-action-primary task-subtask-btn">
+        Add
+      </button>
+      <button type="button" className="task-action-btn task-subtask-btn" onClick={onCancel}>
+        ✕
+      </button>
+    </form>
+  );
+}
+
+// ── TaskEditForm ──────────────────────────────────────────────────────────────
+
+function TaskEditForm({
+  task,
+  worktrees,
+  onSave,
+  onCancel,
+}: {
+  task: WorkspaceTask;
+  worktrees: string[];
+  onSave: (patch: Partial<WorkspaceTask>) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [title, setTitle] = useState(task.title);
+  const [description, setDescription] = useState(task.description);
+  const [memo, setMemo] = useState(task.memo ?? '');
+  const [priority, setPriority] = useState(task.priority);
+  const [status, setStatus] = useState(task.status);
+  const [worktree, setWorktree] = useState(worktreeKey(task.worktree));
+  const [epic, setEpic] = useState(task.epic ?? '');
+  const [tagsInput, setTagsInput] = useState((task.tags ?? []).join(', '));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await onSave({
+      title,
+      description,
+      memo,
+      priority,
+      status,
+      worktree: worktree || null,
+      epic: epic.trim() || null,
+      tags: parseTags(tagsInput),
+    });
+  };
+
+  return (
+    <form className="task-edit-form" onSubmit={(e) => void handleSubmit(e)}>
+      <input
+        className="task-input"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Title"
+        autoFocus
+      />
+      <textarea
+        className="task-textarea"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        placeholder="Description (optional)"
+        rows={3}
+      />
+      <textarea
+        className="task-textarea"
+        value={memo}
+        onChange={(e) => setMemo(e.target.value)}
+        placeholder="Memo (agent notes, findings, blockers…)"
+        rows={4}
+      />
+      <div className="task-edit-row">
+        <input
+          className="task-input"
+          value={epic}
+          onChange={(e) => setEpic(e.target.value)}
+          placeholder="Epic (optional)"
+        />
+        <input
+          className="task-input"
+          value={tagsInput}
+          onChange={(e) => setTagsInput(e.target.value)}
+          placeholder="Tags (comma-separated)"
+        />
+      </div>
+      <div className="task-edit-row">
+        <select
+          className="task-select"
+          value={priority}
+          onChange={(e) => setPriority(e.target.value as WorkspaceTask['priority'])}
+        >
+          <option value="high">High priority</option>
+          <option value="medium">Medium priority</option>
+          <option value="low">Low priority</option>
+        </select>
+        <select
+          className="task-select"
+          value={status}
+          onChange={(e) => setStatus(e.target.value as WorkspaceTask['status'])}
+        >
+          <option value="open">Open</option>
+          <option value="in-progress">In progress</option>
+          <option value="done">Done</option>
+        </select>
+        {!task.parentId && (
+          <select
+            className="task-select"
+            value={worktree}
+            onChange={(e) => setWorktree(e.target.value)}
+          >
+            <option value="">Unassigned</option>
+            {worktrees.map((wt) => (
+              <option key={wt} value={worktreeKey(wt)}>
+                {wt.split(/[/\\]/).pop() ?? wt}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+      <div className="task-edit-row">
+        <button type="submit" className="task-action-btn task-action-primary">
+          Save
+        </button>
+        <button type="button" className="task-action-btn" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
+// ── TaskRow ───────────────────────────────────────────────────────────────────
+
+const TaskRow = React.memo(function TaskRow({
+  task,
+  subtasks,
+  activeWorktree,
+  worktrees,
+  onDelete,
+  onUpdate,
+  onCreateSubtask,
+  onOpenTask,
+}: {
+  task: WorkspaceTask;
+  subtasks: WorkspaceTask[];
+  activeWorktree: string | null;
+  worktrees: string[];
+  onDelete: (id: string) => Promise<void>;
+  onUpdate: (id: string, patch: Partial<WorkspaceTask>) => Promise<void>;
+  onCreateSubtask: (parentId: string, title: string) => Promise<void>;
+  /** When set, clicking the summary defers to the host viewer instead of
+   *  expanding the row inline. */
+  onOpenTask?: (taskId: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [addingSubtask, setAddingSubtask] = useState(false);
+
+  const isCurrentWorktree =
+    activeWorktree && worktreeKey(task.worktree) === worktreeKey(activeWorktree);
+  const doneSubtasks = subtasks.filter((s) => s.status === 'done').length;
+  const subtaskProgress = subtasks.length > 0 ? `${doneSubtasks}/${subtasks.length}` : null;
+  const shortWt = task.worktree ? (task.worktree.split(/[/\\]/).pop() ?? task.worktree) : null;
+
+  const handleSummaryClick = () => {
+    if (onOpenTask) onOpenTask(task.id);
+    else setExpanded((x) => !x);
+  };
+
+  return (
+    <div
+      className={`task-row${isCurrentWorktree ? ' task-row-current' : ''}${task.status === 'done' ? ' task-row-done' : ''}`}
+    >
+      <div
+        className="task-row-summary"
+        onClick={handleSummaryClick}
+        style={{ cursor: 'pointer' }}
+        title={onOpenTask ? 'Open task viewer' : 'Expand task'}
+      >
+        <span
+          className="task-priority-dot"
+          title={task.priority}
+          style={{ background: PRIORITY_COLORS[task.priority] }}
+        />
+        <span className="task-title">{task.title}</span>
+        {subtaskProgress && (
+          <span
+            className="task-subtask-progress"
+            title={`${doneSubtasks} of ${subtasks.length} subtasks done`}
+          >
+            {subtaskProgress}
+          </span>
+        )}
+        <span className={`task-status-chip task-status-${task.status}`}>
+          {STATUS_LABELS[task.status]}
+        </span>
+        {task.tags && task.tags.length > 0 && (
+          <span className="task-tags-row">
+            {task.tags.map((tag) => (
+              <span key={tag} className="task-tag-chip">
+                #{tag}
+              </span>
+            ))}
+          </span>
+        )}
+        {shortWt && (
+          <span className="task-worktree-label" title={task.worktree ?? ''}>
+            {shortWt}
+          </span>
+        )}
+        <button
+          className="task-delete-btn"
+          title="Delete task"
+          onClick={(e) => {
+            e.stopPropagation();
+            void onDelete(task.id);
+          }}
+        >
+          ✕
+        </button>
+      </div>
+
+      {expanded && !onOpenTask && (
+        <div className="cw-accordion-detail">
+          {editing ? (
+            <TaskEditForm
+              task={task}
+              worktrees={worktrees}
+              onSave={async (patch) => {
+                await onUpdate(task.id, patch);
+                setEditing(false);
+              }}
+              onCancel={() => setEditing(false)}
+            />
+          ) : (
+            <div style={{ padding: '8px 10px' }}>
+              {task.description && <p className="task-description">{task.description}</p>}
+              {task.memo && (
+                <div className="task-memo-block">
+                  <span className="task-memo-label">Memo</span>
+                  <pre className="task-memo-content">{task.memo}</pre>
+                </div>
+              )}
+              <div className="task-row-actions">
+                <button className="task-action-btn" onClick={() => setEditing(true)}>
+                  Edit
+                </button>
+                <button className="task-action-btn" onClick={() => setAddingSubtask((x) => !x)}>
+                  + Subtask
+                </button>
+                {task.status !== 'done' && (
+                  <button
+                    className="task-action-btn"
+                    onClick={() => {
+                      const next = task.status === 'open' ? 'in-progress' : 'done';
+                      void onUpdate(task.id, { status: next });
+                    }}
+                  >
+                    {task.status === 'open' ? '▶ Start' : '✓ Done'}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {subtasks.map((sub) => (
+        <SubtaskRow key={sub.id} task={sub} onUpdate={onUpdate} onDelete={onDelete} />
+      ))}
+      {addingSubtask && (
+        <AddSubtaskForm
+          onSubmit={async (t) => {
+            await onCreateSubtask(task.id, t);
+            setAddingSubtask(false);
+          }}
+          onCancel={() => setAddingSubtask(false)}
+        />
+      )}
+    </div>
+  );
+});
+
+// ── NewTaskForm ───────────────────────────────────────────────────────────────
+
+function NewTaskForm({
+  worktrees,
+  onSubmit,
+  onCancel,
+}: {
+  worktrees: string[];
+  onSubmit: (task: NewWorkspaceTask) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [priority, setPriority] = useState<WorkspaceTask['priority']>('medium');
+  const [worktree, setWorktree] = useState('');
+  const [epic, setEpic] = useState('');
+  const [tagsInput, setTagsInput] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const titleRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    titleRef.current?.focus();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || submitting) return;
+    setSubmitting(true);
+    try {
+      await onSubmit({
+        title: title.trim(),
+        description,
+        memo: '',
+        priority,
+        status: 'open',
+        worktree: worktree || null,
+        parentId: null,
+        epic: epic.trim() || null,
+        tags: parseTags(tagsInput),
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <form
+      className="task-new-form"
+      onSubmit={(e) => void handleSubmit(e)}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') onCancel();
+      }}
+    >
+      <input
+        ref={titleRef}
+        className="task-input"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Task title"
+      />
+      <textarea
+        className="task-textarea"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        placeholder="Description (optional)"
+        rows={2}
+      />
+      <div className="task-edit-row">
+        <input
+          className="task-input"
+          value={epic}
+          onChange={(e) => setEpic(e.target.value)}
+          placeholder="Epic (optional)"
+        />
+        <input
+          className="task-input"
+          value={tagsInput}
+          onChange={(e) => setTagsInput(e.target.value)}
+          placeholder="Tags (comma-separated)"
+        />
+      </div>
+      <div className="task-edit-row">
+        <select
+          className="task-select"
+          value={priority}
+          onChange={(e) => setPriority(e.target.value as WorkspaceTask['priority'])}
+        >
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+        <select
+          className="task-select"
+          value={worktree}
+          onChange={(e) => setWorktree(e.target.value)}
+        >
+          <option value="">Unassigned</option>
+          {worktrees.map((wt) => (
+            <option key={wt} value={worktreeKey(wt)}>
+              {wt.split(/[/\\]/).pop() ?? wt}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="task-edit-row">
+        <button
+          type="submit"
+          className="task-action-btn task-action-primary"
+          disabled={submitting || !title.trim()}
+        >
+          {submitting ? 'Adding…' : 'Add task'}
+        </button>
+        <button type="button" className="task-action-btn" disabled={submitting} onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
+// ── TasksPanel ────────────────────────────────────────────────────────────────
+
+interface TasksPanelProps {
+  api: TasksApi;
+  activeWorktree: string | null;
+  worktrees: string[];
+  /** Bump this to force a reload — hosts wire it to their task file watcher. */
+  reloadKey?: number;
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
+  /** When provided, clicking a task row defers to a host viewer (the app's
+   *  focus mode) instead of expanding the row inline. */
+  onOpenTask?: (taskId: string) => void;
+  /** Render a drag-to-resize handle + fixed-height body (Electron app). */
+  resizable?: boolean;
+  /** Host-specific controls injected into the header, before the + button. */
+  headerExtra?: React.ReactNode;
+  /** Suppress the pane-header title when the host chrome already shows it. */
+  hideHeaderTitle?: boolean;
+  /** Suppress the in-panel + / ↻ buttons when the host chrome already
+   *  provides Create/Refresh actions (e.g. a VS Code view title bar). */
+  hideHeaderActions?: boolean;
+}
+
+export function TasksPanel({
+  api,
+  activeWorktree,
+  worktrees,
+  reloadKey = 0,
+  collapsed,
+  onToggleCollapsed,
+  onOpenTask,
+  resizable = false,
+  headerExtra,
+  hideHeaderTitle,
+  hideHeaderActions,
+}: TasksPanelProps) {
+  const [tasks, setTasks] = useState<WorkspaceTask[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [search, setSearch] = useState('');
+  const [bodyHeight, setBodyHeight] = useState(280);
+  const dragRef = useRef<{ startY: number; startHeight: number } | null>(null);
+  const requestIdRef = useRef(0);
+
+  const reload = useCallback(async () => {
+    // Last-write-wins: a burst of reloadKey bumps fires overlapping listTasks
+    // calls; without this guard a slower earlier response could land after a
+    // newer one and flash stale data. (Mirrors useTasks in the Electron app.)
+    const id = ++requestIdRef.current;
+    setLoading(true);
+    try {
+      const result = await api.list();
+      if (id === requestIdRef.current) setTasks(result);
+    } catch {
+      // non-fatal — list stays as-is
+    } finally {
+      if (id === requestIdRef.current) setLoading(false);
+    }
+  }, [api]);
+
+  useEffect(() => {
+    void reload();
+  }, [reload, reloadKey]);
+
+  const createTask = useCallback(
+    async (task: NewWorkspaceTask) => {
+      await api.create(task);
+      await reload();
+    },
+    [api, reload],
+  );
+  const updateTask = useCallback(
+    async (id: string, patch: Partial<WorkspaceTask>) => {
+      await api.update(id, patch);
+      await reload();
+    },
+    [api, reload],
+  );
+  const deleteTask = useCallback(
+    async (id: string) => {
+      await api.remove(id);
+      await reload();
+    },
+    [api, reload],
+  );
+
+  const handleCreateSubtask = useCallback(
+    async (parentId: string, title: string) => {
+      const parent = tasks.find((t) => t.id === parentId);
+      if (!parent || parent.parentId) return;
+      await createTask({
+        title,
+        description: '',
+        memo: '',
+        priority: parent.priority,
+        status: 'open',
+        worktree: null,
+        parentId,
+      });
+    },
+    [tasks, createTask],
+  );
+
+  const handleResizerMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragRef.current = { startY: e.clientY, startHeight: bodyHeight };
+      document.body.style.cursor = 'row-resize';
+      const onMove = (mv: MouseEvent) => {
+        if (!dragRef.current) return;
+        const delta = dragRef.current.startY - mv.clientY;
+        setBodyHeight(Math.max(80, Math.min(600, dragRef.current.startHeight + delta)));
+      };
+      const onUp = () => {
+        dragRef.current = null;
+        document.body.style.cursor = '';
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    },
+    [bodyHeight],
+  );
+
+  const childMap = useMemo(() => buildChildMap(tasks), [tasks]);
+  const rootTasks = useMemo(() => tasks.filter((t) => !t.parentId && t.status !== 'done'), [tasks]);
+
+  const q = search.trim().toLowerCase();
+  const filteredRoots = useMemo(() => {
+    if (!q) return rootTasks;
+    return rootTasks.filter((t) => {
+      const subs = childMap.get(t.id) ?? [];
+      const hay = [t.title, t.description, t.memo, ...(t.tags ?? []), ...subs.map((s) => s.title)]
+        .join(' ')
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [rootTasks, childMap, q]);
+
+  const groupedRoots = useMemo(() => groupByWorktree(filteredRoots), [filteredRoots]);
+
+  return (
+    <div className="cw-pane">
+      {resizable && !collapsed && (
+        <div
+          className="cw-pane-resizer"
+          title="Drag to resize the Tasks panel"
+          onMouseDown={handleResizerMouseDown}
+        />
+      )}
+      {/* Skip the header entirely when the host chrome already supplies the
+          title, actions, and collapse control (e.g. the VS Code view bar). */}
+      {!(hideHeaderTitle && hideHeaderActions && !onToggleCollapsed) && (
+        <PaneHeader
+          title="Tasks"
+          hideTitle={hideHeaderTitle}
+          collapsed={collapsed}
+          onToggleCollapsed={onToggleCollapsed}
+        >
+          {headerExtra}
+          {!hideHeaderActions && (
+            <>
+              <button
+                className="cw-add-btn"
+                title="New task"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setAdding((x) => !x);
+                }}
+              >
+                +
+              </button>
+              <button
+                className="cw-icon-btn"
+                title="Refresh tasks"
+                disabled={loading}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void reload();
+                }}
+              >
+                <span className={loading ? 'cw-spinning' : undefined}>↻</span>
+              </button>
+            </>
+          )}
+        </PaneHeader>
+      )}
+
+      {!collapsed && (
+        <>
+          <div className="task-search-row">
+            <input
+              className="task-search-input"
+              type="search"
+              placeholder="Search tasks…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div
+            style={
+              resizable
+                ? { height: bodyHeight, overflowY: 'auto', flex: '0 0 auto' }
+                : { flex: 1, overflowY: 'auto' }
+            }
+          >
+            {adding && (
+              <NewTaskForm
+                worktrees={worktrees}
+                onSubmit={async (t) => {
+                  await createTask(t);
+                  setAdding(false);
+                }}
+                onCancel={() => setAdding(false)}
+              />
+            )}
+
+            {filteredRoots.length === 0 && !adding && (
+              <div className="cw-empty">{q ? 'No matching tasks.' : 'No project tasks yet.'}</div>
+            )}
+
+            {groupedRoots.map(({ worktree, tasks: wtTasks }) => {
+              const wtLabel = worktree ? (worktree.split(/[/\\]/).pop() ?? worktree) : 'Unassigned';
+              return (
+                <React.Fragment key={worktree ?? '__unassigned__'}>
+                  <div className="task-worktree-group-header" title={worktree ?? 'Unassigned'}>
+                    {wtLabel}
+                  </div>
+                  {groupByEpic(wtTasks).map(({ epic, tasks: epicTasks }) => (
+                    <React.Fragment key={epic ?? '__no_epic__'}>
+                      {epic != null && (
+                        <div className="task-epic-group-header" title={`Epic: ${epic}`}>
+                          {epic}
+                        </div>
+                      )}
+                      {epicTasks.map((task) => (
+                        <TaskRow
+                          key={task.id}
+                          task={task}
+                          subtasks={childMap.get(task.id) ?? NO_SUBTASKS}
+                          activeWorktree={activeWorktree}
+                          worktrees={worktrees}
+                          onUpdate={updateTask}
+                          onDelete={deleteTask}
+                          onCreateSubtask={handleCreateSubtask}
+                          onOpenTask={onOpenTask}
+                        />
+                      ))}
+                    </React.Fragment>
+                  ))}
+                </React.Fragment>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

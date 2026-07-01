@@ -1,0 +1,43 @@
+{
+  "slug": "tasks-view",
+  "name": "Tasks View",
+  "description": "VS Code WebviewView sidebar panel showing the Code Workbench task board. Hosts the shared @code-workbench/ui TasksPanel React component in a webview and answers its list/create/update/remove RPC calls via the shared task-store. Task formatting/parsing now lives entirely in the shared task-store (mcp-core); the extension's old taskFormat.ts was removed.",
+  "files": [
+    "packages/extension/src/tasksView.ts",
+    "packages/extension/src/tasks.ts",
+    "packages/extension/src/reactWebview.ts",
+    "packages/extension/src/webviewRpc.ts",
+    "packages/extension/webview/tasks.tsx",
+    "packages/extension/src/commands/taskCommands.ts"
+  ],
+  "guidelines": [
+    "All task file I/O goes through the shared task-store — never implement parallel task logic in the extension.",
+    "Watch task files with watchTasks() and call tasksProvider.refresh() on change; refresh() posts a tasks-changed event to the webview.",
+    "The panel UI is the shared ui TasksPanel — render it via a React webview, do not hand-write panel markup.",
+    "Task formatting/parsing belongs in mcp-core task-store, not the extension — tasks.ts is a thin re-export."
+  ],
+  "anti_patterns": [
+    "Do not implement task CRUD directly in the extension — delegate to the shared task-store.",
+    "Do not rebuild the task panel as vanilla-JS webview HTML — use the shared ui React component.",
+    "Do not reintroduce a local taskFormat module — formatting lives in the shared task-store."
+  ],
+  "decisions": [
+    "The tasks module is a thin re-export of the shared task-store.",
+    "The panel was migrated from a vanilla-JS webview script to a React webview rendering the shared ui TasksPanel; VS Code-level filter/show-done commands are kept as compatibility stubs.",
+    "Task formatting/parsing was consolidated into the shared task-store (mcp-core); the extension's taskFormat.ts was deleted to avoid divergence."
+  ],
+  "dependsOn": [
+    "session-manager",
+    "git-utils",
+    "ui-shared-panels",
+    "task-store"
+  ],
+  "updatedAt": "2026-06-03T04:57:04.090Z",
+  "createdAt": "2026-05-19T04:49:37.278Z",
+  "tags": [
+    "tasks",
+    "task board",
+    "webview",
+    "TasksPanel"
+  ]
+}
