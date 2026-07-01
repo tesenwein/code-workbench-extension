@@ -59,6 +59,12 @@ function assertSafeSlug(slug: string): string {
   return slug;
 }
 
+/** Absolute path of a card's JSON file, validated against path traversal.
+ *  Exported so the panel can open the card in the normal editor. */
+export function archCardPath(repoRoot: string, slug: string): string {
+  return safeArchCardPath(repoRoot, slug);
+}
+
 function safeArchCardPath(repoRoot: string, slug: string): string {
   assertSafeSlug(slug);
   const dir = archDirPath(repoRoot);
