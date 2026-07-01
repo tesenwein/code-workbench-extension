@@ -582,7 +582,11 @@ export function ArchPanel({
               No components match “{query.trim()}”.
             </div>
           ) : (
-            <ListView cards={filteredCards} selectedSlug={selectedSlug} onSelect={setSelectedSlug} />
+            <ListView
+              cards={filteredCards}
+              selectedSlug={selectedSlug}
+              onSelect={setSelectedSlug}
+            />
           )}
         </div>
 
