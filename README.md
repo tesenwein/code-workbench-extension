@@ -30,7 +30,9 @@ Working with Claude Code across several branches means juggling worktrees, termi
 | 🤖 **Claude sessions**   | Per-worktree Claude, Claude Yolo (`--dangerously-skip-permissions`), or plain shell.                                                      |
 | ✅ **Shared task board** | Markdown-backed tasks with priority, status, subtasks, and due dates — kept in sync by the bundled tasks MCP server.                      |
 | 🔔 **Notifications MCP** | Toast notifications from Claude sessions (`notify_done`, `notify_needs_input`, `notify_info`) plus tab renaming.                          |
-| 🧹 **Code health**       | Duplicate detection (exact/renamed/structural) and dead-code scanning (unused exports/locals, commented code), per-repo acknowledgements. |
+| 🔎 **Semantic code search** | AST-backed hybrid search (`search_code`) so Claude finds symbols by intent, plus file outlines and symbol source lookup.                |
+| 🗺️ **Architecture wiki**  | Git-tracked component cards (`arch` MCP) capturing guidelines, anti-patterns, and decisions — with drift auditing against the code.       |
+| 🧹 **Code health**       | Duplicate detection (exact/renamed/structural), dead-code scanning (unused exports/locals, commented code), and type-safety escape hatch detection (`as`/`any`/`!`/`@ts-ignore`) — all with per-repo acknowledgements. |
 
 ## 💻 Installation
 
@@ -72,7 +74,7 @@ packages/
 ├─ extension/    VS Code extension
 ├─ ui/           Shared React UI components
 ├─ git-utils/    Git helpers shared across packages
-└─ mcp-core/     Bundled MCP servers (tasks, notify, arch, AST, dead-code, clone-detect)
+└─ mcp-core/     Bundled MCP servers (notify, tasks, arch, AST/code search, dead-code, type-safety), unified behind one `cw-code` endpoint
 ```
 
 At package time the `mcp-core` server scripts are bundled into the extension under an `mcp-server/` folder — that path exists in built artifacts, not in the source tree.
