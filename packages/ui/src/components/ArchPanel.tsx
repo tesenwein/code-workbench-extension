@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import type { ArchCard, ArchApi, OpenFileFn } from '../types';
-import { ArchGraph } from './ArchGraph';
+import { decodeEntities } from '../htmlEntities';
 
 // ---------------------------------------------------------------------------
 // Data hook — drives the panel off the host-supplied ArchApi. Mirrors the
@@ -285,9 +285,9 @@ function ListView({ cards, selectedSlug, onSelect }: ListViewProps) {
             fontSize: 12,
           }}
         >
-          <div style={{ fontWeight: 600 }}>{c.name}</div>
+          <div style={{ fontWeight: 600 }}>{decodeEntities(c.name)}</div>
           <div style={{ color: 'var(--vscode-descriptionForeground)', fontSize: 11 }}>
-            {(c.description || '').split('\n')[0].slice(0, 80)}
+            {decodeEntities((c.description || '').split('\n')[0]).slice(0, 80)}
           </div>
         </div>
       ))}
@@ -445,8 +445,6 @@ interface Props {
   onFocusSlugHandled?: () => void;
 }
 
-type Tab = 'graph' | 'list';
-
 export function ArchPanel({
   repoPath,
   api,
@@ -457,14 +455,12 @@ export function ArchPanel({
   onFocusSlugHandled,
 }: Props) {
   const { cards, loading, upsert, remove } = useArchCards(api, repoPath, reloadKey);
-  const [tab, setTab] = useState<Tab>('graph');
   const [query, setQuery] = useState('');
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
 
   useEffect(() => {
     if (focusSlug && cards.length > 0) {
       setSelectedSlug(focusSlug);
-      setTab('list');
       onFocusSlugHandled?.();
     }
   }, [focusSlug, cards.length, onFocusSlugHandled]);
@@ -565,12 +561,6 @@ export function ArchPanel({
           resultCount={filteredCards.length}
           hasQuery={query.trim().length > 0}
         />
-        <TabBtn active={tab === 'graph'} onClick={() => setTab('graph')}>
-          Graph
-        </TabBtn>
-        <TabBtn active={tab === 'list'} onClick={() => setTab('list')}>
-          List
-        </TabBtn>
         <button onClick={() => openEdit()} style={{ ...btnStyle('primary'), padding: '2px 8px' }}>
           +
         </button>
@@ -578,7 +568,7 @@ export function ArchPanel({
 
       {/* Content */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        {/* Left: graph or list */}
+        {/* Left: component list */}
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           {loading && (
             <div style={{ padding: 8, fontSize: 12, color: 'var(--vscode-descriptionForeground)' }}>
@@ -591,12 +581,6 @@ export function ArchPanel({
             >
               No components match “{query.trim()}”.
             </div>
-          ) : tab === 'graph' ? (
-            <ArchGraph
-              cards={filteredCards}
-              selectedSlug={selectedSlug}
-              onSelect={setSelectedSlug}
-            />
           ) : (
             <ListView
               cards={filteredCards}
@@ -630,13 +614,13 @@ export function ArchPanel({
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-              <span style={{ fontWeight: 600, flex: 1 }}>{selectedCard.name}</span>
+              <span style={{ fontWeight: 600, flex: 1 }}>{decodeEntities(selectedCard.name)}</span>
               <button onClick={() => openEdit(selectedCard)} style={btnStyle('secondary')}>
                 Edit
               </button>
             </div>
             <p style={{ color: 'var(--vscode-descriptionForeground)', margin: '0 0 8px' }}>
-              {selectedCard.description}
+              {decodeEntities(selectedCard.description)}
             </p>
             {selectedCard.files.length > 0 && (
               <Section
@@ -662,33 +646,6 @@ export function ArchPanel({
         )}
       </div>
     </div>
-  );
-}
-
-function TabBtn({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        background: active ? 'var(--vscode-button-background)' : 'transparent',
-        color: active ? 'var(--vscode-button-foreground)' : 'var(--vscode-foreground)',
-        border: '1px solid var(--vscode-widget-border, #555)',
-        borderRadius: 3,
-        padding: '2px 8px',
-        fontSize: 11,
-        cursor: 'pointer',
-      }}
-    >
-      {children}
-    </button>
   );
 }
 
@@ -730,7 +687,7 @@ function Section({
                 {item}
               </span>
             ) : (
-              item
+              decodeEntities(item)
             )}
           </li>
         ))}
