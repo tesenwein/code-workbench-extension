@@ -181,7 +181,9 @@ export class SessionsProvider implements vscode.WebviewViewProvider {
       items: groups
         .get(k)!
         .slice()
-        .sort((a, b) => b.created - a.created)
+        // Oldest-first, matching the editor: new terminals are appended as
+        // tabs to the right, so ascending `created` mirrors left→right tab order.
+        .sort((a, b) => a.created - b.created)
         .map((s) => ({
           id: s.id,
           title: s.title,
