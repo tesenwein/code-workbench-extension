@@ -98,6 +98,10 @@ export interface TasksApi {
   create: (task: NewWorkspaceTask) => Promise<WorkspaceTask>;
   update: (id: string, patch: Partial<WorkspaceTask>) => Promise<void>;
   remove: (id: string) => Promise<void>;
+  /** Open the task's backing `.md` file in the host editor. Optional — hosts
+   *  that can't surface a file editor (e.g. the Electron app) omit it and the
+   *  panel hides the "open in editor" affordance. */
+  openInEditor?: (id: string) => Promise<void>;
 }
 
 /** Open a file in the host editor. `loc` is an absolute-ish path. */

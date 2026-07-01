@@ -85,14 +85,18 @@ const SubtaskRow = React.memo(function SubtaskRow({
   task,
   onUpdate,
   onDelete,
+  onOpenInEditor,
 }: {
   task: WorkspaceTask;
   onUpdate: (id: string, patch: Partial<WorkspaceTask>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onOpenInEditor?: (id: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [title, setTitle] = useState(task.title);
   const escapedRef = useRef(false);
+  const hasDetail = Boolean(task.description || task.memo);
 
   useEffect(() => {
     setTitle(task.title);
@@ -126,57 +130,96 @@ const SubtaskRow = React.memo(function SubtaskRow({
 
   return (
     <div className={`task-subtask-row${task.status === 'done' ? ' task-row-done' : ''}`}>
-      <span className="task-subtask-indent" />
-      <span
-        className="task-subtask-check"
-        title={task.status === 'done' ? 'Mark open' : 'Mark done'}
-        onClick={(e) => {
-          e.stopPropagation();
-          void onUpdate(task.id, {
-            status: task.status === 'done' ? 'open' : 'done',
-          });
-        }}
-      >
-        {task.status === 'done' ? '✓' : '○'}
-      </span>
-      {editing ? (
-        <input
-          className="task-input task-subtask-input"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          autoFocus
-          onFocus={() => {
-            escapedRef.current = false;
-          }}
-          onBlur={() => void handleSave()}
-          onKeyDown={handleKeyDown}
-          onClick={(e) => e.stopPropagation()}
-        />
-      ) : (
+      <div className="task-subtask-summary">
         <span
-          className="task-subtask-title"
-          onDoubleClick={(e) => {
+          className="task-subtask-expand"
+          title={hasDetail ? (expanded ? 'Collapse' : 'View details') : 'No details'}
+          onClick={(e) => {
             e.stopPropagation();
-            setEditing(true);
+            if (hasDetail) setExpanded((x) => !x);
           }}
-          title="Double-click to edit"
+          style={{ visibility: hasDetail ? 'visible' : 'hidden' }}
         >
-          {task.title}
+          {expanded ? '▾' : '▸'}
         </span>
+        <span
+          className="task-subtask-check"
+          title={task.status === 'done' ? 'Mark open' : 'Mark done'}
+          onClick={(e) => {
+            e.stopPropagation();
+            void onUpdate(task.id, {
+              status: task.status === 'done' ? 'open' : 'done',
+            });
+          }}
+        >
+          {task.status === 'done' ? '✓' : '○'}
+        </span>
+        {editing ? (
+          <input
+            className="task-input task-subtask-input"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            autoFocus
+            onFocus={() => {
+              escapedRef.current = false;
+            }}
+            onBlur={() => void handleSave()}
+            onKeyDown={handleKeyDown}
+            onClick={(e) => e.stopPropagation()}
+          />
+        ) : (
+          <span
+            className="task-subtask-title"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (hasDetail) setExpanded((x) => !x);
+            }}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              setEditing(true);
+            }}
+            title="Click to view · double-click to edit"
+          >
+            {task.title}
+          </span>
+        )}
+        <span className={`task-status-chip task-status-${task.status}`}>
+          {STATUS_LABELS[task.status]}
+        </span>
+        {onOpenInEditor && (
+          <button
+            className="task-icon-btn task-subtask-open"
+            title="Open task file in editor"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenInEditor(task.id);
+            }}
+          >
+            ↗
+          </button>
+        )}
+        <button
+          className="task-delete-btn task-subtask-delete"
+          title="Delete subtask"
+          onClick={(e) => {
+            e.stopPropagation();
+            void onDelete(task.id);
+          }}
+        >
+          ✕
+        </button>
+      </div>
+      {expanded && hasDetail && (
+        <div className="task-subtask-detail">
+          {task.description && <p className="task-description">{task.description}</p>}
+          {task.memo && (
+            <div className="task-memo-block">
+              <span className="task-memo-label">Memo</span>
+              <pre className="task-memo-content">{task.memo}</pre>
+            </div>
+          )}
+        </div>
       )}
-      <span className={`task-status-chip task-status-${task.status}`}>
-        {STATUS_LABELS[task.status]}
-      </span>
-      <button
-        className="task-delete-btn task-subtask-delete"
-        title="Delete subtask"
-        onClick={(e) => {
-          e.stopPropagation();
-          void onDelete(task.id);
-        }}
-      >
-        ✕
-      </button>
     </div>
   );
 });
@@ -364,6 +407,7 @@ const TaskRow = React.memo(function TaskRow({
   onUpdate,
   onCreateSubtask,
   onOpenTask,
+  onOpenInEditor,
 }: {
   task: WorkspaceTask;
   subtasks: WorkspaceTask[];
@@ -375,6 +419,9 @@ const TaskRow = React.memo(function TaskRow({
   /** When set, clicking the summary defers to the host viewer instead of
    *  expanding the row inline. */
   onOpenTask?: (taskId: string) => void;
+  /** When set, renders an "open in editor" affordance that opens the task's
+   *  backing `.md` file in the host editor. */
+  onOpenInEditor?: (taskId: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -432,6 +479,18 @@ const TaskRow = React.memo(function TaskRow({
             {shortWt}
           </span>
         )}
+        {onOpenInEditor && (
+          <button
+            className="task-icon-btn"
+            title="Open task file in editor"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenInEditor(task.id);
+            }}
+          >
+            ↗
+          </button>
+        )}
         <button
           className="task-delete-btn"
           title="Delete task"
@@ -472,6 +531,11 @@ const TaskRow = React.memo(function TaskRow({
                 <button className="task-action-btn" onClick={() => setAddingSubtask((x) => !x)}>
                   + Subtask
                 </button>
+                {onOpenInEditor && (
+                  <button className="task-action-btn" onClick={() => onOpenInEditor(task.id)}>
+                    ↗ Open in editor
+                  </button>
+                )}
                 {task.status !== 'done' && (
                   <button
                     className="task-action-btn"
@@ -490,7 +554,13 @@ const TaskRow = React.memo(function TaskRow({
       )}
 
       {subtasks.map((sub) => (
-        <SubtaskRow key={sub.id} task={sub} onUpdate={onUpdate} onDelete={onDelete} />
+        <SubtaskRow
+          key={sub.id}
+          task={sub}
+          onUpdate={onUpdate}
+          onDelete={onDelete}
+          onOpenInEditor={onOpenInEditor}
+        />
       ))}
       {addingSubtask && (
         <AddSubtaskForm
@@ -711,6 +781,10 @@ export function TasksPanel({
     },
     [api, reload],
   );
+  const openInEditor = useMemo(
+    () => (api.openInEditor ? (id: string) => void api.openInEditor!(id) : undefined),
+    [api],
+  );
 
   const handleCreateSubtask = useCallback(
     async (parentId: string, title: string) => {
@@ -874,6 +948,7 @@ export function TasksPanel({
                           onDelete={deleteTask}
                           onCreateSubtask={handleCreateSubtask}
                           onOpenTask={onOpenTask}
+                          onOpenInEditor={openInEditor}
                         />
                       ))}
                     </React.Fragment>

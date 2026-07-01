@@ -8,11 +8,11 @@
 
 Git worktrees, per-worktree Claude sessions, and a shared task board — all inside your editor, kept in sync with the agent through bundled MCP servers.
 
-[![License](https://img.shields.io/github/license/tesenwein/code-workbench-monorepo)](LICENSE)
-[![Releases](https://img.shields.io/github/v/release/tesenwein/code-workbench-monorepo?include_prereleases&label=release)](https://github.com/tesenwein/code-workbench-monorepo/releases)
-[![Lint](https://github.com/tesenwein/code-workbench-monorepo/workflows/Lint/badge.svg)](https://github.com/tesenwein/code-workbench-monorepo/actions)
+[![License](https://img.shields.io/github/license/tesenwein/code-workbench-extension)](LICENSE)
+[![Releases](https://img.shields.io/github/v/release/tesenwein/code-workbench-extension?include_prereleases&label=release)](https://github.com/tesenwein/code-workbench-extension/releases)
+[![CI](https://github.com/tesenwein/code-workbench-extension/actions/workflows/ci.yml/badge.svg)](https://github.com/tesenwein/code-workbench-extension/actions/workflows/ci.yml)
 
-[Download](https://github.com/tesenwein/code-workbench-monorepo/releases/latest) · [Features](#-features) · [Quick start](#-quick-start) · [Development](#%EF%B8%8F-development)
+[Download](https://github.com/tesenwein/code-workbench-extension/releases/latest) · [Features](#-features) · [Quick start](#-quick-start) · [Development](#%EF%B8%8F-development)
 
 </div>
 
@@ -34,7 +34,7 @@ Working with Claude Code across several branches means juggling worktrees, termi
 
 ## 💻 Installation
 
-Download the latest `.vsix` from [**GitHub Releases**](https://github.com/tesenwein/code-workbench-monorepo/releases/latest), then in VS Code run _Extensions: Install from VSIX…_.
+Download the latest `.vsix` from [**GitHub Releases**](https://github.com/tesenwein/code-workbench-extension/releases/latest), then in VS Code run _Extensions: Install from VSIX…_.
 
 You'll also need the [`claude` CLI](https://docs.claude.com/en/docs/claude-code) on your `PATH` for Claude sessions.
 
@@ -81,15 +81,14 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
 
 ## 🔁 CI / Releases
 
-One GitHub Actions workflow drives the project:
+Two GitHub Actions workflows drive the project:
 
-- **Lint** — on every push to `develop` and PRs to `main`/`develop`: ESLint, formatting, type-check (build), tests, and a gitleaks secret scan.
-
-Releases are cut manually: build the extension locally (`pnpm run dist:extension`) and attach the `.vsix` from `release/extension/` to a GitHub Release.
+- **CI** — on every push to `develop` and PRs to `main`/`develop`: ESLint, formatting, type-check (build), tests, and a gitleaks secret scan.
+- **Release** — when `develop` is merged into `main`: bumps the extension version, builds the VSIX, and publishes a GitHub Release with the `.vsix` attached.
 
 ## 🤝 Contributing
 
-Contributions, bug reports, and feature requests are welcome — [open an issue](https://github.com/tesenwein/code-workbench-monorepo/issues) or submit a PR against `develop`.
+Contributions, bug reports, and feature requests are welcome — [open an issue](https://github.com/tesenwein/code-workbench-extension/issues) or submit a PR against `develop`.
 
 ## 📄 License
 

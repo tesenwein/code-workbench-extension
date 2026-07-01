@@ -1,7 +1,7 @@
 import * as fsSync from 'fs';
 import * as fs from 'fs/promises';
 import * as vscode from 'vscode';
-import { listTasks, createTask, updateTask, deleteTask, tasksDir } from './tasks';
+import { listTasks, createTask, updateTask, deleteTask, tasksDir, taskFilePath } from './tasks';
 import { listWorktrees } from './git';
 import type { Task } from '@code-workbench/mcp-core/task-format';
 import { reactWebviewHtml } from './reactWebview';
@@ -104,6 +104,13 @@ export class TasksProvider implements vscode.WebviewViewProvider {
           const key = this.getRepoKey();
           if (!key) return;
           await deleteTask(key, String(id));
+        },
+        openInEditor: async (id) => {
+          const key = this.getRepoKey();
+          if (!key) throw new Error('No repository open');
+          const file = taskFilePath(key, String(id));
+          const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(file));
+          await vscode.window.showTextDocument(doc, { preview: false });
         },
       },
       (rpc) => {
