@@ -10,7 +10,6 @@ export { TypeEscapePanel } from './components/TypeEscapePanel';
 export { DuplicatesPanel } from './components/DuplicatesPanel';
 export { TasksPanel } from './components/TasksPanel';
 export { ArchPanel } from './components/ArchPanel';
-export { ArchGraph } from './components/ArchGraph';
 
 export type {
   TaskPriority,
