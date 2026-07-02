@@ -1,10 +1,14 @@
-import * as path from 'path';
 import * as vscode from 'vscode';
 import { TaskFilter, TaskItem, TasksProvider } from '../tasksView';
 import { createTask, deleteTask, listTasks, taskFilePath, updateTask } from '../tasks';
 import { VALID_PRIORITIES, VALID_STATUSES, type Task } from '@code-workbench/mcp-core/task-format';
-import { addWorktree } from '../git';
 import { SessionManager } from '../sessions';
+import {
+  branchSlug,
+  createWorktree,
+  offerOpen,
+  promptNewBranchWorktree,
+} from './worktreeCreate';
 
 interface TaskCommandDeps {
   tasksProvider: TasksProvider;
@@ -178,30 +182,14 @@ export function registerTaskCommands(ctx: vscode.ExtensionContext, deps: TaskCom
       }
       if (!repoKey) return;
 
-      const slug =
-        item.task.title
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '')
-          .slice(0, 50) || 'task';
-      const branch = await vscode.window.showInputBox({
-        prompt: `Branch name for "${item.task.title}"`,
-        value: `feature/${slug}`,
-      });
-      if (!branch) return;
-      const defaultPath = path.join(
-        path.dirname(repoRoot),
-        `${path.basename(repoRoot)}-${branch.replace(/\//g, '-')}`,
+      const spec = await promptNewBranchWorktree(
+        repoRoot,
+        `feature/${branchSlug(item.task.title)}`,
       );
-      const target = await vscode.window.showInputBox({
-        prompt: 'Path for the new worktree',
-        value: defaultPath,
-      });
-      if (!target) return;
+      if (!spec) return;
 
       try {
-        await addWorktree(repoRoot, branch, target, { createBranch: true });
-        await sessionMgr.assignColorIfUnset(target);
+        await createWorktree(repoRoot, sessionMgr, spec);
         // Reassign the task and its whole subtree to the new worktree.
         const all = await listTasks(repoKey);
         const ids = new Set<string>();
@@ -212,16 +200,13 @@ export function registerTaskCommands(ctx: vscode.ExtensionContext, deps: TaskCom
         };
         collect(item.task.id);
         for (const id of ids) {
-          await updateTask(repoKey, id, { worktree: target });
+          await updateTask(repoKey, id, { worktree: spec.target });
         }
         tasksProvider.refresh();
-        const open = await vscode.window.showInformationMessage(
-          `Worktree created at ${target} for "${item.task.title}" (${ids.size} task(s) assigned)`,
-          'Open in New Window',
+        await offerOpen(
+          `Worktree created at ${spec.target} for "${item.task.title}" (${ids.size} task(s) assigned)`,
+          spec.target,
         );
-        if (open) {
-          await vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(target), true);
-        }
       } catch (err) {
         vscode.window.showErrorMessage(`Spawn worktree failed: ${(err as Error).message}`);
       }
