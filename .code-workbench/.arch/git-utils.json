@@ -1,20 +1,38 @@
 {
   "slug": "git-utils",
   "name": "Git Utilities (VS Code extension)",
-  "description": "Async wrappers around the git CLI used by the VS Code extension package (NOT the Electron workbench app — that has its own git layer in app-exec-git / app-worktrees). Exports: gitRaw (with timeoutMs support), listWorktrees, addWorktree, removeWorktree, mergedWorktrees, countUncommitted, aheadBehind, findRepoRoot, findRepoKey, plus the Worktree interface. Re-exports buildRepoKey and repoNameFromCommonDir from @code-workbench/mcp-core/repo-key. `removeWorktree` delegates to @code-workbench/git-utils/remove-worktree for the robust removal flow (timeout + retry + force-detach + pending-deletion rescue).</description>\n<parameter name=\"files\">[\"packages/extension/src/git.ts\"]",
-  "files": ["packages/extension/src/git.ts"],
+  "description": "Async wrappers around the git CLI used by the VS Code extension package (NOT the Electron workbench app — that has its own git layer in app-exec-git / app-worktrees). Exports: gitRaw (with timeoutMs support), listWorktrees, listBranches (local + remote-only branches as RemoteBranch {name, remoteRef}), addWorktree, removeWorktree, mergedWorktrees, countUncommitted, aheadBehind, findRepoRoot, findRepoKey, plus the Worktree interface. addWorktree takes an explicit AddWorktreeOptions discriminated union: {mode:'checkout'} (existing local branch), {mode:'checkout-remote', remoteRef} (new local branch tracking a remote), {mode:'create', base?} (new branch from an optional base ref, default HEAD). Re-exports buildRepoKey and repoNameFromCommonDir from @code-workbench/mcp-core/repo-key. `removeWorktree` delegates to @code-workbench/git-utils/remove-worktree for the robust removal flow (timeout + retry + force-detach + pending-deletion rescue).",
+  "files": [
+    "packages/extension/src/git.ts",
+    "packages/extension/src/commands/worktreeCreate.ts"
+  ],
   "guidelines": [
     "gitRaw accepts an optional `timeoutMs` and surfaces timeouts as `Error('Timed out after Nms: git ...')` so the shared removeWorktreeRobust core recognises them and falls back to manual rm.",
-    "removeWorktree takes an optional PendingDeletionStore; the extension passes a globalState-backed store from extension.ts (PENDING_DELETIONS_KEY) so Windows-locked directories survive a window reload and are retried on next activation."
+    "removeWorktree takes an optional PendingDeletionStore; the extension passes a globalState-backed store from extension.ts (PENDING_DELETIONS_KEY) so Windows-locked directories survive a window reload and are retried on next activation.",
+    "All interactive worktree-creation UI (branch picker with local/remote sections, base-branch picker, path prompt, create + assignColorIfUnset, 'Open in New Window' toast) lives in commands/worktreeCreate.ts — reuse promptWorktree / promptNewBranchWorktree / createWorktree / offerOpen / branchSlug instead of re-implementing the flow in a command."
   ],
   "anti_patterns": [
-    "Don't reintroduce the inline `git worktree remove --force; fs.rm` fallback — it lacks timeout, retry, detach-on-lock, and pending-deletion recovery. Always go through shared-git-utils."
+    "Don't reintroduce the inline `git worktree remove --force; fs.rm` fallback — it lacks timeout, retry, detach-on-lock, and pending-deletion recovery. Always go through shared-git-utils.",
+    "Don't add boolean flags like the old `createBranch` to addWorktree — use the AddWorktreeOptions mode union so intent (checkout vs create vs track-remote) is explicit."
   ],
   "decisions": [
-    "Worktree-removal robustness lives in @code-workbench/git-utils so the Electron app and the VS Code extension share one implementation — see [[shared-git-utils]]."
+    "Worktree-removal robustness lives in @code-workbench/git-utils so the Electron app and the VS Code extension share one implementation — see [[shared-git-utils]].",
+    "addWorktree fetches the branch from its remote best-effort before checkout so ahead/behind counts are accurate; a fetch failure (offline) never blocks worktree creation."
   ],
-  "dependsOn": ["shared-git-utils"],
-  "updatedAt": "2026-05-27T03:49:47.276Z",
+  "dependsOn": [
+    "shared-git-utils"
+  ],
+  "updatedAt": "2026-07-02T06:18:57.339Z",
   "createdAt": "2026-05-19T04:49:52.485Z",
-  "tags": ["git", "worktree", "vscode-extension", "git-cli", "remove-worktree"]
+  "tags": [
+    "git",
+    "worktree",
+    "vscode-extension",
+    "git-cli",
+    "remove-worktree",
+    "branches",
+    "checkout",
+    "base-branch",
+    "worktree-create"
+  ]
 }

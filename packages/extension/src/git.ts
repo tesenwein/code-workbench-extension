@@ -159,44 +159,107 @@ export async function listWorktrees(repoPath: string): Promise<Worktree[]> {
   return trees;
 }
 
-export async function addWorktree(
-  repoPath: string,
-  branch: string,
-  newPath: string,
-  opts: { createBranch?: boolean; base?: string } = {},
-): Promise<string> {
-  validateBranchName(branch);
-  validateNewWorktreePath(newPath);
+/** A branch that exists only on a remote (no local branch of the same name). */
+export interface RemoteBranch {
+  /** Short branch name without the remote prefix, e.g. `feature/x`. */
+  name: string;
+  /** Full remote-tracking ref, e.g. `origin/feature/x`. */
+  remoteRef: string;
+}
 
+export async function listBranches(
+  repoPath: string,
+): Promise<{ local: string[]; remote: RemoteBranch[] }> {
   const local = (await gitRaw(repoPath, ['branch', '--format=%(refname:short)']))
     .split('\n')
     .map((s) => s.trim())
     .filter(Boolean);
+  let remoteRaw = '';
+  try {
+    remoteRaw = await gitRaw(repoPath, ['branch', '-r', '--format=%(refname:short)']);
+  } catch {
+    // No remotes configured.
+  }
+  const localSet = new Set(local);
+  const seen = new Set<string>();
+  const remote: RemoteBranch[] = [];
+  for (const ref of remoteRaw
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean)) {
+    const slash = ref.indexOf('/');
+    if (slash < 0) continue;
+    const name = ref.slice(slash + 1);
+    if (name === 'HEAD' || localSet.has(name) || seen.has(name)) continue;
+    seen.add(name);
+    remote.push({ name, remoteRef: ref });
+  }
+  return { local, remote };
+}
+
+export type AddWorktreeOptions =
+  /** Check out an existing local branch. */
+  | { mode: 'checkout' }
+  /** Create a local branch tracking `remoteRef` (e.g. `origin/feature/x`). */
+  | { mode: 'checkout-remote'; remoteRef: string }
+  /** Create a new branch from `base` (a branch or ref; defaults to HEAD). */
+  | { mode: 'create'; base?: string };
+
+export async function addWorktree(
+  repoPath: string,
+  branch: string,
+  newPath: string,
+  opts: AddWorktreeOptions,
+): Promise<string> {
+  validateBranchName(branch);
+  validateNewWorktreePath(newPath);
+
+  const { local } = await listBranches(repoPath);
   const exists = local.includes(branch);
-  const base = opts.base?.trim() || undefined;
 
   const existingWorktrees = await listWorktrees(repoPath);
   if (existingWorktrees.some((wt) => wt.branch === branch)) {
     throw new Error(`Branch «${branch}» is already checked out in another worktree.`);
   }
 
-  if (base) validateBranchName(base);
-
-  if (opts.createBranch) {
-    if (exists) throw new Error(`Branch «${branch}» already exists.`);
-    const cmd = ['worktree', 'add', '-b', branch, newPath];
-    if (base) cmd.push(base);
-    await gitRaw(repoPath, cmd);
-  } else if (exists) {
-    // Refresh the remote-tracking ref so the new worktree's ahead/behind count
-    // is accurate. Best-effort — do not block worktree creation on a fetch
-    // failure (offline, no remote). Does not touch the local branch ref.
-    await gitRaw(repoPath, ['fetch', 'origin', branch]).catch(() => {});
-    await gitRaw(repoPath, ['worktree', 'add', newPath, branch]);
-  } else {
-    const cmd = ['worktree', 'add', '-b', branch, newPath];
-    if (base) cmd.push(base);
-    await gitRaw(repoPath, cmd);
+  switch (opts.mode) {
+    case 'checkout': {
+      if (!exists) throw new Error(`Branch «${branch}» does not exist locally.`);
+      // Refresh the remote-tracking ref so the new worktree's ahead/behind
+      // count is accurate. Best-effort — do not block worktree creation on a
+      // fetch failure (offline, no remote). Does not touch the local ref.
+      await gitRaw(repoPath, ['fetch', 'origin', branch]).catch(() => {});
+      await gitRaw(repoPath, ['worktree', 'add', newPath, branch]);
+      break;
+    }
+    case 'checkout-remote': {
+      if (exists) {
+        throw new Error(`Branch «${branch}» already exists locally — check it out instead.`);
+      }
+      validateBranchName(opts.remoteRef);
+      const slash = opts.remoteRef.indexOf('/');
+      const remoteName = slash > 0 ? opts.remoteRef.slice(0, slash) : 'origin';
+      await gitRaw(repoPath, ['fetch', remoteName, branch]).catch(() => {});
+      await gitRaw(repoPath, [
+        'worktree',
+        'add',
+        '--track',
+        '-b',
+        branch,
+        newPath,
+        opts.remoteRef,
+      ]);
+      break;
+    }
+    case 'create': {
+      if (exists) throw new Error(`Branch «${branch}» already exists.`);
+      const base = opts.base?.trim() || undefined;
+      if (base) validateBranchName(base);
+      const cmd = ['worktree', 'add', '-b', branch, newPath];
+      if (base) cmd.push(base);
+      await gitRaw(repoPath, cmd);
+      break;
+    }
   }
   return newPath;
 }

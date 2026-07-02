@@ -2,7 +2,14 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
-import { addWorktree, gitRaw, listWorktrees, mergedWorktrees, Worktree } from '../git';
+import { gitRaw, listWorktrees, mergedWorktrees, Worktree } from '../git';
+import {
+  branchSlug,
+  createWorktree,
+  offerOpen,
+  promptNewBranchWorktree,
+  promptWorktree,
+} from './worktreeCreate';
 
 const pExecFile = promisify(execFile);
 
@@ -93,44 +100,12 @@ export function registerWorktreeCommands(
         vscode.window.showWarningMessage('Open a git repository first.');
         return;
       }
-      const branch = await vscode.window.showInputBox({
-        prompt: 'Branch name for the new worktree',
-        placeHolder: 'feature/my-thing',
-      });
-      if (!branch) return;
-      const defaultPath = path.join(
-        path.dirname(repoRoot),
-        `${path.basename(repoRoot)}-${branch.replace(/\//g, '-')}`,
-      );
-      const target = await vscode.window.showInputBox({
-        prompt: 'Path for the new worktree',
-        value: defaultPath,
-      });
-      if (!target) return;
-      const createChoice = await vscode.window.showQuickPick(
-        [
-          {
-            label: 'Use existing branch (if present, otherwise create)',
-            value: false,
-          },
-          { label: 'Force create new branch', value: true },
-        ],
-        { placeHolder: 'Branch strategy' },
-      );
-      if (!createChoice) return;
+      const spec = await promptWorktree(repoRoot);
+      if (!spec) return;
       try {
-        await addWorktree(repoRoot, branch, target, {
-          createBranch: createChoice.value,
-        });
-        await sessionMgr.assignColorIfUnset(target);
+        await createWorktree(repoRoot, sessionMgr, spec);
         worktreesProvider.refresh();
-        const open = await vscode.window.showInformationMessage(
-          `Worktree created at ${target}`,
-          'Open in New Window',
-        );
-        if (open) {
-          await vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(target), true);
-        }
+        await offerOpen(`Worktree created at ${spec.target}`, spec.target);
       } catch (err) {
         vscode.window.showErrorMessage(`Add worktree failed: ${(err as Error).message}`);
       }
@@ -194,41 +169,22 @@ export function registerWorktreeCommands(
       const selectedIds = new Set<string>();
       for (const p of picks) collectSubtree(p.task.id, selectedIds);
       const selected = unassigned.filter((t) => selectedIds.has(t.id));
-      const slug =
-        picks[0].task.title
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '')
-          .slice(0, 50) || 'task';
-      const branch = await vscode.window.showInputBox({
-        prompt: 'Branch name for the new worktree',
-        value: `feature/${slug}`,
-      });
-      if (!branch) return;
-      const defaultPath = path.join(
-        path.dirname(repoRoot),
-        `${path.basename(repoRoot)}-${branch.replace(/\//g, '-')}`,
+      const spec = await promptNewBranchWorktree(
+        repoRoot,
+        `feature/${branchSlug(picks[0].task.title)}`,
       );
-      const target = await vscode.window.showInputBox({
-        prompt: 'Path for the new worktree',
-        value: defaultPath,
-      });
-      if (!target) return;
+      if (!spec) return;
       try {
-        await addWorktree(repoRoot, branch, target, { createBranch: true });
-        await sessionMgr.assignColorIfUnset(target);
+        await createWorktree(repoRoot, sessionMgr, spec);
         for (const t of selected) {
-          await updateTask(repoKey, t.id, { worktree: target });
+          await updateTask(repoKey, t.id, { worktree: spec.target });
         }
         worktreesProvider.refresh();
         tasksProvider.refresh();
-        const open = await vscode.window.showInformationMessage(
-          `Worktree created at ${target} with ${selected.length} task(s) assigned`,
-          'Open in New Window',
+        await offerOpen(
+          `Worktree created at ${spec.target} with ${selected.length} task(s) assigned`,
+          spec.target,
         );
-        if (open) {
-          await vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(target), true);
-        }
       } catch (err) {
         vscode.window.showErrorMessage(`Add worktree with task failed: ${(err as Error).message}`);
       }
@@ -556,37 +512,18 @@ export function registerWorktreeCommands(
       );
       if (!pick) return;
 
-      const slug =
-        pick.issue.title
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '')
-          .slice(0, 50) || 'issue';
-      const branch = await vscode.window.showInputBox({
-        prompt: `Branch name for issue #${pick.issue.number}`,
-        value: `feature/${pick.issue.number}-${slug}`,
-      });
-      if (!branch) return;
-      const defaultPath = path.join(
-        path.dirname(repoRoot),
-        `${path.basename(repoRoot)}-${branch.replace(/\//g, '-')}`,
+      const spec = await promptNewBranchWorktree(
+        repoRoot,
+        `feature/${pick.issue.number}-${branchSlug(pick.issue.title)}`,
       );
-      const target = await vscode.window.showInputBox({
-        prompt: 'Path for the new worktree',
-        value: defaultPath,
-      });
-      if (!target) return;
+      if (!spec) return;
       try {
-        await addWorktree(repoRoot, branch, target, { createBranch: true });
-        await sessionMgr.assignColorIfUnset(target);
+        await createWorktree(repoRoot, sessionMgr, spec);
         worktreesProvider.refresh();
-        const open = await vscode.window.showInformationMessage(
-          `Worktree created at ${target} for issue #${pick.issue.number}`,
-          'Open in New Window',
+        await offerOpen(
+          `Worktree created at ${spec.target} for issue #${pick.issue.number}`,
+          spec.target,
         );
-        if (open) {
-          await vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(target), true);
-        }
       } catch (err) {
         vscode.window.showErrorMessage(`Add worktree from issue failed: ${(err as Error).message}`);
       }
