@@ -18,6 +18,8 @@ const api: TasksApi = {
 interface Context {
   activeWorktree: string | null;
   worktrees: string[];
+  /** 'page' when hosted as the full editor-tab board (tasksPage.ts). */
+  surface?: 'sidebar' | 'page';
 }
 
 function App() {
@@ -43,6 +45,7 @@ function App() {
       reloadKey={reloadKey}
       hideHeaderTitle
       hideHeaderActions
+      pageMode={ctx.surface === 'page'}
     />
   );
 }

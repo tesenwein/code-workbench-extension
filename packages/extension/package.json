@@ -243,6 +243,18 @@
         "icon": "$(search)"
       },
       {
+        "command": "codeWorkbench.themeTokens",
+        "category": "Code Workbench",
+        "title": "Theme Tokens",
+        "icon": "$(symbol-color)"
+      },
+      {
+        "command": "codeWorkbench.worktrees.editNote",
+        "category": "Code Workbench",
+        "title": "Edit Handoff Note…",
+        "icon": "$(note)"
+      },
+      {
         "command": "codeWorkbench.arch.refresh",
         "category": "Code Workbench",
         "title": "Refresh Architecture",
@@ -378,7 +390,7 @@
         {
           "command": "codeWorkbench.init",
           "when": "view == codeWorkbench.worktrees",
-          "group": "navigation@9"
+          "group": "2_manage@3"
         },
         {
           "command": "codeWorkbench.sessions.newFromEditor",
@@ -393,42 +405,42 @@
         {
           "command": "codeWorkbench.pinSidebar",
           "when": "view == codeWorkbench.worktrees && !codeWorkbench.sidebarPinned",
-          "group": "navigation@8"
+          "group": "2_manage@2"
         },
         {
           "command": "codeWorkbench.unpinSidebar",
           "when": "view == codeWorkbench.worktrees && codeWorkbench.sidebarPinned",
-          "group": "navigation@8"
-        },
-        {
-          "command": "codeWorkbench.worktrees.refresh",
-          "when": "view == codeWorkbench.worktrees",
-          "group": "navigation"
-        },
-        {
-          "command": "codeWorkbench.worktrees.switch",
-          "when": "view == codeWorkbench.worktrees",
-          "group": "navigation"
+          "group": "2_manage@2"
         },
         {
           "command": "codeWorkbench.worktrees.add",
           "when": "view == codeWorkbench.worktrees",
-          "group": "navigation"
+          "group": "navigation@1"
+        },
+        {
+          "command": "codeWorkbench.worktrees.switch",
+          "when": "view == codeWorkbench.worktrees",
+          "group": "navigation@2"
+        },
+        {
+          "command": "codeWorkbench.worktrees.refresh",
+          "when": "view == codeWorkbench.worktrees",
+          "group": "navigation@3"
         },
         {
           "command": "codeWorkbench.worktrees.addWithTask",
           "when": "view == codeWorkbench.worktrees",
-          "group": "navigation"
+          "group": "1_add@1"
         },
         {
           "command": "codeWorkbench.worktrees.addFromIssue",
           "when": "view == codeWorkbench.worktrees",
-          "group": "navigation"
+          "group": "1_add@2"
         },
         {
           "command": "codeWorkbench.worktrees.cleanupMerged",
           "when": "view == codeWorkbench.worktrees",
-          "group": "navigation@7"
+          "group": "2_manage@1"
         },
         {
           "command": "codeWorkbench.worktrees.switch",
@@ -580,6 +592,7 @@
     "watch": "node esbuild.mjs --watch",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "test": "vitest run",
     "dist": "npm run build && node -e \"require('fs').mkdirSync('../../release/extension',{recursive:true})\" && npx @vscode/vsce package --no-dependencies --out ../../release/extension/",
     "vscode:prepublish": "npm run build"
   },

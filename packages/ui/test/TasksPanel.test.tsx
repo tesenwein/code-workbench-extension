@@ -83,6 +83,68 @@ describe('TasksPanel', () => {
     expect(openInEditor).toHaveBeenCalledWith('root-1');
   });
 
+  it('page mode: clicking a task opens the inline detail editor, not the file', async () => {
+    const user = userEvent.setup();
+    const openInEditor = vi.fn(async () => {});
+    const api = mockApi([ROOT, SUB], { openInEditor });
+    render(<TasksPanel api={api} activeWorktree={null} worktrees={[]} pageMode />);
+
+    await user.click(await screen.findByText('Root task A'));
+    // Detail pane appears with an editable title field…
+    const pane = document.querySelector('.task-detail-pane');
+    expect(pane).not.toBeNull();
+    expect(within(pane as HTMLElement).getByPlaceholderText('Title')).toHaveValue('Root task A');
+    // …and the file was never opened.
+    expect(openInEditor).not.toHaveBeenCalled();
+
+    // Saving sends the patch through the update API.
+    const title = within(pane as HTMLElement).getByPlaceholderText('Title');
+    await user.clear(title);
+    await user.type(title, 'Renamed task');
+    await user.click(within(pane as HTMLElement).getByText('Save'));
+    expect(api.update).toHaveBeenCalledWith(
+      'root-1',
+      expect.objectContaining({ title: 'Renamed task' }),
+    );
+  });
+
+  it('page mode: status filter reveals done tasks', async () => {
+    const user = userEvent.setup();
+    const done = task({ id: 'done-1', title: 'Finished thing', status: 'done' });
+    render(
+      <TasksPanel api={mockApi([ROOT, done])} activeWorktree={null} worktrees={[]} pageMode />,
+    );
+
+    await screen.findByText('Root task A');
+    expect(screen.queryByText('Finished thing')).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByTitle('Filter by status'), 'all');
+    expect(await screen.findByText('Finished thing')).toBeInTheDocument();
+  });
+
+  it('page mode: tag filter narrows the list and grouping can switch to epic', async () => {
+    const user = userEvent.setup();
+    const tagged = task({ id: 'tag-1', title: 'Tagged task', tags: ['infra'], epic: 'platform' });
+    render(
+      <TasksPanel api={mockApi([ROOT, tagged])} activeWorktree={null} worktrees={[]} pageMode />,
+    );
+
+    await screen.findByText('Tagged task');
+    await user.selectOptions(screen.getByTitle('Filter by tag'), 'infra');
+    expect(screen.queryByText('Root task A')).not.toBeInTheDocument();
+    expect(screen.getByText('Tagged task')).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByTitle('Group tasks by'), 'epic');
+    expect(screen.getByText('platform')).toBeInTheDocument();
+  });
+
+  it('sidebar mode: no filter toolbar, rows expand inline as before', async () => {
+    render(<TasksPanel api={mockApi([ROOT, SUB])} activeWorktree={null} worktrees={[]} />);
+    await screen.findByText('Root task A');
+    expect(screen.queryByTitle('Filter by status')).not.toBeInTheDocument();
+    expect(document.querySelector('.task-detail-pane')).toBeNull();
+  });
+
   it('opens the subtask file from the subtask row button', async () => {
     const user = userEvent.setup();
     const openInEditor = vi.fn(async () => {});

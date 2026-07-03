@@ -8,7 +8,7 @@ import {
   WorktreeColor,
   WORKTREE_COLORS,
 } from './sessions';
-import { themeTokenDecls } from './webviewTheme';
+import { themeTokenDecls, hcOverrideCss } from './webviewTheme';
 
 const COLOR_SWATCH: Record<WorktreeColor, string> = {
   default: 'transparent',
@@ -63,6 +63,7 @@ export function renderPrefsHtml(worktreePath: string, state: PrefsPanelState): s
     --nav-w: 200px;
     --content-max: 640px;
   }
+  ${hcOverrideCss()}
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; padding: 0; }
   body {

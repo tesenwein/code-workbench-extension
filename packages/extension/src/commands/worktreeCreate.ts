@@ -89,6 +89,23 @@ export async function promptWorktree(repoRoot: string): Promise<WorktreeSpec | u
       label: '$(add) Create new branch…',
       pick: () => promptNewBranchWorktree(repoRoot, ''),
     },
+    {
+      label: '$(checklist) From task…',
+      description: 'branch off an unassigned workbench task',
+      pick: async () => {
+        // Hands off to the dedicated flow; it creates the worktree itself.
+        await vscode.commands.executeCommand('codeWorkbench.worktrees.addWithTask');
+        return undefined;
+      },
+    },
+    {
+      label: '$(github) From GitHub issue…',
+      description: 'branch off an open issue',
+      pick: async () => {
+        await vscode.commands.executeCommand('codeWorkbench.worktrees.addFromIssue');
+        return undefined;
+      },
+    },
   ];
   const availableLocal = local.filter((b) => !checkedOut.has(b));
   if (availableLocal.length) {

@@ -575,6 +575,104 @@ const TaskRow = React.memo(function TaskRow({
   );
 });
 
+// ── TaskDetailPane ────────────────────────────────────────────────────────────
+
+/** Full-width task editor for page mode — replaces "open the .md file" as the
+ *  primary way to work on a task. Always editable; subtasks inline below. */
+function TaskDetailPane({
+  task,
+  subtasks,
+  worktrees,
+  onUpdate,
+  onDelete,
+  onCreateSubtask,
+  onOpenInEditor,
+  onClose,
+}: {
+  task: WorkspaceTask;
+  subtasks: WorkspaceTask[];
+  worktrees: string[];
+  onUpdate: (id: string, patch: Partial<WorkspaceTask>) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+  onCreateSubtask: (parentId: string, title: string) => Promise<void>;
+  onOpenInEditor?: (id: string) => void;
+  onClose: () => void;
+}) {
+  const [addingSubtask, setAddingSubtask] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => () => clearTimeout(savedTimer.current), []);
+
+  return (
+    <div className="task-detail-pane">
+      <div className="task-detail-header">
+        <span className="task-detail-id" title={`Task ${task.id}`}>
+          {task.id.slice(0, 8)}
+        </span>
+        {saved && <span className="task-detail-saved">saved</span>}
+        {onOpenInEditor && (
+          <button
+            className="task-icon-btn"
+            title="Open backing .md file"
+            onClick={() => onOpenInEditor(task.id)}
+          >
+            ↗
+          </button>
+        )}
+        <button
+          className="task-delete-btn"
+          title="Delete task"
+          onClick={() => {
+            void onDelete(task.id);
+            onClose();
+          }}
+        >
+          🗑
+        </button>
+        <button className="task-icon-btn" title="Close editor" onClick={onClose}>
+          ✕
+        </button>
+      </div>
+      <TaskEditForm
+        key={task.id}
+        task={task}
+        worktrees={worktrees}
+        onSave={async (patch) => {
+          await onUpdate(task.id, patch);
+          setSaved(true);
+          clearTimeout(savedTimer.current);
+          savedTimer.current = setTimeout(() => setSaved(false), 1500);
+        }}
+        onCancel={onClose}
+      />
+      <div className="task-detail-subtasks">
+        <div className="task-detail-subhead">
+          <span>Subtasks</span>
+          <button className="task-action-btn" onClick={() => setAddingSubtask((x) => !x)}>
+            + Subtask
+          </button>
+        </div>
+        {subtasks.length === 0 && !addingSubtask && (
+          <div className="cw-empty">No subtasks.</div>
+        )}
+        {subtasks.map((sub) => (
+          <SubtaskRow key={sub.id} task={sub} onUpdate={onUpdate} onDelete={onDelete} />
+        ))}
+        {addingSubtask && (
+          <AddSubtaskForm
+            onSubmit={async (t) => {
+              await onCreateSubtask(task.id, t);
+              setAddingSubtask(false);
+            }}
+            onCancel={() => setAddingSubtask(false)}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── NewTaskForm ───────────────────────────────────────────────────────────────
 
 function NewTaskForm({
@@ -717,7 +815,15 @@ interface TasksPanelProps {
   /** Suppress the in-panel + / ↻ buttons when the host chrome already
    *  provides Create/Refresh actions (e.g. a VS Code view title bar). */
   hideHeaderActions?: boolean;
+  /** Full editor-tab board mode: clicking a task opens an inline detail
+   *  editor pane (instead of the accordion/file), and a filter toolbar
+   *  (group-by, status, tag) appears next to the search box. */
+  pageMode?: boolean;
 }
+
+type GroupBy = 'worktree' | 'epic' | 'none';
+type StatusFilter = 'active' | 'all' | TaskStatusValue;
+type TaskStatusValue = WorkspaceTask['status'];
 
 export function TasksPanel({
   api,
@@ -731,11 +837,16 @@ export function TasksPanel({
   headerExtra,
   hideHeaderTitle,
   hideHeaderActions,
+  pageMode = false,
 }: TasksPanelProps) {
   const [tasks, setTasks] = useState<WorkspaceTask[]>([]);
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState(false);
   const [search, setSearch] = useState('');
+  const [groupBy, setGroupBy] = useState<GroupBy>('worktree');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
+  const [tagFilter, setTagFilter] = useState('');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [bodyHeight, setBodyHeight] = useState(280);
   const dragRef = useRef<{ startY: number; startHeight: number } | null>(null);
   const requestIdRef = useRef(0);
@@ -827,21 +938,69 @@ export function TasksPanel({
   );
 
   const childMap = useMemo(() => buildChildMap(tasks), [tasks]);
-  const rootTasks = useMemo(() => tasks.filter((t) => !t.parentId && t.status !== 'done'), [tasks]);
+  const rootTasks = useMemo(() => {
+    const roots = tasks.filter((t) => !t.parentId);
+    // The sidebar always hides done tasks; page mode filters by status.
+    const status = pageMode ? statusFilter : 'active';
+    return roots.filter((t) =>
+      status === 'all' ? true : status === 'active' ? t.status !== 'done' : t.status === status,
+    );
+  }, [tasks, pageMode, statusFilter]);
+
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    for (const t of tasks) for (const tag of t.tags ?? []) set.add(tag);
+    return [...set].sort();
+  }, [tasks]);
 
   const q = search.trim().toLowerCase();
   const filteredRoots = useMemo(() => {
-    if (!q) return rootTasks;
-    return rootTasks.filter((t) => {
+    let roots = rootTasks;
+    if (pageMode && tagFilter) roots = roots.filter((t) => (t.tags ?? []).includes(tagFilter));
+    if (!q) return roots;
+    return roots.filter((t) => {
       const subs = childMap.get(t.id) ?? [];
       const hay = [t.title, t.description, t.memo, ...(t.tags ?? []), ...subs.map((s) => s.title)]
         .join(' ')
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [rootTasks, childMap, q]);
+  }, [rootTasks, childMap, q, pageMode, tagFilter]);
 
-  const groupedRoots = useMemo(() => groupByWorktree(filteredRoots), [filteredRoots]);
+  /* Sections: worktree grouping keeps the nested epic headers; epic grouping
+   * promotes epics to top level; none is one flat list. */
+  const sections = useMemo(() => {
+    const mode: GroupBy = pageMode ? groupBy : 'worktree';
+    if (mode === 'worktree') {
+      return groupByWorktree(filteredRoots).map(({ worktree, tasks: wtTasks }) => ({
+        key: worktree ?? '__unassigned__',
+        label: worktree ? (worktree.split(/[/\\]/).pop() ?? worktree) : 'Unassigned',
+        labelKind: 'worktree' as const,
+        epics: groupByEpic(wtTasks),
+      }));
+    }
+    if (mode === 'epic') {
+      return groupByEpic(filteredRoots).map(({ epic, tasks: epicTasks }) => ({
+        key: epic ?? '__no_epic__',
+        label: epic ?? 'No epic',
+        labelKind: 'epic' as const,
+        epics: [{ epic: null, tasks: epicTasks }],
+      }));
+    }
+    return [
+      {
+        key: '__all__',
+        label: null,
+        labelKind: 'none' as const,
+        epics: [{ epic: null, tasks: filteredRoots }],
+      },
+    ];
+  }, [filteredRoots, pageMode, groupBy]);
+
+  const selectedTask = useMemo(
+    () => (pageMode && selectedId ? (tasks.find((t) => t.id === selectedId) ?? null) : null),
+    [pageMode, selectedId, tasks],
+  );
 
   return (
     <div className="cw-pane">
@@ -900,37 +1059,89 @@ export function TasksPanel({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+            {pageMode && (
+              <>
+                <select
+                  className="task-select task-toolbar-select"
+                  title="Group tasks by"
+                  value={groupBy}
+                  onChange={(e) => setGroupBy(e.target.value as GroupBy)}
+                >
+                  <option value="worktree">By worktree</option>
+                  <option value="epic">By epic</option>
+                  <option value="none">Flat list</option>
+                </select>
+                <select
+                  className="task-select task-toolbar-select"
+                  title="Filter by status"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                >
+                  <option value="active">Active</option>
+                  <option value="all">All (incl. done)</option>
+                  <option value="open">Open</option>
+                  <option value="in-progress">In progress</option>
+                  <option value="done">Done</option>
+                </select>
+                <select
+                  className="task-select task-toolbar-select"
+                  title="Filter by tag"
+                  value={tagFilter}
+                  onChange={(e) => setTagFilter(e.target.value)}
+                >
+                  <option value="">All tags</option>
+                  {allTags.map((tag) => (
+                    <option key={tag} value={tag}>
+                      #{tag}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
           </div>
+          {/* display:contents keeps the sidebar layout identical — the wrapper
+              only becomes a real flex row in page mode (list + detail pane). */}
           <div
-            style={
-              resizable
-                ? { height: bodyHeight, overflowY: 'auto', flex: '0 0 auto' }
-                : { flex: 1, overflowY: 'auto' }
-            }
+            className={pageMode ? 'task-page-layout' : undefined}
+            style={pageMode ? undefined : { display: 'contents' }}
           >
-            {adding && (
-              <NewTaskForm
-                worktrees={worktrees}
-                onSubmit={async (t) => {
-                  await createTask(t);
-                  setAdding(false);
-                }}
-                onCancel={() => setAdding(false)}
-              />
-            )}
+            <div
+              style={
+                resizable
+                  ? { height: bodyHeight, overflowY: 'auto', flex: '0 0 auto' }
+                  : { flex: 1, overflowY: 'auto', minWidth: 0 }
+              }
+            >
+              {adding && (
+                <NewTaskForm
+                  worktrees={worktrees}
+                  onSubmit={async (t) => {
+                    await createTask(t);
+                    setAdding(false);
+                  }}
+                  onCancel={() => setAdding(false)}
+                />
+              )}
 
-            {filteredRoots.length === 0 && !adding && (
-              <div className="cw-empty">{q ? 'No matching tasks.' : 'No project tasks yet.'}</div>
-            )}
+              {filteredRoots.length === 0 && !adding && (
+                <div className="cw-empty">{q ? 'No matching tasks.' : 'No project tasks yet.'}</div>
+              )}
 
-            {groupedRoots.map(({ worktree, tasks: wtTasks }) => {
-              const wtLabel = worktree ? (worktree.split(/[/\\]/).pop() ?? worktree) : 'Unassigned';
-              return (
-                <React.Fragment key={worktree ?? '__unassigned__'}>
-                  <div className="task-worktree-group-header" title={worktree ?? 'Unassigned'}>
-                    {wtLabel}
-                  </div>
-                  {groupByEpic(wtTasks).map(({ epic, tasks: epicTasks }) => (
+              {sections.map((section) => (
+                <React.Fragment key={section.key}>
+                  {section.label != null && (
+                    <div
+                      className={
+                        section.labelKind === 'epic'
+                          ? 'task-epic-group-header'
+                          : 'task-worktree-group-header'
+                      }
+                      title={section.label}
+                    >
+                      {section.label}
+                    </div>
+                  )}
+                  {section.epics.map(({ epic, tasks: epicTasks }) => (
                     <React.Fragment key={epic ?? '__no_epic__'}>
                       {epic != null && (
                         <div className="task-epic-group-header" title={`Epic: ${epic}`}>
@@ -947,15 +1158,27 @@ export function TasksPanel({
                           onUpdate={updateTask}
                           onDelete={deleteTask}
                           onCreateSubtask={handleCreateSubtask}
-                          onOpenTask={onOpenTask}
-                          onOpenInEditor={openInEditor}
+                          onOpenTask={pageMode ? setSelectedId : onOpenTask}
+                          onOpenInEditor={pageMode ? undefined : openInEditor}
                         />
                       ))}
                     </React.Fragment>
                   ))}
                 </React.Fragment>
-              );
-            })}
+              ))}
+            </div>
+            {selectedTask && (
+              <TaskDetailPane
+                task={selectedTask}
+                subtasks={childMap.get(selectedTask.id) ?? NO_SUBTASKS}
+                worktrees={worktrees}
+                onUpdate={updateTask}
+                onDelete={deleteTask}
+                onCreateSubtask={handleCreateSubtask}
+                onOpenInEditor={openInEditor}
+                onClose={() => setSelectedId(null)}
+              />
+            )}
           </div>
         </>
       )}

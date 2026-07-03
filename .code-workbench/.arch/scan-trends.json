@@ -1,0 +1,35 @@
+{
+  "slug": "scan-trends",
+  "name": "Scan trends",
+  "description": "Per-repo history of code-health scan results. scanTrends.ts appends one {t, total, active} point per completed scan and feature (dead-code, duplicates, type-escapes) to .code-workbench/scan-trends.json, capped at 60 points per feature. The scan pages' scan RPC returns the active-count series as `trend` (ScanPaneApi.scan optional field); ScanPanel renders it as a TrendSparkline (single 2px accent line, last-point dot, tooltip with first→last counts) in the tabs row. Trend persistence is best-effort — a write failure never fails the scan.",
+  "files": [
+    "packages/extension/src/scanTrends.ts",
+    "packages/extension/src/scanPages.ts",
+    "packages/ui/src/components/ScanPanel.tsx",
+    "packages/ui/src/types.ts"
+  ],
+  "guidelines": [
+    "Trend points record active (unacked) counts — that is the series users watch; total is kept for context.",
+    "The trend rides in the scan RPC result, not a separate event — keeps ScanPaneApi the single host contract.",
+    "Cap the series (MAX_POINTS) — the file is git-adjacent state and must stay small."
+  ],
+  "anti_patterns": [
+    "Failing a scan because the trend write failed.",
+    "Adding axes/legend to the sparkline — it is a single-series glance, exact numbers live in the tooltip."
+  ],
+  "decisions": [],
+  "tags": [
+    "scan history",
+    "sparkline",
+    "code health",
+    "trend",
+    "dead code",
+    "duplicates",
+    "type safety"
+  ],
+  "dependsOn": [
+    "editor-tab-pages"
+  ],
+  "updatedAt": "2026-07-03T08:12:50.358Z",
+  "createdAt": "2026-07-03T08:12:50.358Z"
+}

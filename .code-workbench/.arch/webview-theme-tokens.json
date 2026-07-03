@@ -1,0 +1,53 @@
+{
+  "slug": "webview-theme-tokens",
+  "name": "Webview theme tokens",
+  "description": "Shared design-token layer for all extension webviews. webviewTheme.ts exports themeTokenDecls(surface: 'sidebar' | 'editor') which emits the CSS custom-property block (--bg-*, --fg-*, --clay*, --border*, --ok/--warn/--danger, fonts, radii) derived from the active VS Code theme's --vscode-* variables via color-mix(), with the former Paper & Clay palette values as fallbacks. Additions: setAccentOverride(hex) tints --clay with the window's worktree color (extension.ts syncAccent maps prefs color → WORKTREE_DOT); hcOverrideCss() emits a body[data-vscode-theme-kind*=\"high-contrast\"] block flattening elevation/fades and switching borders to contrastBorder — appended by every host; themeTokensPanel.ts (command codeWorkbench.themeTokens) is an inspector page showing each token's swatch, resolved value, and source declaration. Consumed by reactWebview.ts, panelTheme.ts (panelCss() built per call, not at import), prefsPanelHtml.ts, globalPrefsPanelHtml.ts, brandView.ts. A contract test (packages/extension/test/webviewTheme.test.ts) asserts every non---vscode-* token consumed by ui/styles.css is declared.",
+  "files": [
+    "packages/extension/src/webviewTheme.ts",
+    "packages/extension/src/themeTokensPanel.ts",
+    "packages/extension/src/reactWebview.ts",
+    "packages/extension/src/panelTheme.ts",
+    "packages/extension/src/prefsPanelHtml.ts",
+    "packages/extension/src/globalPrefsPanelHtml.ts",
+    "packages/extension/src/brandView.ts",
+    "packages/ui/src/styles.css",
+    "packages/extension/test/webviewTheme.test.ts"
+  ],
+  "guidelines": [
+    "Never hardcode palette hex/rgba values in webview CSS — reference the tokens, or derive tints with color-mix(in srgb, var(--token) N%, transparent).",
+    "Accent (--clay) resolves: worktree accent override → --vscode-button-background → --vscode-focusBorder → #d97757; --fg-2 prefers --vscode-descriptionForeground; --warn prefers --vscode-editorWarning-foreground; --border falls back widget-border → panel-border → mix.",
+    "Font tokens follow user settings: --font-ui = var(--vscode-font-family, …), --font-mono = var(--vscode-editor-font-family, …) — no @font-face is bundled.",
+    "Any host emitting the token block must also append hcOverrideCss() right after it.",
+    "Do not compute token CSS at module load — the accent override is set during activation; build the CSS per webview creation (see panelCss()).",
+    "Sidebar webviews use surface 'sidebar'; editor-tab pages use 'editor'.",
+    "Elevation steps (--bg-1..3) and fg fades (--fg-1..4) are color-mix ratios of --fg-0 into --bg-0; keep color-scheme: light dark.",
+    "When adding a token that ui/styles.css consumes, the contract test must keep passing."
+  ],
+  "anti_patterns": [
+    "Adding a new webview host with its own hardcoded :root palette instead of importing themeTokenDecls.",
+    "Using rgba(217,119,87, …) or other Paper & Clay literals in panel CSS.",
+    "Sourcing the accent from --vscode-focusBorder alone — prefer button-background first.",
+    "Caching themeTokenDecls output in a module-level const — it freezes the accent override."
+  ],
+  "decisions": [
+    "Worktree tint is applied at webview creation time only — already-open panels keep their accent until recreated; accepted for simplicity."
+  ],
+  "tags": [
+    "theme",
+    "design tokens",
+    "webview styling",
+    "color-mix",
+    "paper and clay",
+    "dark mode",
+    "light mode",
+    "high contrast",
+    "css variables",
+    "fonts",
+    "accent color",
+    "worktree tint",
+    "token inspector"
+  ],
+  "dependsOn": [],
+  "updatedAt": "2026-07-03T08:13:12.450Z",
+  "createdAt": "2026-07-03T06:36:37.887Z"
+}

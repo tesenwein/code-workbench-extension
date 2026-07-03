@@ -21,6 +21,9 @@ import { registerCodeHealthView } from './codeHealthView';
 import { showTasksPage, refreshTasksPage, isTasksPageOpen } from './tasksPage';
 import { ArchViewProvider } from './archView';
 import { showSearchPanel } from './searchPanel';
+import { setAccentOverride } from './webviewTheme';
+import { showThemeTokensPanel } from './themeTokensPanel';
+import { WORKTREE_DOT } from './panelTheme';
 
 let repoRoot: string | undefined;
 let repoKey: string | undefined;
@@ -150,6 +153,15 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
   await sessionMgr.setRepoKey(repoKey);
   sessionMgr.setCurrentWorktreePath(repoRoot);
 
+  // Tint every webview with this window's worktree color ("which worktree am
+  // I in" at a glance). Panels created after a color change pick up the new
+  // accent; already-open ones keep theirs until recreated.
+  const syncAccent = () => {
+    const color = repoRoot ? sessionMgr.getPrefs(repoRoot).color : undefined;
+    setAccentOverride(color && color !== 'default' ? WORKTREE_DOT[color] : undefined);
+  };
+  syncAccent();
+
   // Resume any worktree removal that was deferred across a window reload
   // (we switch folders before deleting the active worktree, which kills the
   // running command — so we persist intent and finish here).
@@ -186,6 +198,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     () => sessionMgr.getActiveWorktree(),
     (wt) => sessionMgr.listForWorktree(wt).length,
     (wt) => sessionMgr.getPrefs(wt).color,
+    (wt) => sessionMgr.getPrefs(wt).note,
   );
   const tasksProvider = new TasksProvider(
     () => repoKey,
@@ -211,11 +224,29 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     statusBar.show();
   };
   sessionMgr.onDidChange(() => {
+    syncAccent();
     worktreesProvider.refresh();
     tasksProvider.refresh();
     refreshStatusBar();
   });
   refreshStatusBar();
+
+  // Surface this worktree's handoff note once per window — the "where did I
+  // leave off" breadcrumb written at the end of the previous session.
+  if (repoRoot) {
+    const note = sessionMgr.getPrefs(repoRoot).note;
+    if (note) {
+      void vscode.window
+        .showInformationMessage(`Handoff note (${path.basename(repoRoot)}): ${note}`, 'Edit', 'Clear')
+        .then(async (choice) => {
+          if (choice === 'Edit') {
+            await vscode.commands.executeCommand('codeWorkbench.worktrees.editNote');
+          } else if (choice === 'Clear' && repoRoot) {
+            await sessionMgr.setPrefs(repoRoot, { note: undefined });
+          }
+        });
+    }
+  }
 
   const archProvider = new ArchViewProvider(ctx, () => repoRoot);
 
@@ -241,6 +272,25 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     vscode.commands.registerCommand('codeWorkbench.searchCode', () =>
       runSearchCodeCommand(ctx, repoRoot),
     ),
+    vscode.commands.registerCommand('codeWorkbench.themeTokens', () => showThemeTokensPanel()),
+    vscode.commands.registerCommand(
+      'codeWorkbench.worktrees.editNote',
+      async (item?: WorktreeItem) => {
+        const target = item?.wt.path ?? repoRoot;
+        if (!target) {
+          vscode.window.showWarningMessage('Open a git repository first.');
+          return;
+        }
+        const current = sessionMgr.getPrefs(target).note ?? '';
+        const next = await vscode.window.showInputBox({
+          title: `Handoff note — ${path.basename(target)}`,
+          prompt: 'Where did you leave off? Shown when the next session opens this worktree. Empty clears the note.',
+          value: current,
+        });
+        if (next === undefined) return;
+        await sessionMgr.setPrefs(target, { note: next.trim() || undefined });
+      },
+    ),
     vscode.window.registerWebviewViewProvider(
       BrandViewProvider.viewId,
       new BrandViewProvider(sessionMgr),
@@ -258,6 +308,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
       await detectRepoRoot();
       await sessionMgr.setRepoKey(repoKey);
       sessionMgr.setCurrentWorktreePath(repoRoot);
+      syncAccent();
       worktreesProvider.refresh();
       tasksProvider.refresh();
       archProvider.onRepoChanged();

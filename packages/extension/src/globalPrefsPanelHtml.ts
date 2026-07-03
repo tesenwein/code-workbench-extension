@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { randomBytes } from 'crypto';
 import { CLAUDE_MODELS, EFFORT_LABELS } from './sessions';
 import type { GlobalPrefs } from './globalPrefs';
-import { themeTokenDecls } from './webviewTheme';
+import { themeTokenDecls, hcOverrideCss } from './webviewTheme';
 
 /** Serialize to JSON and escape characters that could break an inline script context. */
 function safeJson(value: unknown): string {
@@ -32,6 +32,7 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
     --nav-w: 200px;
     --content-max: 640px;
   }
+  ${hcOverrideCss()}
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; padding: 0; }
   body {

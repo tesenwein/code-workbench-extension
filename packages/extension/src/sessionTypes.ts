@@ -96,6 +96,8 @@ export interface WorktreePrefs {
   effort: ClaudeEffort;
   yolo: boolean;
   color: WorktreeColor;
+  /** Handoff note — "where I left off" for the next session in this worktree. */
+  note?: string;
 }
 
 /** A user-defined launch profile from the `codeWorkbench.sessionProfiles`

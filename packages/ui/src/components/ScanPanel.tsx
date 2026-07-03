@@ -46,6 +46,34 @@ const DEFAULT_HEIGHT = 180;
 const MIN_HEIGHT = 80;
 const MAX_HEIGHT = 560;
 
+/** Active-count history across scans as a tiny inline line — a single muted
+ *  2px series, no axes; the exact numbers live in the title tooltip. */
+function TrendSparkline({ points }: { points: number[] }) {
+  const w = 64;
+  const h = 14;
+  const pad = 2;
+  const max = Math.max(...points, 1);
+  const step = points.length > 1 ? (w - pad * 2) / (points.length - 1) : 0;
+  const y = (v: number) => h - pad - (v / max) * (h - pad * 2);
+  const path = points.map((v, i) => `${i === 0 ? 'M' : 'L'}${pad + i * step},${y(v)}`).join(' ');
+  const first = points[0];
+  const last = points[points.length - 1];
+  return (
+    <svg
+      className="cw-trend-spark"
+      width={w}
+      height={h}
+      viewBox={`0 0 ${w} ${h}`}
+      role="img"
+      aria-label={`Active findings over last ${points.length} scans: ${first} → ${last}`}
+    >
+      <title>{`Active findings, last ${points.length} scans: ${first} → ${last}`}</title>
+      <path d={path} fill="none" stroke="var(--clay)" strokeWidth="2" strokeLinecap="round" />
+      <circle cx={pad + (points.length - 1) * step} cy={y(last)} r="2.5" fill="var(--clay)" />
+    </svg>
+  );
+}
+
 /**
  * Generic scan-result pane: a collapsible pane with Active / Acknowledged /
  * Excluded tabs and a scan / acknowledge / exclude workflow. Shared by
@@ -92,6 +120,7 @@ export function ScanPanel<T extends ScanItem>({
   // distinguish "never scanned" (show the hint) from "scanned, found nothing"
   // (show a clean confirmation) — without it an empty scan looks like a no-op.
   const [scanned, setScanned] = useState(false);
+  const [trend, setTrend] = useState<number[] | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [bodyHeight, setBodyHeight] = useState(DEFAULT_HEIGHT);
   const resizerStartY = useRef<number | null>(null);
@@ -131,13 +160,12 @@ export function ScanPanel<T extends ScanItem>({
     setScanning(true);
     setError(null);
     try {
-      const [{ items: scanned, ackedFingerprints: acked }, excluded] = await Promise.all([
-        api.scan(repoPath),
-        api.listExclude(repoPath),
-      ]);
+      const [{ items: scanned, ackedFingerprints: acked, trend: history }, excluded] =
+        await Promise.all([api.scan(repoPath), api.listExclude(repoPath)]);
       setItems(scanned);
       setAckedFingerprints(acked);
       setExcludeDirs(excluded);
+      setTrend(history);
       setScanned(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -303,6 +331,7 @@ export function ScanPanel<T extends ScanItem>({
               {hideHeaderTitle && (
                 <>
                   <span className="cw-tabs-spacer" />
+                  {trend && trend.length >= 2 && <TrendSparkline points={trend} />}
                   {(scanning || hasResults || scanned) && (
                     <span className="cw-tabs-meta">
                       {scanning

@@ -2,7 +2,7 @@
  *  (Worktrees, Tasks, Saved Sessions). Design tokens derive from the
  *  active VS Code theme (see webviewTheme.ts). */
 
-import { themeTokenDecls } from './webviewTheme';
+import { themeTokenDecls, hcOverrideCss } from './webviewTheme';
 
 /** Worktree accent colors for the webview panels. Brighter and more saturated
  *  than the terminal ANSI palette so they read clearly on the dark panel
@@ -24,9 +24,12 @@ export function makeNonce(): string {
   return t;
 }
 
-const PANEL_CSS = `
+/* Built per call, not at module load — the token block depends on the
+ * worktree accent override, which is set during activation. */
+const panelCss = () => `
   :root {${themeTokenDecls('sidebar')}
   }
+  ${hcOverrideCss()}
   * { box-sizing:border-box; }
   html,body { margin:0; padding:0; }
   body {
@@ -240,7 +243,7 @@ export function panelHtml(cspSource: string, nonce: string, script: string): str
 <head>
 <meta charset="utf-8" />
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource} https: data:; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';" />
-<style>${PANEL_CSS}</style>
+<style>${panelCss()}</style>
 </head>
 <body>
 <div id="root"></div>
