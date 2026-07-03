@@ -43,6 +43,12 @@ export function buildArchRpcHandlers(
       );
       await vscode.window.showTextDocument(doc, { preview: false });
     },
+    // Open the full-page Architecture board focused on this card (its formatted
+    // detail viewer) — the sidebar list's click target, since the narrow view
+    // has no room for a detail pane.
+    openInPage: async (slug) => {
+      await vscode.commands.executeCommand('codeWorkbench.arch.openAsPage', String(slug));
+    },
     search: async (query) => {
       const root = getRepoRoot();
       if (!root) return [];
