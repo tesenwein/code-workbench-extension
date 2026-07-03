@@ -93,12 +93,12 @@ describe('TasksPanel', () => {
     // Detail pane appears with an editable title field…
     const pane = document.querySelector('.task-detail-pane');
     expect(pane).not.toBeNull();
-    expect(within(pane as HTMLElement).getByPlaceholderText('Title')).toHaveValue('Root task A');
+    expect(within(pane as HTMLElement).getByPlaceholderText('What needs doing?')).toHaveValue('Root task A');
     // …and the file was never opened.
     expect(openInEditor).not.toHaveBeenCalled();
 
     // Saving sends the patch through the update API.
-    const title = within(pane as HTMLElement).getByPlaceholderText('Title');
+    const title = within(pane as HTMLElement).getByPlaceholderText('What needs doing?');
     await user.clear(title);
     await user.type(title, 'Renamed task');
     await user.click(within(pane as HTMLElement).getByText('Save'));
@@ -106,6 +106,25 @@ describe('TasksPanel', () => {
       'root-1',
       expect.objectContaining({ title: 'Renamed task' }),
     );
+  });
+
+  it('page mode: "+ New task" opens a blank create editor and creates the task', async () => {
+    const user = userEvent.setup();
+    const created = task({ id: 'new-1', title: 'Fresh task' });
+    const api = mockApi([ROOT], { create: vi.fn(async () => created) });
+    render(<TasksPanel api={api} activeWorktree={null} worktrees={[]} pageMode />);
+
+    await user.click(await screen.findByTitle('Create a new task'));
+    const pane = document.querySelector('.task-detail-pane');
+    expect(pane).not.toBeNull();
+    expect(within(pane as HTMLElement).getByText('New task')).toBeInTheDocument();
+
+    await user.type(
+      within(pane as HTMLElement).getByPlaceholderText('What needs doing?'),
+      'Fresh task',
+    );
+    await user.click(within(pane as HTMLElement).getByText('Create task'));
+    expect(api.create).toHaveBeenCalledWith(expect.objectContaining({ title: 'Fresh task' }));
   });
 
   it('page mode: status filter reveals done tasks', async () => {

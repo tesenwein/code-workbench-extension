@@ -31,6 +31,7 @@ function App() {
   // Bumped each time the host asks the page to focus a task, so re-selecting
   // the same id (e.g. reveal) still re-opens its editor.
   const [openTask, setOpenTask] = useState<{ id: string; nonce: number } | null>(null);
+  const [newTaskNonce, setNewTaskNonce] = useState(0);
 
   useEffect(() => {
     bridge.onEvent((name, payload) => {
@@ -38,6 +39,7 @@ function App() {
       else if (name === 'context') setCtx(payload as Context);
       else if (name === 'select-task')
         setOpenTask((prev) => ({ id: String(payload), nonce: (prev?.nonce ?? 0) + 1 }));
+      else if (name === 'new-task') setNewTaskNonce((n) => n + 1);
     });
     bridge.ready();
   }, []);
@@ -58,6 +60,7 @@ function App() {
       onOpenTask={isPage ? undefined : (id) => void bridge.call('openTaskPage', id)}
       openTaskId={openTask?.id}
       openTaskNonce={openTask?.nonce}
+      newTaskNonce={newTaskNonce}
     />
   );
 }

@@ -53,8 +53,10 @@ export function registerTaskCommands(ctx: vscode.ExtensionContext, deps: TaskCom
   ctx.subscriptions.push(
     vscode.commands.registerCommand('codeWorkbench.tasks.refresh', () => tasksProvider.refresh()),
 
+    // Top-level create opens the full-width board with a blank editor in the
+    // detail column (createSubtask below still uses the quick input flow).
     vscode.commands.registerCommand('codeWorkbench.tasks.create', async () => {
-      await createTaskFlow();
+      await vscode.commands.executeCommand('codeWorkbench.tasks.newInPage');
     }),
 
     vscode.commands.registerCommand('codeWorkbench.tasks.createSubtask', async (item: TaskItem) => {

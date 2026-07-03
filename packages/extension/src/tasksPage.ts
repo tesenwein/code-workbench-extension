@@ -11,12 +11,19 @@ import { buildTaskRpcHandlers, taskPanelContext } from './tasksView';
 
 const VIEW_TYPE = 'codeWorkbench.page.tasks';
 
+export interface TasksPageIntent {
+  /** Open this task in the detail editor once the board mounts. */
+  selectTaskId?: string;
+  /** Open a blank new-task editor in the detail column. */
+  create?: boolean;
+}
+
 export function showTasksPage(
   ctx: vscode.ExtensionContext,
   getRepoKey: () => string | undefined,
   getRepoRoot: () => string | undefined,
   getActiveWorktree: () => string | undefined,
-  selectTaskId?: string,
+  intent: TasksPageIntent = {},
 ): void {
   const pushContext = async (rpc: { postEvent(name: string, payload: unknown): void }) => {
     rpc.postEvent('context', {
@@ -26,8 +33,9 @@ export function showTasksPage(
       surface: 'page',
     });
   };
-  const pushSelection = (rpc: { postEvent(name: string, payload: unknown): void }) => {
-    if (selectTaskId) rpc.postEvent('select-task', selectTaskId);
+  const pushIntent = (rpc: { postEvent(name: string, payload: unknown): void }) => {
+    if (intent.selectTaskId) rpc.postEvent('select-task', intent.selectTaskId);
+    if (intent.create) rpc.postEvent('new-task', null);
   };
   showPage({
     ctx,
@@ -37,12 +45,12 @@ export function showTasksPage(
     handlers: buildTaskRpcHandlers(getRepoKey),
     onReady: (rpc) => {
       void pushContext(rpc);
-      pushSelection(rpc);
+      pushIntent(rpc);
     },
     onReveal: (rpc) => {
       rpc.postEvent('tasks-changed', null);
       void pushContext(rpc);
-      pushSelection(rpc);
+      pushIntent(rpc);
     },
     // The watcher poll skips while the page is hidden (see isTasksPageOpen),
     // so re-list on return to catch anything that changed meanwhile.

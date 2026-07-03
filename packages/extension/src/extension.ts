@@ -277,7 +277,18 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
         () => repoKey,
         () => repoRoot,
         () => sessionMgr.getActiveWorktree() ?? undefined,
-        typeof id === 'string' ? id : undefined,
+        { selectTaskId: typeof id === 'string' ? id : undefined },
+      ),
+    ),
+    // Creating a task opens the board with a blank editor in the detail
+    // column — no more input-box chain.
+    vscode.commands.registerCommand('codeWorkbench.tasks.newInPage', () =>
+      showTasksPage(
+        ctx,
+        () => repoKey,
+        () => repoRoot,
+        () => sessionMgr.getActiveWorktree() ?? undefined,
+        { create: true },
       ),
     ),
     vscode.commands.registerCommand('codeWorkbench.arch.refresh', () => archProvider.refresh()),

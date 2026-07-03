@@ -976,14 +976,44 @@
   background: color-mix(in srgb, var(--clay) 10%, var(--bg-2));
   border-color: var(--clay);
 }
-.task-new-form,
-.task-edit-form {
+.task-new-form {
   display: flex;
   flex-direction: column;
   gap: 6px;
   padding: 10px 12px 12px;
   border-bottom: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg-1) 80%, var(--bg-0));
+}
+/* Detail/create pane form — sits inside the card, so no strip chrome. */
+.task-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.task-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.task-field-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.task-edit-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+}
+.task-edit-actions .task-action-btn {
+  font-size: 11.5px;
+  padding: 5px 14px;
 }
 .task-input {
   font-size: 12px;
@@ -1085,20 +1115,41 @@
   display: flex;
   min-height: 0;
 }
+/* The list column is capped so it stays scannable on very wide editors; the
+ * detail pane takes the rest. */
+.task-list-col {
+  flex: 1 1 40%;
+  max-width: 620px;
+  min-width: 0;
+  overflow-y: auto;
+}
 .task-detail-pane {
-  flex: 0 0 42%;
-  max-width: 560px;
-  min-width: 300px;
+  flex: 1 1 58%;
+  min-width: 340px;
   overflow-y: auto;
   border-left: 1px solid var(--border);
   background: var(--bg-card);
-  padding: 10px 12px;
+  padding: 16px 20px 24px;
 }
 .task-detail-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+}
+.task-detail-header .task-priority-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+.task-detail-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-0);
+  margin-right: auto;
 }
 .task-detail-id {
   font-family: var(--font-mono);
@@ -1106,15 +1157,45 @@
   color: var(--fg-3);
   margin-right: auto;
 }
+.task-detail-header .task-status-chip {
+  margin-right: 0;
+}
 .task-detail-saved {
   font-family: var(--font-mono);
   font-size: 10px;
   color: var(--ok);
+  animation: cw-fade 0.2s ease both;
 }
 .task-detail-subtasks {
-  margin-top: 14px;
+  margin-top: 20px;
   border-top: 1px solid var(--rule);
-  padding-top: 8px;
+  padding-top: 12px;
+}
+/* Empty placeholder when nothing is selected. */
+.task-detail-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.task-detail-empty-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--fg-3);
+  text-align: center;
+}
+.task-detail-empty-icon {
+  font-size: 26px;
+  opacity: 0.5;
+}
+.task-detail-empty-text {
+  font-size: 12px;
+  color: var(--fg-3);
+}
+.task-toolbar-new {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 .task-detail-subhead {
   display: flex;
