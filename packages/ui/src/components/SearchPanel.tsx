@@ -77,7 +77,6 @@ function ResultCard({
   tokens: string[];
   onOpen: (r: CodeSearchResult) => void;
 }) {
-  const [hover, setHover] = useState(false);
   const rel =
     repoPath && result.file.startsWith(repoPath)
       ? result.file.slice(repoPath.length).replace(/^[/\\]/, '')
@@ -87,16 +86,20 @@ function ResultCard({
   const truncated = result.startLine + lines.length - 1 < result.endLine;
 
   return (
+    // Hover styling lives in CSS (.cws-card) — a hover state here would
+    // re-render the card and re-run the highlight regex over every snippet
+    // line on each mouse enter/leave.
     <div
+      className="cws-card"
       onClick={() => onOpen(result)}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
       style={{
-        border: `1px solid ${hover ? 'var(--vscode-focusBorder)' : 'var(--vscode-widget-border, #3a3a3a)'}`,
         borderRadius: 6,
         overflow: 'hidden',
+        // The results list is a fixed-height flex column; without this, cards
+        // (overflow:hidden ⇒ no automatic min size) all shrink to hairlines
+        // so the 50 results "fit" the viewport instead of scrolling.
+        flexShrink: 0,
         cursor: 'pointer',
-        transition: 'border-color 120ms ease',
         background: 'var(--vscode-editorWidget-background, transparent)',
       }}
     >
@@ -114,13 +117,11 @@ function ResultCard({
         </span>
         {kindBadge(result.kind)}
         <span
+          className="cws-card-path"
           style={{
             marginLeft: 'auto',
             fontSize: 11,
             fontFamily: mono,
-            color: hover
-              ? 'var(--vscode-textLink-foreground, #6ab0f3)'
-              : 'var(--vscode-descriptionForeground)',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',

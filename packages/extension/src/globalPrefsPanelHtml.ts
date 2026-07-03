@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { randomBytes } from 'crypto';
 import { CLAUDE_MODELS, EFFORT_LABELS } from './sessions';
 import type { GlobalPrefs } from './globalPrefs';
+import { themeTokenDecls } from './webviewTheme';
 
 /** Serialize to JSON and escape characters that could break an inline script context. */
 function safeJson(value: unknown): string {
@@ -25,29 +26,7 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
 <meta charset="utf-8" />
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';" />
 <style>
-  :root {
-    color-scheme: dark;
-    --bg-0: #181715;
-    --bg-1: #1f1e1c;
-    --bg-2: #262522;
-    --bg-3: #2f2e2a;
-    --bg-card: #1c1b19;
-    --fg-0: #f3f0e7;
-    --fg-1: #c4c0b4;
-    --fg-2: #8b877c;
-    --fg-3: #5f5c54;
-    --fg-4: #403d38;
-    --clay: #d97757;
-    --clay-bright: #e8916f;
-    --clay-deep: #b85c3e;
-    --clay-ghost: rgba(217,119,87, 0.12);
-    --clay-line: rgba(217,119,87, 0.30);
-    --border: #34322e;
-    --border-soft: #28262300;
-    --rule: #2a2825;
-    --font-ui: 'Hanken Grotesk', system-ui, sans-serif;
-    --font-serif: 'Newsreader', 'Iowan Old Style', Georgia, serif;
-    --font-mono: 'JetBrains Mono', Menlo, monospace;
+  :root {${themeTokenDecls('editor')}
     --radius: 6px;
     --radius-sm: 4px;
     --nav-w: 200px;
@@ -67,8 +46,8 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
     position: fixed; inset: 0;
     pointer-events: none; z-index: -1;
     background-image:
-      radial-gradient(circle at 8% -5%, rgba(217,119,87,0.10), transparent 38%),
-      radial-gradient(circle at 110% 110%, rgba(217,119,87,0.06), transparent 50%);
+      radial-gradient(circle at 8% -5%, color-mix(in srgb, var(--clay) 10%, transparent), transparent 38%),
+      radial-gradient(circle at 110% 110%, color-mix(in srgb, var(--clay) 6%, transparent), transparent 50%);
     background-repeat: no-repeat;
   }
 
@@ -323,7 +302,7 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
     transition: all .14s ease;
   }
   .iconbtn:hover { border-color: var(--clay-line); color: var(--fg-0); background: var(--bg-2); }
-  .iconbtn.danger:hover { color: #e87060; border-color: rgba(232,112,96,0.42); }
+  .iconbtn.danger:hover { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 42%, transparent); }
 
   .addbtn {
     margin-top: 4px;

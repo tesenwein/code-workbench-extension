@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": 1782972547476,
+  "generatedAt": 1783058612574,
   "root": "/Users/theodoresenwein/Code/code-workbench-extension",
   "groups": [
     {
@@ -45,8 +45,8 @@
           "file": "packages/ui/src/components/DuplicatesPanel.tsx",
           "name": "DuplicatesPanel",
           "kind": "function",
-          "startLine": 96,
-          "endLine": 140,
+          "startLine": 149,
+          "endLine": 193,
           "lines": 45
         },
         {
@@ -260,38 +260,6 @@
       ]
     },
     {
-      "cloneType": "renamed",
-      "similarity": 1,
-      "count": 3,
-      "fingerprint": "cd2f9f123c56ece5",
-      "members": [
-        {
-          "file": "packages/extension/src/deadCodeView.ts",
-          "name": "DeadCodeViewProvider",
-          "kind": "class",
-          "startLine": 6,
-          "endLine": 21,
-          "lines": 16
-        },
-        {
-          "file": "packages/extension/src/duplicatesView.ts",
-          "name": "DuplicatesViewProvider",
-          "kind": "class",
-          "startLine": 6,
-          "endLine": 21,
-          "lines": 16
-        },
-        {
-          "file": "packages/extension/src/typeEscapeView.ts",
-          "name": "TypeEscapeViewProvider",
-          "kind": "class",
-          "startLine": 6,
-          "endLine": 21,
-          "lines": 16
-        }
-      ]
-    },
-    {
       "cloneType": "exact",
       "similarity": 1,
       "count": 2,
@@ -312,38 +280,6 @@
           "startLine": 100,
           "endLine": 122,
           "lines": 23
-        }
-      ]
-    },
-    {
-      "cloneType": "renamed",
-      "similarity": 1,
-      "count": 3,
-      "fingerprint": "d928775c636a25fe",
-      "members": [
-        {
-          "file": "packages/extension/src/deadCodeView.ts",
-          "name": "constructor",
-          "kind": "method",
-          "startLine": 9,
-          "endLine": 20,
-          "lines": 12
-        },
-        {
-          "file": "packages/extension/src/duplicatesView.ts",
-          "name": "constructor",
-          "kind": "method",
-          "startLine": 9,
-          "endLine": 20,
-          "lines": 12
-        },
-        {
-          "file": "packages/extension/src/typeEscapeView.ts",
-          "name": "constructor",
-          "kind": "method",
-          "startLine": 9,
-          "endLine": 20,
-          "lines": 12
         }
       ]
     },
@@ -400,6 +336,30 @@
           "startLine": 37,
           "endLine": 54,
           "lines": 18
+        }
+      ]
+    },
+    {
+      "cloneType": "structural",
+      "similarity": 0.932,
+      "count": 2,
+      "fingerprint": "b7fa4374358717a6",
+      "members": [
+        {
+          "file": "packages/extension/webview/arch.tsx",
+          "name": "App",
+          "kind": "function",
+          "startLine": 17,
+          "endLine": 32,
+          "lines": 16
+        },
+        {
+          "file": "packages/extension/webview/search.tsx",
+          "name": "App",
+          "kind": "function",
+          "startLine": 15,
+          "endLine": 34,
+          "lines": 20
         }
       ]
     },
@@ -469,8 +429,8 @@
           "file": "packages/ui/src/components/DuplicatesPanel.tsx",
           "name": "<anonymous>",
           "kind": "function",
-          "startLine": 127,
-          "endLine": 137,
+          "startLine": 180,
+          "endLine": 190,
           "lines": 11
         },
         {
@@ -695,22 +655,22 @@
       "cloneType": "renamed",
       "similarity": 1,
       "count": 2,
-      "fingerprint": "55a0a9bb736db79a",
+      "fingerprint": "2841c928b23fb5cb",
       "members": [
         {
-          "file": "packages/extension/src/scanViewProvider.ts",
+          "file": "packages/extension/src/scanPages.ts",
           "name": "ack",
           "kind": "function",
-          "startLine": 76,
-          "endLine": 88,
+          "startLine": 122,
+          "endLine": 134,
           "lines": 13
         },
         {
-          "file": "packages/extension/src/scanViewProvider.ts",
+          "file": "packages/extension/src/scanPages.ts",
           "name": "excludeDir",
           "kind": "function",
-          "startLine": 89,
-          "endLine": 101,
+          "startLine": 135,
+          "endLine": 147,
           "lines": 13
         }
       ]
@@ -784,6 +744,30 @@
           "startLine": 117,
           "endLine": 127,
           "lines": 11
+        }
+      ]
+    },
+    {
+      "cloneType": "renamed",
+      "similarity": 1,
+      "count": 2,
+      "fingerprint": "a22dc201790a18d8",
+      "members": [
+        {
+          "file": "packages/extension/src/commands/taskCommands.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 88,
+          "endLine": 96,
+          "lines": 9
+        },
+        {
+          "file": "packages/extension/src/commands/taskCommands.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 98,
+          "endLine": 106,
+          "lines": 9
         }
       ]
     }

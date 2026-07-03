@@ -8,6 +8,7 @@ import {
   WorktreeColor,
   WORKTREE_COLORS,
 } from './sessions';
+import { themeTokenDecls } from './webviewTheme';
 
 const COLOR_SWATCH: Record<WorktreeColor, string> = {
   default: 'transparent',
@@ -56,28 +57,7 @@ export function renderPrefsHtml(worktreePath: string, state: PrefsPanelState): s
 <meta charset="utf-8" />
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';" />
 <style>
-  :root {
-    color-scheme: dark;
-    --bg-0: #181715;
-    --bg-1: #1f1e1c;
-    --bg-2: #262522;
-    --bg-3: #2f2e2a;
-    --bg-card: #1c1b19;
-    --fg-0: #f3f0e7;
-    --fg-1: #c4c0b4;
-    --fg-2: #8b877c;
-    --fg-3: #5f5c54;
-    --fg-4: #403d38;
-    --clay: #d97757;
-    --clay-bright: #e8916f;
-    --clay-deep: #b85c3e;
-    --clay-ghost: rgba(217,119,87, 0.12);
-    --clay-line: rgba(217,119,87, 0.30);
-    --border: #34322e;
-    --rule: #2a2825;
-    --font-ui: 'Hanken Grotesk', system-ui, sans-serif;
-    --font-serif: 'Newsreader', 'Iowan Old Style', Georgia, serif;
-    --font-mono: 'JetBrains Mono', Menlo, monospace;
+  :root {${themeTokenDecls('editor')}
     --radius: 6px;
     --radius-sm: 4px;
     --nav-w: 200px;
@@ -97,8 +77,8 @@ export function renderPrefsHtml(worktreePath: string, state: PrefsPanelState): s
     position: fixed; inset: 0;
     pointer-events: none; z-index: -1;
     background-image:
-      radial-gradient(circle at 8% -5%, rgba(217,119,87,0.10), transparent 38%),
-      radial-gradient(circle at 110% 110%, rgba(217,119,87,0.06), transparent 50%);
+      radial-gradient(circle at 8% -5%, color-mix(in srgb, var(--clay) 10%, transparent), transparent 38%),
+      radial-gradient(circle at 110% 110%, color-mix(in srgb, var(--clay) 6%, transparent), transparent 50%);
     background-repeat: no-repeat;
   }
 

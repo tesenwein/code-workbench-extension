@@ -10,8 +10,7 @@
   },
   "categories": [
     "Other",
-    "SCM Providers",
-    "Themes"
+    "SCM Providers"
   ],
   "icon": "media/icon.png",
   "repository": {
@@ -28,13 +27,6 @@
     "terminalDataWriteEvent"
   ],
   "contributes": {
-    "themes": [
-      {
-        "label": "Code Workbench — Paper & Clay",
-        "uiTheme": "vs-dark",
-        "path": "./themes/code-workbench-color-theme.json"
-      }
-    ],
     "viewsContainers": {
       "activitybar": [
         {
