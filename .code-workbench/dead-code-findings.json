@@ -1,15 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": 1782972514023,
+  "generatedAt": 1783058640282,
   "root": "/Users/theodoresenwein/Code/code-workbench-extension",
-  "items": [
-    {
-      "kind": "unused-local",
-      "file": "packages/ui/test/TasksPanel.test.tsx",
-      "name": "waitFor",
-      "startLine": 2,
-      "detail": "'waitFor' is declared but its value is never read.",
-      "fingerprint": "1b1076b2b579b074"
-    }
-  ]
+  "items": []
 }

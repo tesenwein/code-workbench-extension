@@ -31,6 +31,12 @@ export function showTasksPage(
       rpc.postEvent('tasks-changed', null);
       void pushContext(rpc);
     },
+    // The watcher poll skips while the page is hidden (see isTasksPageOpen),
+    // so re-list on return to catch anything that changed meanwhile.
+    onVisible: (rpc) => {
+      rpc.postEvent('tasks-changed', null);
+      void pushContext(rpc);
+    },
   });
 }
 
@@ -40,8 +46,9 @@ export function refreshTasksPage(): void {
   getPage(VIEW_TYPE)?.rpc?.postEvent('tasks-changed', null);
 }
 
-/** Whether the tasks page tab is open — keeps the tasks file-watcher poll
- *  running even while the sidebar view is hidden. */
+/** Whether the tasks page tab is currently VISIBLE — keeps the tasks
+ *  file-watcher poll running while the user is looking at the board. A
+ *  hidden (retained) tab doesn't poll; onVisible re-lists on return. */
 export function isTasksPageOpen(): boolean {
-  return getPage(VIEW_TYPE) !== undefined;
+  return getPage(VIEW_TYPE)?.panel.visible ?? false;
 }

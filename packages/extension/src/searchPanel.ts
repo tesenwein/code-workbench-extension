@@ -37,10 +37,12 @@ export function showSearchPanel(
         const results = await searchCode(ctx, repoRoot, text, RESULT_LIMIT);
         // The raw result carries only ~4 snippet lines (enough for ranking) —
         // widen to up to SNIPPET_LINES lines of the symbol body for the page.
+        // Results cluster in the same files, so share one read cache per query.
+        const cache = new Map<string, Promise<string[] | undefined>>();
         return Promise.all(
           results.map(async (r) => ({
             ...r,
-            snippet: await widenSnippet(r, SNIPPET_LINES, r.snippet),
+            snippet: await widenSnippet(r, SNIPPET_LINES, r.snippet, cache),
           })),
         );
       },

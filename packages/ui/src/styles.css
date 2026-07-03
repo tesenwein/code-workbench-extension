@@ -626,6 +626,23 @@
   font-style: italic;
 }
 
+/* ── Code-search results page ────────────────────────────────── */
+/* Hover styling for result cards lives here (not React state) so hovering
+   never re-renders a card. The page styles with --vscode-* theme vars. */
+.cws-card {
+  border: 1px solid var(--vscode-widget-border, #3a3a3a);
+  transition: border-color 120ms ease;
+}
+.cws-card:hover {
+  border-color: var(--vscode-focusBorder, var(--clay));
+}
+.cws-card-path {
+  color: var(--vscode-descriptionForeground, var(--fg-2));
+}
+.cws-card:hover .cws-card-path {
+  color: var(--vscode-textLink-foreground, #6ab0f3);
+}
+
 /* ── Tasks pane ──────────────────────────────────────────────── */
 .task-row {
   border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 60%, transparent);

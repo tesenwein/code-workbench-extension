@@ -31,6 +31,10 @@ export interface PageOptions {
   onReady: (rpc: RpcContext) => void;
   /** Called instead of onReady when the page already exists and is revealed. */
   onReveal?: (rpc: RpcContext) => void;
+  /** Called when the tab becomes visible again after being hidden (tab
+   *  switch back) — push a refresh here so a retained-but-hidden page can
+   *  skip background work and still show fresh data on return. */
+  onVisible?: (rpc: RpcContext) => void;
 }
 
 /** Open the page, or reveal the existing tab for this viewType. */
@@ -61,6 +65,13 @@ export function showPage(opts: PageOptions): void {
     instance.rpc = rpc;
     opts.onReady(rpc);
   });
+
+  if (opts.onVisible) {
+    const onVisible = opts.onVisible;
+    panel.onDidChangeViewState((e) => {
+      if (e.webviewPanel.visible && instance.rpc) onVisible(instance.rpc);
+    });
+  }
 }
 
 /** The live page for a viewType, if its tab is open. */
