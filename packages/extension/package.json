@@ -243,6 +243,12 @@
         "icon": "$(search)"
       },
       {
+        "command": "codeWorkbench.themeTokens",
+        "category": "Code Workbench",
+        "title": "Theme Tokens",
+        "icon": "$(symbol-color)"
+      },
+      {
         "command": "codeWorkbench.arch.refresh",
         "category": "Code Workbench",
         "title": "Refresh Architecture",

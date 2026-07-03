@@ -22,6 +22,7 @@ import { showTasksPage, refreshTasksPage, isTasksPageOpen } from './tasksPage';
 import { ArchViewProvider } from './archView';
 import { showSearchPanel } from './searchPanel';
 import { setAccentOverride } from './webviewTheme';
+import { showThemeTokensPanel } from './themeTokensPanel';
 import { WORKTREE_DOT } from './panelTheme';
 
 let repoRoot: string | undefined;
@@ -253,6 +254,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     vscode.commands.registerCommand('codeWorkbench.searchCode', () =>
       runSearchCodeCommand(ctx, repoRoot),
     ),
+    vscode.commands.registerCommand('codeWorkbench.themeTokens', () => showThemeTokensPanel()),
     vscode.window.registerWebviewViewProvider(
       BrandViewProvider.viewId,
       new BrandViewProvider(sessionMgr),
