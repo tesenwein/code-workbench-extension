@@ -96,6 +96,10 @@ const configs = [
       ),
       // Code-search CLI spawned by scan-runner's runCodeSearch.
       'mcp-server/code-search': require.resolve('@code-workbench/mcp-core/servers/code-search'),
+      // Semantic arch-card search CLI spawned by scan-runner's runArchSearch.
+      'mcp-server/arch-search': fileURLToPath(
+        import.meta.resolve('@code-workbench/mcp-core/arch-search.mjs'),
+      ),
     },
     // @xenova/transformers is an optional, heavy dependency used only for
     // semantic reranking — code-search.mjs imports it dynamically and falls

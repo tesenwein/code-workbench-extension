@@ -249,10 +249,29 @@ async function runCodeSearch({
     }));
 }
 
+/**
+ * Run arch-search.mjs and return validated { slug, score } hits, best-first.
+ * Returns [] when semantic search is unavailable (caller substring-filters).
+ * @param {{ nodeBin: string; scriptPath: string; root: string; query: string; limit?: number; env?: NodeJS.ProcessEnv }} opts
+ */
+async function runArchSearch({ nodeBin, scriptPath, root, query, limit, env }) {
+  if (!query || !root) return [];
+  const cliArgs = [scriptPath, "--query", query, "--root", root];
+  if (limit != null) cliArgs.push("--limit", String(limit));
+  const raw = await spawnDetector(nodeBin, cliArgs, "arch-search", env);
+  return raw
+    .filter((r) => r && typeof r.slug === "string")
+    .map((r) => ({
+      slug: r.slug,
+      score: typeof r.score === "number" ? r.score : 0,
+    }));
+}
+
 module.exports = {
   groupFingerprint,
   runDeadCodeScan,
   runDuplicateScan,
   runTypeEscapeScan,
   runCodeSearch,
+  runArchSearch,
 };

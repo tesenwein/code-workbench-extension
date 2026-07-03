@@ -1,11 +1,13 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import {
+  runArchSearch,
   runCodeSearch,
   runDeadCodeScan,
   runDuplicateScan,
   runTypeEscapeScan,
 } from '@code-workbench/mcp-core/scan-runner';
+import type { ArchSearchHit } from '@code-workbench/mcp-core/scan-runner';
 import {
   readAcks,
   writeAcks,
@@ -103,6 +105,30 @@ export async function searchCode(
     env: detectorEnv,
     scriptPath: detectorPath(ctx, 'code-search.mjs'),
     roots: [repoPath],
+    query,
+    limit,
+  });
+}
+
+export type { ArchSearchHit };
+
+/**
+ * Semantic search over the repo's architecture cards — ranks each card by
+ * local-embedding similarity to `query`. Returns [] when the embedding model
+ * is absent (@xenova/transformers not installed), so callers fall back to
+ * substring filtering.
+ */
+export async function searchArchCards(
+  ctx: vscode.ExtensionContext,
+  repoPath: string,
+  query: string,
+  limit?: number,
+): Promise<ArchSearchHit[]> {
+  return runArchSearch({
+    nodeBin,
+    env: detectorEnv,
+    scriptPath: detectorPath(ctx, 'arch-search.mjs'),
+    root: repoPath,
     query,
     limit,
   });

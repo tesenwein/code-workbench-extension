@@ -78,3 +78,26 @@ export function runTypeEscapeScan(
 export function runCodeSearch(
   opts: CodeSearchOpts,
 ): Promise<CodeSearchResult[]>;
+
+export interface ArchSearchOpts {
+  nodeBin: string;
+  scriptPath: string;
+  /** Repo root whose `.code-workbench/.arch` cards are ranked. */
+  root: string;
+  /** Free-text query — matched semantically against each card. */
+  query: string;
+  /** Cap on hits returned. */
+  limit?: number;
+  /** Environment for the spawned detector process. */
+  env?: NodeJS.ProcessEnv;
+}
+
+/** A card ranked by embedding similarity; `score` is cosine in [-1, 1]. */
+export interface ArchSearchHit {
+  slug: string;
+  score: number;
+}
+
+export function runArchSearch(
+  opts: ArchSearchOpts,
+): Promise<ArchSearchHit[]>;

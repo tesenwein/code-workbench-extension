@@ -261,6 +261,12 @@
         "icon": "$(refresh)"
       },
       {
+        "command": "codeWorkbench.arch.openAsPage",
+        "category": "Code Workbench",
+        "title": "Open Architecture as Page",
+        "icon": "$(link-external)"
+      },
+      {
         "command": "codeWorkbench.tasks.create",
         "category": "Code Workbench",
         "title": "New Task…",
@@ -468,6 +474,11 @@
           "command": "codeWorkbench.arch.refresh",
           "when": "view == codeWorkbench.arch",
           "group": "navigation"
+        },
+        {
+          "command": "codeWorkbench.arch.openAsPage",
+          "when": "view == codeWorkbench.arch",
+          "group": "navigation@1"
         },
         {
           "command": "codeWorkbench.sessions.closeInactive",

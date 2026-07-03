@@ -1,0 +1,39 @@
+{
+  "slug": "semantic-arch-search",
+  "name": "Semantic Arch Card Search",
+  "description": "Embedding-based (vector) search over architecture cards, surfaced in the ArchPanel search box. The detector CLI mcp-core/arch-search.mjs reads .code-workbench/.arch/*.json under --root, flattens each card (name + description + files + guidelines + anti_patterns + decisions + dependsOn + tags) into one embedding document, and ranks them against --query via semantic-search.mjs semanticScores() (local all-MiniLM-L6-v2 through @xenova/transformers, mean-pooled + L2-normalized cosine, on-disk vector cache). Prints a JSON array of {slug, score} best-first, or [] when the model is unavailable — the same graceful-degradation contract code-search.mjs uses. Spawned by scan-runner.cjs runArchSearch (mirrors runCodeSearch: spawnDetector + validate), exposed to the host as scanHost.searchArchCards(ctx, repoPath, query, limit?), and reached from the webview via the ArchPanel's `search` RPC in buildArchRpcHandlers. The bundled detector is dist/mcp-server/arch-search.mjs (esbuild entry mcp-server/arch-search; @xenova/transformers stays external). In the UI, ArchPanel debounces the query (200ms), calls api.search, and — when it returns hits — orders cards by the ranking (keeping the stronger half of the corpus plus any exact substring matches), showing a \"semantic\" badge; an empty result falls back to substring filtering.",
+  "files": [
+    "packages/mcp-core/arch-search.mjs",
+    "packages/mcp-core/semantic-search.mjs",
+    "packages/mcp-core/scan-runner.cjs",
+    "packages/mcp-core/scan-runner.d.ts",
+    "packages/extension/src/scanHost.ts",
+    "packages/extension/src/archView.ts",
+    "packages/ui/src/components/ArchPanel.tsx"
+  ],
+  "guidelines": [
+    "arch-search.mjs must print [] (not error) when semanticScores returns null so callers substring-fall-back — same as code-search.",
+    "Keep the CLI basename guard (path.basename === 'arch-search.mjs') so the file doesn't self-run when bundled into another script and corrupt stdio.",
+    "New detector CLIs need: an esbuild mcp-server/* entry, an mcp-core package.json export (./arch-search.mjs), and a scan-runner runner + its .d.ts/.d.cts decl."
+  ],
+  "anti_patterns": [
+    "Don't embed cards on the extension host — the model + transformers live in the spawned Node detector process (ELECTRON_RUN_AS_NODE), reached via spawnDetector.",
+    "Don't require @xenova/transformers — it's an optional external dep; absence must degrade to substring search, not crash."
+  ],
+  "decisions": [],
+  "tags": [
+    "vector search",
+    "semantic search",
+    "embeddings",
+    "arch cards",
+    "MiniLM",
+    "arch-search"
+  ],
+  "dependsOn": [
+    "mcp-core",
+    "arch-view",
+    "editor-tab-pages"
+  ],
+  "updatedAt": "2026-07-03T09:40:31.885Z",
+  "createdAt": "2026-07-03T09:40:31.885Z"
+}
