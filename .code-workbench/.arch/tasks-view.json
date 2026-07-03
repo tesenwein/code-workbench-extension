@@ -1,7 +1,7 @@
 {
   "slug": "tasks-view",
   "name": "Tasks View",
-  "description": "VS Code WebviewView sidebar panel showing the Code Workbench task board. Hosts the shared @code-workbench/ui TasksPanel React component in a webview and answers its list/create/update/remove RPC calls via the shared task-store. Task formatting/parsing now lives entirely in the shared task-store (mcp-core); the extension's old taskFormat.ts was removed.",
+  "description": "VS Code WebviewView sidebar panel showing the Code Workbench task board. Hosts the shared @code-workbench/ui TasksPanel React component in a webview and answers its list/create/update/remove/openInEditor RPC calls via the shared task-store. The RPC handler set and context payload are exported (buildTaskRpcHandlers, taskPanelContext) and shared with the full editor-tab Task Board page (tasksPage.ts, command codeWorkbench.tasks.openAsPage, view/title icon) — sidebar for glancing, page for planning. The tasks file watcher (watchTasks) refreshes both surfaces and keeps polling while either is visible/open. Task formatting/parsing lives entirely in the shared task-store (mcp-core).",
   "files": [
     "packages/extension/src/tasksView.ts",
     "packages/extension/src/tasks.ts",
@@ -32,7 +32,7 @@
     "ui-shared-panels",
     "task-store"
   ],
-  "updatedAt": "2026-06-03T04:57:04.090Z",
+  "updatedAt": "2026-07-03T04:36:52.368Z",
   "createdAt": "2026-05-19T04:49:37.278Z",
   "tags": [
     "tasks",

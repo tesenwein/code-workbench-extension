@@ -1,7 +1,7 @@
 import { ScanPanel } from './ScanPanel';
 import { AccordionRow } from './primitives';
 import { FileLink, ScanRowActions } from './ScanRowParts';
-import type { DuplicateGroup, ScanPaneApi, OpenFileFn } from '../types';
+import type { DuplicateGroup, DuplicateMember, ScanPaneApi, OpenFileFn } from '../types';
 
 interface Props {
   repoPath: string | null;
@@ -26,6 +26,51 @@ const CLONE_LABEL: Record<DuplicateGroup['cloneType'], string> = {
   renamed: 'Renamed',
   structural: 'Structural',
 };
+
+/** One clone member's code, with real line numbers — a column in the
+ *  side-by-side comparison. Rendered only when the host attached snippets. */
+function MemberSnippet({
+  member,
+  repoPath,
+  onOpenFile,
+}: {
+  member: DuplicateMember;
+  repoPath: string | null;
+  onOpenFile?: OpenFileFn;
+}) {
+  const lines = (member.snippet ?? '').split('\n');
+  const shownEnd = member.startLine + lines.length - 1;
+  return (
+    <div className="dup-snippet-col">
+      <div className="dup-snippet-head">
+        <span className="dup-member-kind">{member.kind}</span>
+        <span className="dup-snippet-name" title={member.name}>
+          {member.name}
+        </span>
+        <FileLink
+          file={member.file}
+          line={member.startLine}
+          repoPath={repoPath}
+          onOpenFile={onOpenFile}
+          baseClass="dup-member-file"
+        />
+      </div>
+      <pre className="dup-snippet-code">
+        {lines.map((line, i) => (
+          <div key={i}>
+            <span className="dup-snippet-ln">{member.startLine + i}</span>
+            {line}
+          </div>
+        ))}
+        {shownEnd < member.endLine && (
+          <div className="dup-snippet-more">
+            <span className="dup-snippet-ln" />⋯ {member.endLine - shownEnd} more line(s)
+          </div>
+        )}
+      </pre>
+    </div>
+  );
+}
 
 function GroupRow({
   group,
@@ -59,24 +104,32 @@ function GroupRow({
         </>
       }
     >
-      <div className="dup-members">
-        {group.members.map((m, i) => (
-          <div key={i} className="dup-member">
-            <span className="dup-member-kind">{m.kind}</span>
-            <span className="dup-member-name" title={m.file + ':' + m.startLine}>
-              {m.name}
-            </span>
-            <FileLink
-              file={m.file}
-              line={m.startLine}
-              repoPath={repoPath}
-              onOpenFile={onOpenFile}
-              baseClass="dup-member-file"
-            />
-            <span className="dup-member-lines">{m.lines}L</span>
-          </div>
-        ))}
-      </div>
+      {group.members.some((m) => m.snippet) ? (
+        <div className="dup-snippets">
+          {group.members.map((m, i) => (
+            <MemberSnippet key={i} member={m} repoPath={repoPath} onOpenFile={onOpenFile} />
+          ))}
+        </div>
+      ) : (
+        <div className="dup-members">
+          {group.members.map((m, i) => (
+            <div key={i} className="dup-member">
+              <span className="dup-member-kind">{m.kind}</span>
+              <span className="dup-member-name" title={m.file + ':' + m.startLine}>
+                {m.name}
+              </span>
+              <FileLink
+                file={m.file}
+                line={m.startLine}
+                repoPath={repoPath}
+                onOpenFile={onOpenFile}
+                baseClass="dup-member-file"
+              />
+              <span className="dup-member-lines">{m.lines}L</span>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="dup-group-actions">
         <ScanRowActions
           acknowledged={acknowledged}

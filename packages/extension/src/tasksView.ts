@@ -43,6 +43,57 @@ export interface TaskFilter {
   status?: Task['status'];
 }
 
+/** RPC handler set the shared TasksPanel React component needs — used by
+ *  both the sidebar view (TasksProvider) and the full-page tasks board
+ *  (tasksPage.ts), so the two surfaces stay behaviorally identical. */
+export function buildTaskRpcHandlers(getRepoKey: () => string | undefined) {
+  return {
+    list: async () => {
+      const key = getRepoKey();
+      return key ? listTasks(key) : [];
+    },
+    create: async (task: unknown) => {
+      const key = getRepoKey();
+      if (!key) throw new Error('No repository open');
+      return createTask(key, task as Parameters<typeof createTask>[1]);
+    },
+    update: async (id: unknown, patch: unknown) => {
+      const key = getRepoKey();
+      if (!key) return;
+      await updateTask(key, String(id), patch as Parameters<typeof updateTask>[2]);
+    },
+    remove: async (id: unknown) => {
+      const key = getRepoKey();
+      if (!key) return;
+      await deleteTask(key, String(id));
+    },
+    openInEditor: async (id: unknown) => {
+      const key = getRepoKey();
+      if (!key) throw new Error('No repository open');
+      const file = taskFilePath(key, String(id));
+      const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(file));
+      await vscode.window.showTextDocument(doc, { preview: false });
+    },
+  };
+}
+
+/** Context payload (active worktree + all worktrees) pushed to the panel. */
+export async function taskPanelContext(
+  getRepoRoot: () => string | undefined,
+  getActiveWorktree: () => string | undefined,
+): Promise<{ activeWorktree: string | null; worktrees: string[] }> {
+  let worktrees: string[] = [];
+  const root = getRepoRoot();
+  if (root) {
+    try {
+      worktrees = (await listWorktrees(root)).map((w) => w.path);
+    } catch {
+      /* best-effort — dropdown just shows Unassigned */
+    }
+  }
+  return { activeWorktree: getActiveWorktree() ?? null, worktrees };
+}
+
 /**
  * Tasks sidebar panel. Hosts the shared `@code-workbench/ui` `TasksPanel`
  * React component in a webview and answers its RPC calls — list, create,
@@ -83,41 +134,10 @@ export class TasksProvider implements vscode.WebviewViewProvider {
     };
     view.webview.html = reactWebviewHtml(view.webview, this.extensionUri, 'tasks');
 
-    attachRpc(
-      view.webview,
-      {
-        list: async () => {
-          const key = this.getRepoKey();
-          return key ? listTasks(key) : [];
-        },
-        create: async (task) => {
-          const key = this.getRepoKey();
-          if (!key) throw new Error('No repository open');
-          return createTask(key, task as Parameters<typeof createTask>[1]);
-        },
-        update: async (id, patch) => {
-          const key = this.getRepoKey();
-          if (!key) return;
-          await updateTask(key, String(id), patch as Parameters<typeof updateTask>[2]);
-        },
-        remove: async (id) => {
-          const key = this.getRepoKey();
-          if (!key) return;
-          await deleteTask(key, String(id));
-        },
-        openInEditor: async (id) => {
-          const key = this.getRepoKey();
-          if (!key) throw new Error('No repository open');
-          const file = taskFilePath(key, String(id));
-          const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(file));
-          await vscode.window.showTextDocument(doc, { preview: false });
-        },
-      },
-      (rpc) => {
-        this.rpc = rpc;
-        void this.pushContext();
-      },
-    );
+    attachRpc(view.webview, buildTaskRpcHandlers(this.getRepoKey), (rpc) => {
+      this.rpc = rpc;
+      void this.pushContext();
+    });
 
     // Re-list whenever the panel becomes visible again — with
     // retainContextWhenHidden the webview's `ready` only fires once, so a
@@ -129,19 +149,10 @@ export class TasksProvider implements vscode.WebviewViewProvider {
   }
 
   private async pushContext(): Promise<void> {
-    let worktrees: string[] = [];
-    const root = this.getRepoRoot();
-    if (root) {
-      try {
-        worktrees = (await listWorktrees(root)).map((w) => w.path);
-      } catch {
-        /* best-effort — dropdown just shows Unassigned */
-      }
-    }
-    this.rpc?.postEvent('context', {
-      activeWorktree: this.getActiveWorktree() ?? null,
-      worktrees,
-    });
+    this.rpc?.postEvent(
+      'context',
+      await taskPanelContext(this.getRepoRoot, this.getActiveWorktree),
+    );
   }
 
   /** Tell the webview to reload its task list. Called by the file watcher and

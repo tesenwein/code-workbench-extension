@@ -1,0 +1,37 @@
+{
+  "slug": "search-results-panel",
+  "name": "Code Search Results Panel",
+  "description": "Editor-tab WebviewPanel that shows results of the hybrid code search (search-code quick command) with readable code snippets — replacing the old QuickPick, which could only show one detail line per result. The palette command (codeWorkbench.searchCode) still prompts for a query via input box, then opens/reveals a single reused panel (searchPanel.ts showSearchPanel) rendering the shared @code-workbench/ui SearchPanel React component (webview entry: webview/search.tsx). RPC: `search(query)` runs scanHost.searchCode (limit 50), widens each result's ~4-line ranking snippet to up to 12 real lines by re-reading the file, and retitles the tab \"Search: <query>\"; `openFile(file, line)` opens the file at the symbol's line. The panel has its own query bar (Enter re-searches without re-running the command); re-invoking the command pushes a `run-search` event into the existing panel.",
+  "files": [
+    "packages/extension/src/searchPanel.ts",
+    "packages/extension/webview/search.tsx",
+    "packages/ui/src/components/SearchPanel.tsx",
+    "packages/ui/src/types.ts",
+    "packages/extension/src/extension.ts",
+    "packages/extension/src/reactWebview.ts"
+  ],
+  "guidelines": [
+    "Snippet widening is best-effort — on file read failure keep the ranking snippet from code-search.mjs.",
+    "Single panel instance: reveal + postEvent('run-search') instead of creating a second tab.",
+    "UI stays host-agnostic: SearchPanel talks only through SearchApi (search/openFile); the extension wires it via webviewRpc/bridge like the other panels.",
+    "Style with --vscode-* theme variables (like ArchPanel), not the clay design tokens — this is a full editor tab, it should match the user's theme."
+  ],
+  "anti_patterns": [],
+  "decisions": [],
+  "tags": [
+    "search",
+    "code-search",
+    "snippets",
+    "quickcommand",
+    "webview panel",
+    "results page",
+    "searchCode"
+  ],
+  "dependsOn": [
+    "shared-scan-service",
+    "ui-shared-panels",
+    "extension-core"
+  ],
+  "updatedAt": "2026-07-03T04:20:07.967Z",
+  "createdAt": "2026-07-03T04:20:07.967Z"
+}

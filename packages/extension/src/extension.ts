@@ -16,11 +16,11 @@ import { pickSessionLaunch, pickWorktreeAndActivate } from './workspaceFolder';
 import { registerLayoutCommands } from './commands/layoutCommands';
 import { registerTaskCommands } from './commands/taskCommands';
 import { registerWorktreeCommands } from './commands/worktreeCommands';
-import { DeadCodeViewProvider } from './deadCodeView';
-import { TypeEscapeViewProvider } from './typeEscapeView';
-import { DuplicatesViewProvider } from './duplicatesView';
+import { registerScanPageCommands } from './scanPages';
+import { registerCodeHealthView } from './codeHealthView';
+import { showTasksPage, refreshTasksPage, isTasksPageOpen } from './tasksPage';
 import { ArchViewProvider } from './archView';
-import { searchCode } from './scanHost';
+import { showSearchPanel } from './searchPanel';
 
 let repoRoot: string | undefined;
 let repoKey: string | undefined;
@@ -113,8 +113,9 @@ async function performWorktreeRemoval(
 }
 
 /** Hybrid AST + symbol code search — the QuickBar `search-code` command,
- *  surfaced in the VS Code command palette. Prompts for a query, ranks
- *  symbols, and opens the picked result at its line. */
+ *  surfaced in the VS Code command palette. Prompts for a query, then opens
+ *  the results page (editor-tab webview) showing every match with its code
+ *  snippet; clicking a card opens the file at that line. */
 async function runSearchCodeCommand(
   ctx: vscode.ExtensionContext,
   repoRoot: string | undefined,
@@ -129,38 +130,7 @@ async function runSearchCodeCommand(
     placeHolder: 'e.g. debounce git polling, parse markdown frontmatter',
   });
   if (!query) return;
-
-  const results = await vscode.window.withProgress(
-    {
-      location: vscode.ProgressLocation.Window,
-      title: 'Code Workbench: searching code…',
-    },
-    () => searchCode(ctx, repoRoot, query),
-  );
-  if (results.length === 0) {
-    vscode.window.showInformationMessage(`No code matches for “${query}”.`);
-    return;
-  }
-
-  const pick = await vscode.window.showQuickPick(
-    results.map((r) => {
-      const rel = path.relative(repoRoot, r.file).split(path.sep).join('/');
-      return {
-        label: r.name,
-        description: r.kind,
-        detail: `${rel}:${r.startLine}`,
-        result: r,
-      };
-    }),
-    { title: `Search Code — ${results.length} result(s)`, matchOnDetail: true },
-  );
-  if (!pick) return;
-
-  const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(pick.result.file));
-  const editor = await vscode.window.showTextDocument(doc);
-  const pos = new vscode.Position(Math.max(0, pick.result.startLine - 1), 0);
-  editor.selection = new vscode.Selection(pos, pos);
-  editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.InCenter);
+  showSearchPanel(ctx, repoRoot, query);
 }
 
 export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
@@ -247,33 +217,25 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
   });
   refreshStatusBar();
 
-  const deadCodeProvider = new DeadCodeViewProvider(
-    ctx,
-    () => repoRoot,
-    () => repoKey,
-  );
-  const duplicatesProvider = new DuplicatesViewProvider(
-    ctx,
-    () => repoRoot,
-    () => repoKey,
-  );
-  const typeEscapeProvider = new TypeEscapeViewProvider(
-    ctx,
-    () => repoRoot,
-    () => repoKey,
-  );
   const archProvider = new ArchViewProvider(ctx, () => repoRoot);
 
   ctx.subscriptions.push(
     statusBar,
-    vscode.commands.registerCommand('codeWorkbench.deadCode.scan', () =>
-      deadCodeProvider.requestScan(),
+    // Code-health scans open full editor-tab pages (the old sidebar scan
+    // views are gone — the Code Health action bar triggers these commands).
+    ...registerScanPageCommands(
+      ctx,
+      () => repoRoot,
+      () => repoKey,
     ),
-    vscode.commands.registerCommand('codeWorkbench.duplicates.scan', () =>
-      duplicatesProvider.requestScan(),
-    ),
-    vscode.commands.registerCommand('codeWorkbench.typeEscapes.scan', () =>
-      typeEscapeProvider.requestScan(),
+    registerCodeHealthView(),
+    vscode.commands.registerCommand('codeWorkbench.tasks.openAsPage', () =>
+      showTasksPage(
+        ctx,
+        () => repoKey,
+        () => repoRoot,
+        () => sessionMgr.getActiveWorktree() ?? undefined,
+      ),
     ),
     vscode.commands.registerCommand('codeWorkbench.arch.refresh', () => archProvider.refresh()),
     vscode.commands.registerCommand('codeWorkbench.searchCode', () =>
@@ -301,22 +263,16 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
       archProvider.onRepoChanged();
       refreshStatusBar();
     }),
-    vscode.window.registerWebviewViewProvider(DeadCodeViewProvider.viewId, deadCodeProvider, {
-      webviewOptions: { retainContextWhenHidden: true },
-    }),
-    vscode.window.registerWebviewViewProvider(DuplicatesViewProvider.viewId, duplicatesProvider, {
-      webviewOptions: { retainContextWhenHidden: true },
-    }),
-    vscode.window.registerWebviewViewProvider(TypeEscapeViewProvider.viewId, typeEscapeProvider, {
-      webviewOptions: { retainContextWhenHidden: true },
-    }),
     vscode.window.registerWebviewViewProvider(ArchViewProvider.viewId, archProvider, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
     watchTasks(
       () => repoKey,
-      () => tasksProvider.refresh(),
-      () => tasksProvider.isVisible(),
+      () => {
+        tasksProvider.refresh();
+        refreshTasksPage();
+      },
+      () => tasksProvider.isVisible() || isTasksPageOpen(),
     ),
     // Keep worktree status badges fresh: window regaining focus may mean the
     // user committed/pulled in a terminal, and saving a file changes dirty state.

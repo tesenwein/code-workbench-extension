@@ -1,7 +1,7 @@
 {
   "slug": "duplicate-detection",
   "name": "Duplicate Code Detection",
-  "description": "Cross-package clone/duplicate detection via clone-detect.mjs (tree-sitter). The host runs the scan and persists results to <repo>/.code-workbench/duplicates-findings.json; the cw-ast MCP tool find_duplicates reads that file and applies acks + post-filters at read time. Surfaced as cw-ast MCP tools and the VS Code extension's DuplicatesView React webview, which renders the shared @code-workbench/ui DuplicatesPanel.",
+  "description": "Cross-package clone/duplicate detection via clone-detect.mjs (tree-sitter). The host runs the scan and persists results to <repo>/.code-workbench/duplicates-findings.json; the cw-ast MCP tool find_duplicates reads that file and applies acks + post-filters at read time. Surfaced as cw-ast MCP tools and the VS Code extension's full editor-tab Duplicates page (scanPages.ts, replacing the old sidebar DuplicatesView) rendering the shared @code-workbench/ui DuplicatesPanel — on the page each clone member carries a host-widened `snippet` and the panel renders group members SIDE BY SIDE for comparison (falls back to the compact list when snippets are absent).",
   "files": [
     "packages/mcp-core/clone-detect.mjs",
     "packages/mcp-core/ast-core.mjs",
@@ -49,7 +49,7 @@
     "shared-scan-service",
     "ui-shared-panels"
   ],
-  "updatedAt": "2026-05-26T08:28:34.830Z",
+  "updatedAt": "2026-07-03T04:36:34.876Z",
   "createdAt": "2026-05-19T09:42:22.279Z",
   "tags": [
     "duplicate",
