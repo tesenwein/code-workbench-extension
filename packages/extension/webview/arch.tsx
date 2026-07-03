@@ -12,6 +12,7 @@ const api: ArchApi = {
   upsert: (card) => bridge.call('upsert', card),
   remove: (slug) => bridge.call('remove', slug) as Promise<void>,
   openCard: (slug) => bridge.call('openCard', slug) as Promise<void>,
+  openInPage: (slug) => bridge.call('openInPage', slug) as Promise<void>,
   search: (query) =>
     bridge.call('search', query) as Promise<Array<{ slug: string; score: number }>>,
 };

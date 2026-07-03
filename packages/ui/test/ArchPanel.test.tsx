@@ -25,6 +25,7 @@ function mockApi(cards: ArchCard[]): ArchApi {
     upsert: vi.fn(),
     remove: vi.fn(async () => {}),
     openCard: vi.fn(async () => {}),
+    openInPage: vi.fn(async () => {}),
   };
 }
 
@@ -118,14 +119,15 @@ describe('ArchPanel', () => {
     expect(await screen.findByText(/Created/)).toBeInTheDocument();
   });
 
-  it('sidebar (non-page) mode still opens the card file on select', async () => {
+  it('sidebar (non-page) mode opens the full-page viewer on select', async () => {
     const auth = card({ slug: 'auth', name: 'Auth service' });
     const api = mockApi([auth]);
 
     render(<ArchPanel repoPath="/repo" api={api} />);
     await userEvent.click(await screen.findByText('Auth service'));
 
-    expect(api.openCard).toHaveBeenCalledWith('auth');
+    expect(api.openInPage).toHaveBeenCalledWith('auth');
+    expect(api.openCard).not.toHaveBeenCalled();
   });
 
   it('falls back to substring filtering when api.search returns nothing', async () => {

@@ -445,12 +445,14 @@ export function ArchPanel({
   }, [repoPath]);
 
   // Selecting a card: on the full-page board it opens the in-webview detail
-  // viewer (right pane); in the narrow sidebar it opens the `<slug>.json` file
-  // in the host's normal editor (there is no room for a detail pane there).
+  // viewer (right pane); in the narrow sidebar it opens the full-page board
+  // focused on this card's formatted viewer (there is no room for a detail
+  // pane in the sidebar). Falls back to the raw `<slug>.json` if the host
+  // didn't wire openInPage.
   const selectCard = useCallback(
     (slug: string) => {
       setSelectedSlug(slug);
-      if (!pageMode) void api.openCard(slug);
+      if (!pageMode) void (api.openInPage ?? api.openCard)(slug);
     },
     [api, pageMode],
   );
