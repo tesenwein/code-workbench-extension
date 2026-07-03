@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { SessionManager } from './sessions';
-import { themeTokenDecls } from './webviewTheme';
+import { themeTokenDecls, hcOverrideCss } from './webviewTheme';
 
 function escapeHtml(s: string): string {
   return s
@@ -45,6 +45,7 @@ export class BrandViewProvider implements vscode.WebviewViewProvider {
   :root {${themeTokenDecls('sidebar')}
     --bg-glow: color-mix(in srgb, var(--clay) 14%, var(--bg-0));
   }
+  ${hcOverrideCss()}
   html, body { margin: 0; padding: 0; height: 100%; background: var(--bg-1); overflow: hidden; }
   body {
     position: relative;

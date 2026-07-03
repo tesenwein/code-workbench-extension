@@ -8,7 +8,7 @@
  * theme the user selected. */
 
 import * as vscode from 'vscode';
-import { themeTokenDecls, type ThemeSurface } from './webviewTheme';
+import { themeTokenDecls, hcOverrideCss, type ThemeSurface } from './webviewTheme';
 
 export type WebviewEntry = 'tasks' | 'deadcode' | 'duplicates' | 'typeescapes' | 'arch' | 'search';
 
@@ -25,6 +25,7 @@ function tokensCss(surface: ThemeSurface): string {
   return `
 :root {${themeTokenDecls(surface)}
 }
+${hcOverrideCss()}
 * { box-sizing:border-box; }
 html,body { margin:0; padding:0; height:100%; }
 body {

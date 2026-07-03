@@ -21,6 +21,8 @@ import { registerCodeHealthView } from './codeHealthView';
 import { showTasksPage, refreshTasksPage, isTasksPageOpen } from './tasksPage';
 import { ArchViewProvider } from './archView';
 import { showSearchPanel } from './searchPanel';
+import { setAccentOverride } from './webviewTheme';
+import { WORKTREE_DOT } from './panelTheme';
 
 let repoRoot: string | undefined;
 let repoKey: string | undefined;
@@ -150,6 +152,15 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
   await sessionMgr.setRepoKey(repoKey);
   sessionMgr.setCurrentWorktreePath(repoRoot);
 
+  // Tint every webview with this window's worktree color ("which worktree am
+  // I in" at a glance). Panels created after a color change pick up the new
+  // accent; already-open ones keep theirs until recreated.
+  const syncAccent = () => {
+    const color = repoRoot ? sessionMgr.getPrefs(repoRoot).color : undefined;
+    setAccentOverride(color && color !== 'default' ? WORKTREE_DOT[color] : undefined);
+  };
+  syncAccent();
+
   // Resume any worktree removal that was deferred across a window reload
   // (we switch folders before deleting the active worktree, which kills the
   // running command — so we persist intent and finish here).
@@ -211,6 +222,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     statusBar.show();
   };
   sessionMgr.onDidChange(() => {
+    syncAccent();
     worktreesProvider.refresh();
     tasksProvider.refresh();
     refreshStatusBar();
@@ -258,6 +270,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
       await detectRepoRoot();
       await sessionMgr.setRepoKey(repoKey);
       sessionMgr.setCurrentWorktreePath(repoRoot);
+      syncAccent();
       worktreesProvider.refresh();
       tasksProvider.refresh();
       archProvider.onRepoChanged();
