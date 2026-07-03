@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": 1783058612574,
+  "generatedAt": 1783073887715,
   "root": "/Users/theodoresenwein/Code/code-workbench-extension",
   "groups": [
     {
@@ -180,6 +180,30 @@
       ]
     },
     {
+      "cloneType": "structural",
+      "similarity": 0.88,
+      "count": 2,
+      "fingerprint": "90c2d52af2f192a8",
+      "members": [
+        {
+          "file": "packages/extension/src/archPage.ts",
+          "name": "showArchPage",
+          "kind": "function",
+          "startLine": 20,
+          "endLine": 51,
+          "lines": 32
+        },
+        {
+          "file": "packages/extension/src/tasksPage.ts",
+          "name": "showTasksPage",
+          "kind": "function",
+          "startLine": 21,
+          "endLine": 62,
+          "lines": 42
+        }
+      ]
+    },
+    {
       "cloneType": "renamed",
       "similarity": 1,
       "count": 3,
@@ -239,23 +263,23 @@
       "cloneType": "structural",
       "similarity": 0.978,
       "count": 2,
-      "fingerprint": "26c76194dee5befa",
+      "fingerprint": "961b5900de0c2de8",
       "members": [
         {
           "file": "packages/extension/src/sessionsView.ts",
           "name": "onMessage",
           "kind": "method",
-          "startLine": 210,
-          "endLine": 231,
+          "startLine": 223,
+          "endLine": 244,
           "lines": 22
         },
         {
           "file": "packages/extension/src/worktreesView.ts",
           "name": "onMessage",
           "kind": "method",
-          "startLine": 187,
-          "endLine": 213,
-          "lines": 27
+          "startLine": 192,
+          "endLine": 219,
+          "lines": 28
         }
       ]
     },
@@ -280,6 +304,54 @@
           "startLine": 100,
           "endLine": 122,
           "lines": 23
+        }
+      ]
+    },
+    {
+      "cloneType": "structural",
+      "similarity": 0.872,
+      "count": 2,
+      "fingerprint": "341518e61e3f5cd3",
+      "members": [
+        {
+          "file": "packages/mcp-core/arch-search.mjs",
+          "name": "readCards",
+          "kind": "function",
+          "startLine": 33,
+          "endLine": 53,
+          "lines": 21
+        },
+        {
+          "file": "packages/mcp-core/arch-server.mjs",
+          "name": "readArch",
+          "kind": "function",
+          "startLine": 95,
+          "endLine": 115,
+          "lines": 21
+        }
+      ]
+    },
+    {
+      "cloneType": "structural",
+      "similarity": 0.908,
+      "count": 2,
+      "fingerprint": "b2a0803ee198244e",
+      "members": [
+        {
+          "file": "packages/ui/src/components/TasksPanel.tsx",
+          "name": "handleSubmit",
+          "kind": "function",
+          "startLine": 305,
+          "endLine": 323,
+          "lines": 19
+        },
+        {
+          "file": "packages/ui/src/components/TasksPanel.tsx",
+          "name": "handleSubmit",
+          "kind": "function",
+          "startLine": 821,
+          "endLine": 840,
+          "lines": 20
         }
       ]
     },
@@ -336,30 +408,6 @@
           "startLine": 37,
           "endLine": 54,
           "lines": 18
-        }
-      ]
-    },
-    {
-      "cloneType": "structural",
-      "similarity": 0.932,
-      "count": 2,
-      "fingerprint": "b7fa4374358717a6",
-      "members": [
-        {
-          "file": "packages/extension/webview/arch.tsx",
-          "name": "App",
-          "kind": "function",
-          "startLine": 17,
-          "endLine": 32,
-          "lines": 16
-        },
-        {
-          "file": "packages/extension/webview/search.tsx",
-          "name": "App",
-          "kind": "function",
-          "startLine": 15,
-          "endLine": 34,
-          "lines": 20
         }
       ]
     },
@@ -453,16 +501,16 @@
           "file": "packages/extension/src/scanHost.ts",
           "name": "scanDeadCode",
           "kind": "function",
-          "startLine": 41,
-          "endLine": 56,
+          "startLine": 43,
+          "endLine": 58,
           "lines": 16
         },
         {
           "file": "packages/extension/src/scanHost.ts",
           "name": "scanTypeEscapes",
           "kind": "function",
-          "startLine": 73,
-          "endLine": 88,
+          "startLine": 75,
+          "endLine": 90,
           "lines": 16
         }
       ]
@@ -492,6 +540,30 @@
       ]
     },
     {
+      "cloneType": "structural",
+      "similarity": 0.952,
+      "count": 2,
+      "fingerprint": "c705a73a7ad58568",
+      "members": [
+        {
+          "file": "packages/extension/src/scanHost.ts",
+          "name": "searchCode",
+          "kind": "function",
+          "startLine": 97,
+          "endLine": 111,
+          "lines": 15
+        },
+        {
+          "file": "packages/extension/src/scanHost.ts",
+          "name": "searchArchCards",
+          "kind": "function",
+          "startLine": 121,
+          "endLine": 135,
+          "lines": 15
+        }
+      ]
+    },
+    {
       "cloneType": "renamed",
       "similarity": 1,
       "count": 2,
@@ -512,46 +584,6 @@
           "startLine": 120,
           "endLine": 133,
           "lines": 14
-        }
-      ]
-    },
-    {
-      "cloneType": "renamed",
-      "similarity": 1,
-      "count": 4,
-      "fingerprint": "6782cb2489c3b0aa",
-      "members": [
-        {
-          "file": "packages/extension/webview/arch.tsx",
-          "name": "<anonymous>",
-          "kind": "function",
-          "startLine": 21,
-          "endLine": 27,
-          "lines": 7
-        },
-        {
-          "file": "packages/extension/webview/deadcode.tsx",
-          "name": "<anonymous>",
-          "kind": "function",
-          "startLine": 22,
-          "endLine": 28,
-          "lines": 7
-        },
-        {
-          "file": "packages/extension/webview/duplicates.tsx",
-          "name": "<anonymous>",
-          "kind": "function",
-          "startLine": 22,
-          "endLine": 28,
-          "lines": 7
-        },
-        {
-          "file": "packages/extension/webview/typeescapes.tsx",
-          "name": "<anonymous>",
-          "kind": "function",
-          "startLine": 22,
-          "endLine": 28,
-          "lines": 7
         }
       ]
     },
@@ -589,8 +621,8 @@
           "file": "packages/ui/test/ArchPanel.test.tsx",
           "name": "card",
           "kind": "function",
-          "startLine": 6,
-          "endLine": 19,
+          "startLine": 7,
+          "endLine": 20,
           "lines": 14
         },
         {
@@ -600,6 +632,30 @@
           "startLine": 7,
           "endLine": 20,
           "lines": 14
+        }
+      ]
+    },
+    {
+      "cloneType": "structural",
+      "similarity": 0.946,
+      "count": 2,
+      "fingerprint": "327803d52e5a350b",
+      "members": [
+        {
+          "file": "packages/ui/test/TasksPanel.test.tsx",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 130,
+          "endLine": 142,
+          "lines": 13
+        },
+        {
+          "file": "packages/ui/test/TasksPanel.test.tsx",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 144,
+          "endLine": 158,
+          "lines": 15
         }
       ]
     },
@@ -645,8 +701,8 @@
           "file": "packages/ui/src/components/TasksPanel.tsx",
           "name": "<anonymous>",
           "kind": "function",
-          "startLine": 743,
-          "endLine": 757,
+          "startLine": 988,
+          "endLine": 1002,
           "lines": 15
         }
       ]
@@ -661,16 +717,16 @@
           "file": "packages/extension/src/scanPages.ts",
           "name": "ack",
           "kind": "function",
-          "startLine": 122,
-          "endLine": 134,
+          "startLine": 138,
+          "endLine": 150,
           "lines": 13
         },
         {
           "file": "packages/extension/src/scanPages.ts",
           "name": "excludeDir",
           "kind": "function",
-          "startLine": 135,
-          "endLine": 147,
+          "startLine": 151,
+          "endLine": 163,
           "lines": 13
         }
       ]
@@ -696,78 +752,6 @@
           "startLine": 129,
           "endLine": 140,
           "lines": 12
-        }
-      ]
-    },
-    {
-      "cloneType": "renamed",
-      "similarity": 1,
-      "count": 2,
-      "fingerprint": "2d59e69b89e639b8",
-      "members": [
-        {
-          "file": "packages/mcp-core/arch-server.mjs",
-          "name": "withArchLock",
-          "kind": "function",
-          "startLine": 17,
-          "endLine": 27,
-          "lines": 11
-        },
-        {
-          "file": "packages/mcp-core/tasks-server.mjs",
-          "name": "withLock",
-          "kind": "function",
-          "startLine": 156,
-          "endLine": 166,
-          "lines": 11
-        }
-      ]
-    },
-    {
-      "cloneType": "renamed",
-      "similarity": 1,
-      "count": 2,
-      "fingerprint": "10372baa13b5f4b1",
-      "members": [
-        {
-          "file": "packages/mcp-core/arch-server.mjs",
-          "name": "findRepoRootFromCwd",
-          "kind": "function",
-          "startLine": 34,
-          "endLine": 44,
-          "lines": 11
-        },
-        {
-          "file": "packages/mcp-core/tasks-server.mjs",
-          "name": "findWorktreeRootFromCwd",
-          "kind": "function",
-          "startLine": 117,
-          "endLine": 127,
-          "lines": 11
-        }
-      ]
-    },
-    {
-      "cloneType": "renamed",
-      "similarity": 1,
-      "count": 2,
-      "fingerprint": "a22dc201790a18d8",
-      "members": [
-        {
-          "file": "packages/extension/src/commands/taskCommands.ts",
-          "name": "<anonymous>",
-          "kind": "function",
-          "startLine": 88,
-          "endLine": 96,
-          "lines": 9
-        },
-        {
-          "file": "packages/extension/src/commands/taskCommands.ts",
-          "name": "<anonymous>",
-          "kind": "function",
-          "startLine": 98,
-          "endLine": 106,
-          "lines": 9
         }
       ]
     }

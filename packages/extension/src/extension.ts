@@ -20,6 +20,7 @@ import { registerScanPageCommands } from './scanPages';
 import { registerCodeHealthView } from './codeHealthView';
 import { showTasksPage, refreshTasksPage, isTasksPageOpen } from './tasksPage';
 import { ArchViewProvider } from './archView';
+import { showArchPage, refreshArchPage } from './archPage';
 import { showSearchPanel } from './searchPanel';
 import { setAccentOverride } from './webviewTheme';
 import { showThemeTokensPanel } from './themeTokensPanel';
@@ -196,7 +197,6 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
   const worktreesProvider = new WorktreesProvider(
     () => repoRoot,
     () => sessionMgr.getActiveWorktree(),
-    (wt) => sessionMgr.listForWorktree(wt).length,
     (wt) => sessionMgr.getPrefs(wt).color,
     (wt) => sessionMgr.getPrefs(wt).note,
   );
@@ -248,7 +248,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     }
   }
 
-  const archProvider = new ArchViewProvider(ctx, () => repoRoot);
+  const archProvider = new ArchViewProvider(ctx, () => repoRoot, refreshArchPage);
 
   ctx.subscriptions.push(
     statusBar,
@@ -292,6 +292,13 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
       ),
     ),
     vscode.commands.registerCommand('codeWorkbench.arch.refresh', () => archProvider.refresh()),
+    // Open the full-width Architecture board in the main editor area, with
+    // semantic card search — the sidebar view's "open as page" counterpart.
+    vscode.commands.registerCommand('codeWorkbench.arch.openAsPage', (slug?: string) =>
+      showArchPage(ctx, () => repoRoot, {
+        focusSlug: typeof slug === 'string' ? slug : undefined,
+      }),
+    ),
     vscode.commands.registerCommand('codeWorkbench.searchCode', () =>
       runSearchCodeCommand(ctx, repoRoot),
     ),

@@ -5,4 +5,6 @@ export {
   runDuplicateScan,
   runTypeEscapeScan,
   runCodeSearch,
+  runArchSearch,
+  createArchSearchWorker,
 } from "./scan-runner.cjs";

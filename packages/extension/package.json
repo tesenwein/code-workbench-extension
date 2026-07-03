@@ -261,6 +261,12 @@
         "icon": "$(refresh)"
       },
       {
+        "command": "codeWorkbench.arch.openAsPage",
+        "category": "Code Workbench",
+        "title": "Open Architecture as Page",
+        "icon": "$(link-external)"
+      },
+      {
         "command": "codeWorkbench.tasks.create",
         "category": "Code Workbench",
         "title": "New Task…",
@@ -470,6 +476,11 @@
           "group": "navigation"
         },
         {
+          "command": "codeWorkbench.arch.openAsPage",
+          "when": "view == codeWorkbench.arch",
+          "group": "navigation@1"
+        },
+        {
           "command": "codeWorkbench.sessions.closeInactive",
           "when": "view == codeWorkbench.sessions",
           "group": "navigation@0"
@@ -606,6 +617,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@types/vscode": "^1.85.0",
+    "@vscode/codicons": "^0.0.45",
     "@vscode/vsce": "^3.9.2",
     "esbuild": "^0.28.1",
     "eslint": "latest",

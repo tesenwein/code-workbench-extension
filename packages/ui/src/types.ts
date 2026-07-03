@@ -162,4 +162,7 @@ export interface ArchApi {
   remove: (slug: string) => Promise<void>;
   /** Open the card's `<slug>.json` file in the host's normal editor. */
   openCard: (slug: string) => Promise<void>;
+  /** Rank cards by embedding similarity to `query`, best-first. Optional —
+   *  when absent (or it returns []), the panel substring-filters instead. */
+  search?: (query: string) => Promise<Array<{ slug: string; score: number }>>;
 }

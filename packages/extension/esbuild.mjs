@@ -38,6 +38,21 @@ function copyTreeSitterAssets() {
   console.log(`[esbuild] copied tree-sitter wasm assets to ${destDir}`);
 }
 
+// The sidebar Sessions panel renders each session's codicon in its row, so the
+// webview needs the codicon font. esbuild only bundles JS; copy the stylesheet
+// and its .ttf into dist/codicon/ so the webview can load them via asWebviewUri
+// (the css's relative url(./codicon.ttf) then resolves alongside).
+function copyCodiconAssets() {
+  const cssPath = require.resolve('@vscode/codicons/dist/codicon.css');
+  const srcDir = path.dirname(cssPath);
+  const destDir = fileURLToPath(new URL('dist/codicon/', import.meta.url));
+  mkdirSync(destDir, { recursive: true });
+  for (const file of ['codicon.css', 'codicon.ttf']) {
+    cpSync(path.join(srcDir, file), path.join(destDir, file));
+  }
+  console.log(`[esbuild] copied codicon font assets to ${destDir}`);
+}
+
 const common = {
   bundle: true,
   platform: 'node',
@@ -81,6 +96,10 @@ const configs = [
       ),
       // Code-search CLI spawned by scan-runner's runCodeSearch.
       'mcp-server/code-search': require.resolve('@code-workbench/mcp-core/servers/code-search'),
+      // Semantic arch-card search CLI spawned by scan-runner's runArchSearch.
+      'mcp-server/arch-search': fileURLToPath(
+        import.meta.resolve('@code-workbench/mcp-core/arch-search.mjs'),
+      ),
     },
     // @xenova/transformers is an optional, heavy dependency used only for
     // semantic reranking — code-search.mjs imports it dynamically and falls
@@ -151,3 +170,4 @@ for (const config of configs) {
 }
 
 copyTreeSitterAssets();
+copyCodiconAssets();

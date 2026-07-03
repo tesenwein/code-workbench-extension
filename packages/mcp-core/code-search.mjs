@@ -3,10 +3,9 @@
 // of the top pool, and a fuzzy subsequence fallback when BM25 finds nothing.
 // Exports searchCode() for use as a library.
 
-import fs from "node:fs";
 import fsPromises from "node:fs/promises";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { isCliEntry } from "./cli-entry.mjs";
 import {
   getParser,
   detectLanguage,
@@ -243,18 +242,7 @@ function parseCliArgs(argv) {
   return opts;
 }
 
-// realpathSync resolves pnpm node_modules symlinks so a spawn via the
-// symlinked path still matches node's canonicalised import.meta.url.
-const __entry = process.argv[1] ? fs.realpathSync(process.argv[1]) : "";
-// Only run as CLI when this file is the actual entrypoint. When bundled into
-// another script (e.g. ast-server), import.meta.url resolves to the bundle's
-// URL and would falsely match — basename check prevents stray stdout writes
-// that corrupt the MCP stdio protocol.
-if (
-  __entry &&
-  path.basename(__entry) === "code-search.mjs" &&
-  pathToFileURL(__entry).href === import.meta.url
-) {
+if (isCliEntry(import.meta.url, "code-search.mjs")) {
   searchCode(parseCliArgs(process.argv.slice(2)))
     .then((results) => process.stdout.write(JSON.stringify(results)))
     .catch((err) => {

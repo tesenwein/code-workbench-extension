@@ -88,10 +88,12 @@ interface ListViewProps {
   cards: ArchCard[];
   selectedSlug: string | null;
   onSelect: (slug: string) => void;
+  /** Keep the given order (semantic ranking) instead of sorting by slug. */
+  preserveOrder?: boolean;
 }
 
-function ListView({ cards, selectedSlug, onSelect }: ListViewProps) {
-  const sorted = [...cards].sort((a, b) => a.slug.localeCompare(b.slug));
+function ListView({ cards, selectedSlug, onSelect, preserveOrder }: ListViewProps) {
+  const sorted = preserveOrder ? cards : [...cards].sort((a, b) => a.slug.localeCompare(b.slug));
   return (
     <div style={{ flex: 1, overflow: 'auto' }}>
       {sorted.map((c) => (
@@ -135,11 +137,14 @@ function SearchBox({
   onChange,
   resultCount,
   hasQuery,
+  semantic,
 }: {
   value: string;
   onChange: (v: string) => void;
   resultCount: number;
   hasQuery: boolean;
+  /** Show a badge when results are ranked by embedding similarity. */
+  semantic?: boolean;
 }) {
   const [focused, setFocused] = useState(false);
   return (
@@ -198,6 +203,23 @@ function SearchBox({
       />
       {hasQuery && (
         <>
+          {semantic && (
+            <span
+              title="Ranked by semantic (embedding) similarity"
+              style={{
+                fontSize: 9,
+                textTransform: 'uppercase',
+                letterSpacing: 0.4,
+                padding: '1px 5px',
+                borderRadius: 3,
+                background: 'var(--vscode-badge-background)',
+                color: 'var(--vscode-badge-foreground)',
+                flexShrink: 0,
+              }}
+            >
+              semantic
+            </span>
+          )}
           <span
             style={{
               fontSize: 10,
@@ -280,6 +302,11 @@ export function ArchPanel({
   const { cards, loading, upsert } = useArchCards(api, repoPath, reloadKey);
   const [query, setQuery] = useState('');
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+  // Semantic ranking (host embeddings) — best-first slug order for the current
+  // query, or null while the substring filter is the source of truth (no
+  // api.search, empty query, a ranking still in flight, or search returned []
+  // because the model is unavailable / no card cleared the relevance floor).
+  const [semanticOrder, setSemanticOrder] = useState<string[] | null>(null);
 
   // Selecting a card opens its `<slug>.json` file in the host's normal editor
   // (highlighting it in the list for feedback) — there is no in-webview form.
@@ -298,7 +325,34 @@ export function ArchPanel({
     }
   }, [focusSlug, cards.length, onFocusSlugHandled, selectCard]);
 
-  const filteredCards = useMemo(() => {
+  // Debounced semantic search: ask the host to embed-rank cards for the query.
+  // Runs only when the host wired api.search; an empty result (model absent or
+  // nothing relevant) clears semanticOrder so the substring filter below takes
+  // over.
+  const search = api.search;
+  useEffect(() => {
+    const q = query.trim();
+    // Drop the previous query's ranking immediately — substring order is the
+    // honest interim state while the new ranking is in flight.
+    setSemanticOrder(null);
+    if (!search || !q) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const hits = await search(q);
+        if (cancelled) return;
+        setSemanticOrder(hits.length ? hits.map((h) => h.slug) : null);
+      } catch {
+        if (!cancelled) setSemanticOrder(null);
+      }
+    }, 200);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [search, query, reloadKey]);
+
+  const substringMatches = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return cards;
     return cards.filter((c) =>
@@ -318,6 +372,33 @@ export function ArchPanel({
         .includes(q),
     );
   }, [cards, query]);
+
+  // When semantic ranking is live, order cards by it (the host already drops
+  // cards below its relevance floor, so an off-topic query can rank nothing
+  // and the empty state stays reachable) — but always fold in substring
+  // matches so a literal term never disappears. Otherwise fall back to
+  // substring filtering.
+  const semanticActive = semanticOrder !== null && query.trim().length > 0;
+  const filteredCards = useMemo(() => {
+    if (!semanticActive || !semanticOrder) return substringMatches;
+    const bySlug = new Map(cards.map((c) => [c.slug, c]));
+    const seen = new Set<string>();
+    const ranked: ArchCard[] = [];
+    for (const slug of semanticOrder) {
+      const card = bySlug.get(slug);
+      if (card && !seen.has(slug)) {
+        seen.add(slug);
+        ranked.push(card);
+      }
+    }
+    for (const c of substringMatches) {
+      if (!seen.has(c.slug)) {
+        seen.add(c.slug);
+        ranked.push(c);
+      }
+    }
+    return ranked;
+  }, [semanticActive, semanticOrder, substringMatches, cards]);
 
   // Create a new component card (with defaults), then open its file to edit.
   const addCard = useCallback(async () => {
@@ -346,6 +427,7 @@ export function ArchPanel({
           onChange={setQuery}
           resultCount={filteredCards.length}
           hasQuery={query.trim().length > 0}
+          semantic={semanticActive}
         />
         <button
           onClick={() => void addCard()}
@@ -368,7 +450,12 @@ export function ArchPanel({
             No components match “{query.trim()}”.
           </div>
         ) : (
-          <ListView cards={filteredCards} selectedSlug={selectedSlug} onSelect={selectCard} />
+          <ListView
+            cards={filteredCards}
+            selectedSlug={selectedSlug}
+            onSelect={selectCard}
+            preserveOrder={semanticActive}
+          />
         )}
       </div>
     </div>

@@ -8,6 +8,7 @@ import fsSync from "node:fs";
 import path from "node:path";
 import { randomBytes } from "node:crypto";
 import { recordToolUse } from "./usage-log.mjs";
+import { archCardsDir, readArchCards } from "./arch-cards.mjs";
 
 // ---------------------------------------------------------------------------
 // Write serialization
@@ -58,9 +59,7 @@ function requireRepoPath() {
 // Storage helpers
 // ---------------------------------------------------------------------------
 
-function archDir(repoPath) {
-  return path.join(repoPath, ".code-workbench", ".arch");
-}
+const archDir = archCardsDir;
 
 function assertSafeSlug(slug) {
   if (!/^[a-z0-9-]+$/.test(slug)) {
@@ -92,27 +91,7 @@ async function ensureArchDir(repoPath) {
   await fs.mkdir(archDir(repoPath), { recursive: true });
 }
 
-async function readArch(repoPath) {
-  const dir = archDir(repoPath);
-  let entries;
-  try {
-    entries = await fs.readdir(dir);
-  } catch {
-    return [];
-  }
-  const cards = [];
-  for (const entry of entries) {
-    if (!entry.endsWith(".json")) continue;
-    try {
-      const raw = await fs.readFile(path.join(dir, entry), "utf8");
-      const card = JSON.parse(raw);
-      if (card && typeof card.slug === "string") cards.push(card);
-    } catch {
-      /* skip malformed */
-    }
-  }
-  return cards;
-}
+const readArch = readArchCards;
 
 async function writeArch(repoPath, card) {
   await ensureArchDir(repoPath);

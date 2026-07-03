@@ -78,3 +78,49 @@ export function runTypeEscapeScan(
 export function runCodeSearch(
   opts: CodeSearchOpts,
 ): Promise<CodeSearchResult[]>;
+
+export interface ArchSearchOpts {
+  nodeBin: string;
+  scriptPath: string;
+  /** Repo root whose `.code-workbench/.arch` cards are ranked. */
+  root: string;
+  /** Free-text query — matched semantically against each card. */
+  query: string;
+  /** Cap on hits returned. */
+  limit?: number;
+  /** Environment for the spawned detector process. */
+  env?: NodeJS.ProcessEnv;
+}
+
+/** A card ranked by embedding similarity; `score` is cosine in [-1, 1]. */
+export interface ArchSearchHit {
+  slug: string;
+  score: number;
+}
+
+export function runArchSearch(
+  opts: ArchSearchOpts,
+): Promise<ArchSearchHit[]>;
+
+export interface ArchSearchWorkerOpts {
+  nodeBin: string;
+  scriptPath: string;
+  /** Environment for the spawned worker process. */
+  env?: NodeJS.ProcessEnv;
+}
+
+/** Long-lived `arch-search.mjs --serve` child that keeps the embedding model warm. */
+export interface ArchSearchWorker {
+  /** Rank cards for `query`; lazily (re)spawns the worker child. */
+  search(req: {
+    root: string;
+    query: string;
+    limit?: number;
+  }): Promise<ArchSearchHit[]>;
+  /** Kill the worker child; a later search() re-spawns it. */
+  dispose(): void;
+}
+
+export function createArchSearchWorker(
+  opts: ArchSearchWorkerOpts,
+): ArchSearchWorker;
