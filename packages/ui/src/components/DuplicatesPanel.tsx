@@ -1,6 +1,7 @@
 import { ScanPanel } from './ScanPanel';
 import { AccordionRow } from './primitives';
-import { FileLink, ScanRowActions } from './ScanRowParts';
+import { ScanRowActions } from './ScanRowParts';
+import { CodeLines } from './SnippetCard';
 import type { DuplicateGroup, DuplicateMember, ScanPaneApi, OpenFileFn } from '../types';
 
 interface Props {
@@ -38,36 +39,35 @@ function MemberSnippet({
   repoPath: string | null;
   onOpenFile?: OpenFileFn;
 }) {
-  const lines = (member.snippet ?? '').split('\n');
-  const shownEnd = member.startLine + lines.length - 1;
+  const clickable = !!onOpenFile && !!repoPath;
+  const open = clickable
+    ? () =>
+        onOpenFile!(
+          `${repoPath}/${member.file}`,
+          member.file.split('/').pop() ?? member.file,
+          member.startLine,
+        )
+    : undefined;
   return (
-    <div className="dup-snippet-col">
+    <div
+      className={'dup-snippet-col' + (clickable ? ' dup-snippet-col-link' : '')}
+      onClick={open}
+      title={clickable ? `Open ${member.file}:${member.startLine}` : undefined}
+    >
       <div className="dup-snippet-head">
         <span className="dup-member-kind">{member.kind}</span>
         <span className="dup-snippet-name" title={member.name}>
           {member.name}
         </span>
-        <FileLink
-          file={member.file}
-          line={member.startLine}
-          repoPath={repoPath}
-          onOpenFile={onOpenFile}
-          baseClass="dup-member-file"
-        />
+        <span className="dup-member-file">
+          {member.file.split('/').slice(-2).join('/')}:{member.startLine}
+        </span>
       </div>
-      <pre className="dup-snippet-code">
-        {lines.map((line, i) => (
-          <div key={i}>
-            <span className="dup-snippet-ln">{member.startLine + i}</span>
-            {line}
-          </div>
-        ))}
-        {shownEnd < member.endLine && (
-          <div className="dup-snippet-more">
-            <span className="dup-snippet-ln" />⋯ {member.endLine - shownEnd} more line(s)
-          </div>
-        )}
-      </pre>
+      <CodeLines
+        code={member.snippet ?? ''}
+        startLine={member.startLine}
+        endLine={member.endLine}
+      />
     </div>
   );
 }
@@ -112,22 +112,29 @@ function GroupRow({
         </div>
       ) : (
         <div className="dup-members">
-          {group.members.map((m, i) => (
-            <div key={i} className="dup-member">
-              <span className="dup-member-kind">{m.kind}</span>
-              <span className="dup-member-name" title={m.file + ':' + m.startLine}>
-                {m.name}
-              </span>
-              <FileLink
-                file={m.file}
-                line={m.startLine}
-                repoPath={repoPath}
-                onOpenFile={onOpenFile}
-                baseClass="dup-member-file"
-              />
-              <span className="dup-member-lines">{m.lines}L</span>
-            </div>
-          ))}
+          {group.members.map((m, i) => {
+            const clickable = !!onOpenFile && !!repoPath;
+            return (
+              <div
+                key={i}
+                className={'dup-member' + (clickable ? ' dup-member-link' : '')}
+                title={clickable ? `Open ${m.file}:${m.startLine}` : m.file + ':' + m.startLine}
+                onClick={
+                  clickable
+                    ? () =>
+                        onOpenFile!(`${repoPath}/${m.file}`, m.file.split('/').pop() ?? m.file, m.startLine)
+                    : undefined
+                }
+              >
+                <span className="dup-member-kind">{m.kind}</span>
+                <span className="dup-member-name">{m.name}</span>
+                <span className="dup-member-file">
+                  {m.file.split('/').slice(-2).join('/')}:{m.startLine}
+                </span>
+                <span className="dup-member-lines">{m.lines}L</span>
+              </div>
+            );
+          })}
         </div>
       )}
       <div className="dup-group-actions">

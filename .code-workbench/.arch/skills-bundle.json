@@ -1,9 +1,11 @@
 {
   "slug": "skills-bundle",
   "name": "Skills Bundle",
-  "description": "Installs and manages Code Workbench skill files (slash-command scripts) into a target directory (either the active worktree's .claude/skills/ or ~/.claude/skills/ for user-scope installs). Skill definitions live in the shared @code-workbench/mcp-core skills module — one .cjs file per skill under skills/, assembled by the skills.cjs index — consumed by the VS Code extension, with each skill's SKILL.md content embedded as a string so skills work offline and version-lock with the release.",
+  "description": "Installs and manages Code Workbench skill files (slash-command scripts) into a target directory (either the active worktree's .claude/skills/ or ~/.claude/skills/ for user-scope installs). Skill definitions live in the shared @code-workbench/mcp-core skills module — one .cjs file per skill under skills/, assembled by the skills.cjs index — consumed by the VS Code extension, with each skill's SKILL.md content embedded as a string so skills work offline and version-lock with the release. Also detects drift: on activation the extension byte-compares installed copies against the bundle and prompts to update (never auto-writes).",
   "files": [
     "packages/extension/src/skillsBundle.ts",
+    "packages/extension/src/extension.ts",
+    "packages/extension/test/skillsBundle.test.ts",
     "packages/mcp-core/skills.cjs",
     "packages/mcp-core/skills.mjs",
     "packages/mcp-core/skills/"
@@ -11,14 +13,14 @@
   "guidelines": [
     "installWorkbenchSkills must return { installed, removed } so the caller can surface a clear notification.",
     "Support both 'user' scope (~/.claude) and 'project' scope (active worktree) to let users choose where skills live.",
-    "Project-scope install receives a repoPath that may be a `wsl://<distro>/…` location string — resolve it via locToFsPath(parseLoc(repoPath)) before any fs call, never path.join the raw string.",
     "Each skill is its own packages/mcp-core/skills/<name>.cjs file exporting { name, body }; to add a skill create that file and register it in BUNDLED_SKILLS in skills.cjs.",
     "skills.cjs is only the index — it requires the per-skill files and assembles BUNDLED_SKILLS; skills.mjs is a re-export shim for ESM consumers.",
     "Consumers import the @code-workbench/mcp-core/skills package specifier; esbuild follows the require chain and inlines every per-skill file at build time.",
     "Skill body text must reference MCP tools by their cw- server name only (e.g. mcp__cw-ast__find_duplicates). There is exactly one ast server — do not offer a cwb-ast fallback.",
     "Keep skills repo-agnostic — the workbench is an IDE used across projects, so skill text must resolve paths against the active workspace and not assume the workbench's own codebase.",
-    "Drift detection: checkWorkbenchSkills() / checkWorkbenchSkillsForProject() byte-compare each installed SKILL.md against the embedded bundled body and return { dir, inSync, missing, stale }. They are READ-ONLY — never write from a check path; installation stays in installWorkbenchSkills*.",
-    "On drift, prompt the user to inject skills rather than auto-injecting — detection only prompts; the user clicks to apply."
+    "Drift detection: checkWorkbenchSkills(targetPath) byte-compares each installed SKILL.md against the embedded bundled body and returns { installedAny, stale, missing, legacy }. It is READ-ONLY — never write from a check path; installation stays in installWorkbenchSkills.",
+    "On drift, prompt the user to update skills rather than auto-injecting — extension.ts promptSkillsDrift prompts per scope on activation; only locations with installedAny=true are prompted (never nag where the user never installed).",
+    "A 'Not now' dismissal is persisted in globalState keyed by skillsBundleSignature() (sha256 over all skill names+bodies) so the prompt only returns when the shipped skill set actually changes."
   ],
   "anti_patterns": [
     "Do not silently overwrite customized skill files without versioning — check before clobber.",
@@ -26,20 +28,19 @@
     "Do not generate skill SKILL.md content inside arch-server.mjs — that responsibility was moved to the skills module (commit 556df47).",
     "Do not import skills from a relative built path — use the @code-workbench/mcp-core package specifier.",
     "Do not reference mcp__cwb-ast__ / mcp__cwb-tasks__ tools in skill text — the cwb- prefix is retired; only cw- servers are registered.",
-    "Do not fs-read skill .md files at runtime — skill bodies are embedded as strings so the bundle stays offline-capable.",
-    "Do not path.join a raw repoPath for fs ops — a `wsl://` loc string is not an absolute Windows path and resolves relative to the app cwd."
+    "Do not fs-read skill .md files at runtime — skill bodies are embedded as strings so the bundle stays offline-capable."
   ],
   "decisions": [
     "Skills are bundled inside the extension rather than fetched remotely so they work offline and version-lock with the extension release.",
     "Each skill lives in its own packages/mcp-core/skills/<name>.cjs file; skills.cjs is a thin index assembling BUNDLED_SKILLS — chosen over a monolithic file (escaping pain) and over real .md files (would break build-time inlining).",
     "skills.mjs is a thin ESM re-export shim over the skills.cjs index, used by the VS Code extension.",
-    "BUNDLED_SKILLS ships cw-work, cw-plan, cw-arch, cw-arch-audit, cw-duplicate-cleanup and cw-dead-code; consumers iterate the array so no count is hardcoded. Legacy folder names are removed on reinstall via LEGACY_SKILL_NAMES.",
-    "2026-06-03: Added skills-sync detection — checkWorkbenchSkills* byte-compare installed vs bundled bodies and prompt with an 'Inject skills' action when user or active-project skills drift. Chosen over auto-injecting (preserves the 'never silently clobber' decision) and over a bundle hash/version (exact compare also catches hand-edited skills)."
+    "BUNDLED_SKILLS ships cw-work, cw-plan, cw-arch, cw-arch-audit, cw-duplicate-cleanup, cw-dead-code and cw-type-safety; consumers iterate the array so no count is hardcoded. Legacy folder names are removed on reinstall via LEGACY_SKILL_NAMES.",
+    "2026-07-03: Added skills drift detection to the VS Code extension (it previously existed only in the Electron app): checkWorkbenchSkills + skillsBundleSignature in skillsBundle.ts; extension.ts prompts per scope (user + active project) on activation with an 'Update skills' action that runs codeWorkbench.installWorkbenchSkills. Chosen over auto-injecting (preserves 'never silently clobber') and over a version stamp (exact byte-compare also catches hand-edited skills). Dismissals are remembered per bundle signature to avoid nagging."
   ],
   "dependsOn": [
     "mcp-core"
   ],
-  "updatedAt": "2026-06-03T04:04:52.439Z",
+  "updatedAt": "2026-07-03T11:23:29.098Z",
   "createdAt": "2026-05-19T04:50:02.946Z",
   "tags": [
     "skills",
@@ -47,11 +48,11 @@
     "slash commands",
     "SKILL.md",
     "cw-arch skill",
-    "wsl path",
-    "loc",
     "skills sync",
     "drift",
     "notification",
-    "inject skills"
+    "update skills",
+    "skills up to date",
+    "checkWorkbenchSkills"
   ]
 }
