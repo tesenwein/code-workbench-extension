@@ -33,7 +33,11 @@ async function readJsonArray(file) {
 
 async function writeJsonArray(file, items) {
   await fsp.mkdir(path.dirname(file), { recursive: true });
-  await fsp.writeFile(file, JSON.stringify(items, null, 2));
+  // tmp + rename: an interrupted write must not truncate the file — a torn
+  // ack list silently parses as [] and un-hides every acknowledged finding.
+  const tmp = `${file}.${process.pid}.tmp`;
+  await fsp.writeFile(tmp, JSON.stringify(items, null, 2));
+  await fsp.rename(tmp, file);
 }
 
 /** Read acknowledged fingerprints for a feature. */

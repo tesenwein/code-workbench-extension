@@ -75,6 +75,17 @@ describe('serializeTask / parseTask round-trip', () => {
     expect(parsed.description).toBe('');
   });
 
+  it('round-trips a memo when the description is empty', () => {
+    const task = makeTask({ description: '', memo: 'blocker notes' });
+    const parsed = parseTask(serializeTask(task));
+    expect(parsed.description).toBe('');
+    expect(parsed.memo).toBe('blocker notes');
+    // Stable across a second round-trip (no marker bleeding into description).
+    const reparsed = parseTask(serializeTask(parsed));
+    expect(reparsed.description).toBe('');
+    expect(reparsed.memo).toBe('blocker notes');
+  });
+
   it('escapes and restores quotes and backslashes in the title', () => {
     const task = makeTask({ title: 'weird "quoted" \\ path' });
     const parsed = parseTask(serializeTask(task));

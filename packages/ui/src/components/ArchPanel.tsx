@@ -27,6 +27,12 @@ function useArchCards(api: ArchApi, repoPath: string | null, reloadKey: number |
     }
   }, [api]);
 
+  // A repo switch must not leave the previous project's cards visible while
+  // the new list loads (a reloadKey bump keeps them to avoid flicker).
+  useEffect(() => {
+    setCards([]);
+  }, [repoPath]);
+
   useEffect(() => {
     void reload();
   }, [reload, repoPath, reloadKey]);
@@ -307,6 +313,12 @@ export function ArchPanel({
   // api.search, empty query, a ranking still in flight, or search returned []
   // because the model is unavailable / no card cleared the relevance floor).
   const [semanticOrder, setSemanticOrder] = useState<string[] | null>(null);
+
+  // A repo switch invalidates the selection — it points at a card of the
+  // previous project and could open the wrong file via focus-card.
+  useEffect(() => {
+    setSelectedSlug(null);
+  }, [repoPath]);
 
   // Selecting a card opens its `<slug>.json` file in the host's normal editor
   // (highlighting it in the list for feedback) — there is no in-webview form.

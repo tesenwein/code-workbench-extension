@@ -1123,6 +1123,21 @@
   min-width: 0;
   overflow-y: auto;
 }
+/* Drag handle between the list column and the detail pane. It overlaps the
+ * pane's border-left so the divider looks like one line until hovered. */
+.task-col-resizer {
+  flex: 0 0 5px;
+  margin-right: -5px;
+  position: relative;
+  z-index: 1;
+  cursor: col-resize;
+  background: transparent;
+  transition: background 120ms ease;
+}
+.task-col-resizer:hover,
+.task-col-resizer:active {
+  background: var(--clay);
+}
 .task-detail-pane {
   flex: 1 1 58%;
   min-width: 340px;
@@ -1130,6 +1145,23 @@
   border-left: 1px solid var(--border);
   background: var(--bg-card);
   padding: 16px 20px 24px;
+}
+/* Backlink shown in place of the Subtasks section when a subtask is open. */
+.task-detail-parent-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--fg-0);
+  font-size: 12px;
+  cursor: pointer;
+}
+.task-detail-parent-link:hover {
+  border-color: var(--clay);
+  color: var(--clay);
 }
 .task-detail-header {
   display: flex;

@@ -320,17 +320,21 @@ function createArchSearchWorker({ nodeBin, scriptPath, env }) {
     });
     // Surface model-load / embed diagnostics in the host's log.
     child.stderr.on("data", (chunk) => process.stderr.write(chunk));
-    child.on("error", () => {
-      /* 'exit' follows and handles cleanup */
-    });
-    child.on("exit", () => {
+    const cleanup = (reason) => {
       child = null;
       for (const req of pending.values()) {
         clearTimeout(req.timer);
-        req.reject(new Error("arch-search worker exited"));
+        req.reject(new Error(reason));
       }
       pending.clear();
-    });
+    };
+    // A failed spawn (bad nodeBin, ENOENT) emits 'error' with NO 'exit'
+    // afterwards — without cleanup here the dead handle would be reused and
+    // every request would hang until its timeout.
+    child.on("error", (err) =>
+      cleanup(`arch-search worker error: ${err.message}`),
+    );
+    child.on("exit", () => cleanup("arch-search worker exited"));
     return child;
   }
 

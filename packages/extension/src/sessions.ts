@@ -39,7 +39,7 @@ const REPOS_KEY = 'codeWorkbench.repos.v1';
  *  `git worktree list` output can each render the same path slightly
  *  differently (trailing slash, `..` segments, case on case-insensitive
  *  filesystems); normalizing makes counts and lookups consistent. */
-function normalizeWtPath(p: string | undefined | null): string {
+export function normalizeWtPath(p: string | undefined | null): string {
   if (!p) return '';
   let s = path.normalize(p).replace(/[\\/]+$/, '');
   if (process.platform === 'darwin' || process.platform === 'win32') s = s.toLowerCase();
@@ -221,17 +221,27 @@ export class SessionManager {
     return this.getReposStore()[this.repoKey] ?? EMPTY_REPO_STATE;
   }
 
-  private async updateRepoState(mutate: (s: RepoState) => void): Promise<void> {
-    if (!this.repoKey) return;
-    const all = this.getReposStore();
-    const cur: RepoState = {
-      sessions: all[this.repoKey]?.sessions ?? [],
-      prefs: all[this.repoKey]?.prefs ?? {},
-      activeWorktree: all[this.repoKey]?.activeWorktree,
-    };
-    mutate(cur);
-    all[this.repoKey] = cur;
-    await this.ctx.globalState.update(REPOS_KEY, all);
+  // Serializes writes: globalState.get returns the last COMMITTED value, so
+  // two overlapping read-mutate-update cycles would both read the same
+  // snapshot and the later update() would silently drop the earlier change.
+  private repoStateWrites: Promise<void> = Promise.resolve();
+
+  private updateRepoState(mutate: (s: RepoState) => void): Promise<void> {
+    const run = this.repoStateWrites.then(async () => {
+      if (!this.repoKey) return;
+      const all = this.getReposStore();
+      const cur: RepoState = {
+        sessions: all[this.repoKey]?.sessions ?? [],
+        prefs: all[this.repoKey]?.prefs ?? {},
+        activeWorktree: all[this.repoKey]?.activeWorktree,
+      };
+      mutate(cur);
+      all[this.repoKey] = cur;
+      await this.ctx.globalState.update(REPOS_KEY, all);
+    });
+    // Keep the chain alive even if a write fails; the caller still sees it.
+    this.repoStateWrites = run.catch(() => {});
+    return run;
   }
 
   /** One-shot migration: if the repo bucket is empty and legacy workspaceState

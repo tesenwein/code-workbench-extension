@@ -43,7 +43,7 @@ async function githubRepoUrl(cwd: string): Promise<string | null> {
 }
 import { WorktreeItem, WorktreesProvider } from '../worktreesView';
 import { TasksProvider } from '../tasksView';
-import { CLAUDE_MODELS, SessionManager } from '../sessions';
+import { CLAUDE_MODELS, SessionManager, normalizeWtPath } from '../sessions';
 import { listTasks, updateTask } from '../tasks';
 import { PrefsPanel } from '../prefsPanel';
 import {
@@ -212,7 +212,11 @@ export function registerWorktreeCommands(
         // leaves the window pointed at a missing path. Defer: switch to main
         // first (reloads the host) and complete removal on next activation.
         const folders = vscode.workspace.workspaceFolders ?? [];
-        const isOpenHere = folders.some((f) => f.uri.fsPath === item.wt.path);
+        // Normalized compare: git-canonical paths and VS Code folder paths can
+        // differ by case/trailing slash; a raw === here would miss the match
+        // and delete the folder VS Code currently has open.
+        const doomed = normalizeWtPath(item.wt.path);
+        const isOpenHere = folders.some((f) => normalizeWtPath(f.uri.fsPath) === doomed);
         if (isOpenHere) {
           if (!repoKey) {
             vscode.window.showErrorMessage('Cannot determine repo key for deferred removal.');
@@ -239,6 +243,26 @@ export function registerWorktreeCommands(
             worktreePath: item.wt.path,
           } satisfies PendingRemoval);
           await openWorkspaceFolder(fallback.path);
+          // In a multi-root workspace openWorkspaceFolder only appends the
+          // fallback — no reload happens, so the deferred removal in
+          // activate() would never run. Drop the doomed folder, then reload.
+          const after = vscode.workspace.workspaceFolders ?? [];
+          if (after.length > 1) {
+            const idx = after.findIndex((f) => normalizeWtPath(f.uri.fsPath) === doomed);
+            if (idx >= 0) {
+              await new Promise<void>((resolve) => {
+                const sub = vscode.workspace.onDidChangeWorkspaceFolders(() => {
+                  sub.dispose();
+                  resolve();
+                });
+                if (!vscode.workspace.updateWorkspaceFolders(idx, 1)) {
+                  sub.dispose();
+                  resolve();
+                }
+              });
+            }
+            await vscode.commands.executeCommand('workbench.action.reloadWindow');
+          }
           return;
         }
 
