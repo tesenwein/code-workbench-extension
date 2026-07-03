@@ -98,6 +98,7 @@ export async function checkWorkbenchSkills(targetPath: string): Promise<SkillsDr
  */
 export function skillsBundleSignature(): string {
   const hash = createHash('sha256');
-  for (const skill of BUNDLED_SKILLS) hash.update(skill.name).update('\0').update(skill.body);
+  const skills = [...BUNDLED_SKILLS].sort((a, b) => a.name.localeCompare(b.name));
+  for (const skill of skills) hash.update(skill.name).update('\0').update(skill.body);
   return hash.digest('hex').slice(0, 16);
 }

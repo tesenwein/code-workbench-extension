@@ -492,7 +492,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
       if (!drift.installedAny) return; // never opted in here — don't nag
       const parts: string[] = [];
       if (drift.stale.length) parts.push(`${drift.stale.length} outdated`);
-      if (drift.missing.length) parts.push(`${drift.missing.length} new`);
+      if (drift.missing.length) parts.push(`${drift.missing.length} not installed`);
       if (drift.legacy.length) parts.push(`${drift.legacy.length} legacy`);
       if (!parts.length) return;
       const promptKey = `codeWorkbench.skillsDriftDismissed.${scope}`;
@@ -513,9 +513,12 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
       console.error('Skills drift check failed', e);
     }
   };
-  void promptSkillsDrift('user', os.homedir());
   const projectTarget = sessionMgr.getActiveWorktree() ?? repoRoot;
-  if (projectTarget) void promptSkillsDrift('project', projectTarget);
+  void (async () => {
+    // Sequential so the two scopes never stack notifications on one activation.
+    await promptSkillsDrift('user', os.homedir());
+    if (projectTarget) await promptSkillsDrift('project', projectTarget);
+  })();
 
   // ── Register workbench MCP servers into .claude.json ──────────────────
   ctx.subscriptions.push(
