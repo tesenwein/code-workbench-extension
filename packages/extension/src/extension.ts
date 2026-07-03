@@ -200,12 +200,20 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     (wt) => sessionMgr.getPrefs(wt).color,
     (wt) => sessionMgr.getPrefs(wt).note,
   );
+  // Refresh BOTH task surfaces (sidebar view + full-page board) at once. Wired
+  // into every task mutation so an edit in one surface reflects in the other
+  // immediately, rather than waiting on the unreliable fs.watch / 3s poll.
+  const refreshTaskSurfaces = () => {
+    tasksProvider.refresh();
+    refreshTasksPage();
+  };
   const tasksProvider = new TasksProvider(
     () => repoKey,
     () => sessionMgr.getActiveWorktree() ?? undefined,
     ctx.extensionUri,
     () => repoRoot,
     ctx.workspaceState,
+    refreshTaskSurfaces,
   );
   const sessionsProvider = new SessionsProvider(sessionMgr, ctx.extensionUri);
 
@@ -266,6 +274,8 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
         () => repoKey,
         () => repoRoot,
         () => sessionMgr.getActiveWorktree() ?? undefined,
+        {},
+        refreshTaskSurfaces,
       ),
     ),
     // Opening a task from the sidebar reveals the full-width board with that
@@ -278,6 +288,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
         () => repoRoot,
         () => sessionMgr.getActiveWorktree() ?? undefined,
         { selectTaskId: typeof id === 'string' ? id : undefined },
+        refreshTaskSurfaces,
       ),
     ),
     // Creating a task opens the board with a blank editor in the detail
@@ -289,6 +300,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
         () => repoRoot,
         () => sessionMgr.getActiveWorktree() ?? undefined,
         { create: true },
+        refreshTaskSurfaces,
       ),
     ),
     vscode.commands.registerCommand('codeWorkbench.arch.refresh', () => archProvider.refresh()),

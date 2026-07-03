@@ -24,6 +24,9 @@ export function showTasksPage(
   getRepoRoot: () => string | undefined,
   getActiveWorktree: () => string | undefined,
   intent: TasksPageIntent = {},
+  /** Called after any task mutation on this page so the host can also refresh
+   *  the sidebar Tasks view immediately (the file watcher is unreliable). */
+  afterMutation: () => void = () => undefined,
 ): void {
   const pushContext = async (rpc: { postEvent(name: string, payload: unknown): void }) => {
     rpc.postEvent('context', {
@@ -42,7 +45,7 @@ export function showTasksPage(
     viewType: VIEW_TYPE,
     title: 'Task Board',
     entry: 'tasks',
-    handlers: buildTaskRpcHandlers(getRepoKey),
+    handlers: buildTaskRpcHandlers(getRepoKey, afterMutation),
     onReady: (rpc) => {
       void pushContext(rpc);
       pushIntent(rpc);
