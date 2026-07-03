@@ -135,6 +135,126 @@ function ListView({ cards, selectedSlug, onSelect, preserveOrder }: ListViewProp
 }
 
 // ---------------------------------------------------------------------------
+// Detail viewer — a nicely-formatted, read-only render of a card for the
+// full-page board. Editing still happens in the raw `<slug>.json` file (Open
+// button); this pane is the human-friendly counterpart to the sidebar list.
+// ---------------------------------------------------------------------------
+
+function ArchSection({ title, items }: { title: string; items: string[] }) {
+  if (!items || items.length === 0) return null;
+  return (
+    <div className="arch-detail-section">
+      <div className="arch-detail-subhead">{title}</div>
+      <ul className="arch-detail-list">
+        {items.map((it, i) => (
+          <li key={i}>{decodeEntities(it)}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function fmtDate(iso: string): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+interface ArchDetailProps {
+  card: ArchCard;
+  cards: ArchCard[];
+  onOpenFile: (slug: string) => void;
+  onSelect: (slug: string) => void;
+  onDelete: (slug: string) => void;
+}
+
+function ArchDetail({ card, cards, onOpenFile, onSelect, onDelete }: ArchDetailProps) {
+  const bySlug = useMemo(() => new Map(cards.map((c) => [c.slug, c])), [cards]);
+  return (
+    <div className="arch-detail">
+      <div className="arch-detail-header">
+        <span className="arch-detail-title">{decodeEntities(card.name)}</span>
+        <span className="arch-detail-id">{card.slug}</span>
+        <button onClick={() => onOpenFile(card.slug)} style={btnStyle('secondary')} title="Edit the card's .json file">
+          Open .json
+        </button>
+        <button onClick={() => onDelete(card.slug)} style={btnStyle('danger')} title="Delete this card">
+          Delete
+        </button>
+      </div>
+
+      {card.description?.trim() && (
+        <p className="arch-detail-desc">{decodeEntities(card.description)}</p>
+      )}
+
+      {card.tags && card.tags.length > 0 && (
+        <div className="arch-detail-chips">
+          {card.tags.map((t) => (
+            <span key={t} className="arch-chip">
+              {decodeEntities(t)}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {card.files && card.files.length > 0 && (
+        <div className="arch-detail-section">
+          <div className="arch-detail-subhead">Files</div>
+          <ul className="arch-detail-list arch-detail-files">
+            {card.files.map((f, i) => (
+              <li key={i}>{f}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <ArchSection title="Guidelines" items={card.guidelines} />
+      <ArchSection title="Anti-patterns" items={card.anti_patterns} />
+      <ArchSection title="Decisions" items={card.decisions} />
+
+      {card.dependsOn && card.dependsOn.length > 0 && (
+        <div className="arch-detail-section">
+          <div className="arch-detail-subhead">Depends on</div>
+          <div className="arch-detail-chips">
+            {card.dependsOn.map((slug) => {
+              const dep = bySlug.get(slug);
+              return (
+                <button
+                  key={slug}
+                  className="arch-chip arch-chip-link"
+                  onClick={() => dep && onSelect(slug)}
+                  disabled={!dep}
+                  title={dep ? `Go to ${dep.name}` : `Unknown card: ${slug}`}
+                >
+                  {dep ? decodeEntities(dep.name) : slug}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className="arch-detail-meta">
+        {card.createdAt && <span>Created {fmtDate(card.createdAt)}</span>}
+        {card.updatedAt && <span>Updated {fmtDate(card.updatedAt)}</span>}
+      </div>
+    </div>
+  );
+}
+
+function ArchDetailEmpty() {
+  return (
+    <div className="arch-detail arch-detail-empty">
+      <div className="arch-detail-empty-inner">
+        <div className="arch-detail-empty-icon">◇</div>
+        <div className="arch-detail-empty-text">Select a component to view its details.</div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Search box
 // ---------------------------------------------------------------------------
 
@@ -295,6 +415,9 @@ interface Props {
   /** Programmatically focus a card by slug (e.g. a deep link from elsewhere). */
   focusSlug?: string | null;
   onFocusSlugHandled?: () => void;
+  /** Full-page board: render a master/detail layout with an in-webview card
+   *  detail viewer instead of opening the raw `.json` on select. */
+  pageMode?: boolean;
 }
 
 export function ArchPanel({
@@ -304,8 +427,9 @@ export function ArchPanel({
   hideHeaderTitle,
   focusSlug,
   onFocusSlugHandled,
+  pageMode,
 }: Props) {
-  const { cards, loading, upsert } = useArchCards(api, repoPath, reloadKey);
+  const { cards, loading, upsert, remove } = useArchCards(api, repoPath, reloadKey);
   const [query, setQuery] = useState('');
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
   // Semantic ranking (host embeddings) — best-first slug order for the current
@@ -320,14 +444,15 @@ export function ArchPanel({
     setSelectedSlug(null);
   }, [repoPath]);
 
-  // Selecting a card opens its `<slug>.json` file in the host's normal editor
-  // (highlighting it in the list for feedback) — there is no in-webview form.
+  // Selecting a card: on the full-page board it opens the in-webview detail
+  // viewer (right pane); in the narrow sidebar it opens the `<slug>.json` file
+  // in the host's normal editor (there is no room for a detail pane there).
   const selectCard = useCallback(
     (slug: string) => {
       setSelectedSlug(slug);
-      void api.openCard(slug);
+      if (!pageMode) void api.openCard(slug);
     },
-    [api],
+    [api, pageMode],
   );
 
   useEffect(() => {
@@ -412,6 +537,11 @@ export function ArchPanel({
     return ranked;
   }, [semanticActive, semanticOrder, substringMatches, cards]);
 
+  const selectedCard = useMemo(
+    () => (selectedSlug ? (cards.find((c) => c.slug === selectedSlug) ?? null) : null),
+    [cards, selectedSlug],
+  );
+
   // Create a new component card (with defaults), then open its file to edit.
   const addCard = useCallback(async () => {
     const saved = await upsert({ name: 'New Component' });
@@ -450,26 +580,71 @@ export function ArchPanel({
         </button>
       </div>
 
-      {/* Content — component list; clicking a row opens the card file */}
-      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        {loading && (
-          <div style={{ padding: 8, fontSize: 12, color: 'var(--vscode-descriptionForeground)' }}>
-            Loading…
+      {/* Content — component list. Sidebar: clicking a row opens the card file.
+          Page: a master/detail split with an in-webview detail viewer. */}
+      {pageMode ? (
+        <div className="arch-page-layout">
+          <div className="arch-list-col">
+            {loading && (
+              <div
+                style={{ padding: 8, fontSize: 12, color: 'var(--vscode-descriptionForeground)' }}
+              >
+                Loading…
+              </div>
+            )}
+            {!loading && filteredCards.length === 0 && query.trim() ? (
+              <div
+                style={{ padding: 16, color: 'var(--vscode-descriptionForeground)', fontSize: 12 }}
+              >
+                No components match “{query.trim()}”.
+              </div>
+            ) : (
+              <ListView
+                cards={filteredCards}
+                selectedSlug={selectedSlug}
+                onSelect={selectCard}
+                preserveOrder={semanticActive}
+              />
+            )}
           </div>
-        )}
-        {!loading && filteredCards.length === 0 && query.trim() ? (
-          <div style={{ padding: 16, color: 'var(--vscode-descriptionForeground)', fontSize: 12 }}>
-            No components match “{query.trim()}”.
+          <div className="arch-detail-pane">
+            {selectedCard ? (
+              <ArchDetail
+                card={selectedCard}
+                cards={cards}
+                onOpenFile={(slug) => void api.openCard(slug)}
+                onSelect={selectCard}
+                onDelete={(slug) => {
+                  void remove(slug);
+                  setSelectedSlug(null);
+                }}
+              />
+            ) : (
+              <ArchDetailEmpty />
+            )}
           </div>
-        ) : (
-          <ListView
-            cards={filteredCards}
-            selectedSlug={selectedSlug}
-            onSelect={selectCard}
-            preserveOrder={semanticActive}
-          />
-        )}
-      </div>
+        </div>
+      ) : (
+        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          {loading && (
+            <div style={{ padding: 8, fontSize: 12, color: 'var(--vscode-descriptionForeground)' }}>
+              Loading…
+            </div>
+          )}
+          {!loading && filteredCards.length === 0 && query.trim() ? (
+            <div style={{ padding: 16, color: 'var(--vscode-descriptionForeground)', fontSize: 12 }}>
+              No components match “{query.trim()}”.
+            </div>
+          ) : (
+            <ListView
+              cards={filteredCards}
+              selectedSlug={selectedSlug}
+              onSelect={selectCard}
+              preserveOrder={semanticActive}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

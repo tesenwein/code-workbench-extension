@@ -1241,6 +1241,147 @@
   margin-bottom: 6px;
 }
 
+/* ── Architecture full-page board: master/detail ──────────────────────── */
+.arch-page-layout {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+.arch-list-col {
+  flex: 1 1 40%;
+  max-width: 520px;
+  min-width: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.arch-detail-pane {
+  flex: 1 1 60%;
+  min-width: 340px;
+  overflow-y: auto;
+  border-left: 1px solid var(--border);
+  background: var(--bg-card);
+}
+.arch-detail {
+  padding: 18px 22px 26px;
+}
+.arch-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+}
+.arch-detail-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg-0);
+  margin-right: 6px;
+}
+.arch-detail-id {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  margin-right: auto;
+}
+.arch-detail-desc {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--fg-1);
+  margin: 0 0 14px;
+  white-space: pre-wrap;
+}
+.arch-detail-section {
+  margin-top: 16px;
+}
+.arch-detail-subhead {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  margin-bottom: 7px;
+}
+.arch-detail-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--fg-1);
+}
+.arch-detail-list li {
+  margin-bottom: 4px;
+}
+.arch-detail-files {
+  list-style: none;
+  padding-left: 0;
+}
+.arch-detail-files li {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--fg-2);
+}
+.arch-detail-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.arch-chip {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  color: var(--fg-2);
+}
+.arch-chip-link {
+  cursor: pointer;
+}
+.arch-chip-link:hover:not(:disabled) {
+  border-color: var(--clay);
+  color: var(--clay);
+}
+.arch-chip-link:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.arch-detail-meta {
+  display: flex;
+  gap: 16px;
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-3);
+}
+.arch-detail-empty {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.arch-detail-empty-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+.arch-detail-empty-icon {
+  font-size: 30px;
+  color: var(--fg-3);
+  opacity: 0.5;
+}
+.arch-detail-empty-text {
+  font-size: 12px;
+  color: var(--fg-3);
+}
+
 /* fade-in for freshly rendered rows */
 .cw-fade {
   animation: cw-fade 0.24s ease both;

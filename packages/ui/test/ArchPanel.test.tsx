@@ -90,6 +90,44 @@ describe('ArchPanel', () => {
     expect(screen.queryByText('Auth service')).not.toBeInTheDocument();
   });
 
+  it('pageMode: selecting a card shows the in-webview detail viewer, not the file', async () => {
+    const auth = card({
+      slug: 'auth',
+      name: 'Auth service',
+      description: 'Handles login',
+      files: ['src/auth.ts'],
+      guidelines: ['Prefer tokens'],
+      dependsOn: ['db'],
+    });
+    const db = card({ slug: 'db', name: 'Database layer' });
+    const api = mockApi([auth, db]);
+
+    render(<ArchPanel repoPath="/repo" api={api} pageMode />);
+    // The empty placeholder shows before a selection.
+    expect(await screen.findByText(/Select a component to view/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByText('Auth service'));
+
+    // Detail-only sections render; the raw .json file is NOT opened in page mode.
+    expect(await screen.findByText('src/auth.ts')).toBeInTheDocument();
+    expect(screen.getByText('Prefer tokens')).toBeInTheDocument();
+    expect(api.openCard).not.toHaveBeenCalled();
+
+    // The dependsOn chip links to the dependency card by name.
+    await userEvent.click(screen.getByRole('button', { name: 'Database layer' }));
+    expect(await screen.findByText(/Created/)).toBeInTheDocument();
+  });
+
+  it('sidebar (non-page) mode still opens the card file on select', async () => {
+    const auth = card({ slug: 'auth', name: 'Auth service' });
+    const api = mockApi([auth]);
+
+    render(<ArchPanel repoPath="/repo" api={api} />);
+    await userEvent.click(await screen.findByText('Auth service'));
+
+    expect(api.openCard).toHaveBeenCalledWith('auth');
+  });
+
   it('falls back to substring filtering when api.search returns nothing', async () => {
     const auth = card({ slug: 'auth', name: 'Auth service' });
     const db = card({ slug: 'db', name: 'Database layer' });

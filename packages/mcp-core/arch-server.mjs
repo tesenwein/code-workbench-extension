@@ -260,6 +260,17 @@ export async function handle(req) {
         protocolVersion: "2024-11-05",
         capabilities: { tools: {} },
         serverInfo: { name: "code-workbench-arch", version: "0.1.0" },
+        instructions:
+          "This server holds the repo's architecture wiki — component cards recording each " +
+          "component's intent, guidelines, anti-patterns, and key decisions. CONSULT IT BEFORE " +
+          "designing or changing code so your work matches the recorded conventions:\n" +
+          "1. At the start of any non-trivial task or in plan mode, call arch_list for the " +
+          "component landscape, then arch_search the area you will touch and arch_get the matching card.\n" +
+          "2. Follow each card's guidelines and avoid its anti-patterns; when code and a card " +
+          "disagree, surface it to the user rather than silently picking one.\n" +
+          "3. After a significant change (new component, changed behavior, new dependency), call " +
+          "arch_upsert to record or update the card in the same session, with tags so future searches find it.\n" +
+          "An empty wiki is fine — build it up as you learn the codebase; absence is not an error.",
       };
     case "tools/list":
       return { tools: TOOLS };
