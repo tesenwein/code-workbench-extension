@@ -123,12 +123,16 @@ export class SessionManager {
     // `Terminal.name` whenever the active terminal or its state changes —
     // those fire on the focus shifts that naturally follow a rename.
     vscode.window.onDidChangeActiveTerminal(() => {
+      this.pruneClosedTerminals();
       void this.syncTerminalNames();
       // Re-render so the session row matching the now-focused terminal gains
       // its "selected" highlight (and the previously-selected one drops it).
       this._onDidChange.fire();
     });
-    vscode.window.onDidChangeTerminalState(() => void this.syncTerminalNames());
+    vscode.window.onDidChangeTerminalState(() => {
+      this.pruneClosedTerminals();
+      void this.syncTerminalNames();
+    });
     // Subscribe to raw terminal output to drive the "active" indicator. The
     // event is part of the `terminalDataWriteEvent` proposed API (enabled via
     // package.json `enabledApiProposals`). Guard with `try` so an environment
@@ -143,6 +147,23 @@ export class SessionManager {
     } catch {
       /* proposed API unavailable — skip */
     }
+  }
+
+  /** Reconcile the session→terminal map against the terminals VS Code still
+   *  knows about. Safety net for any close we missed (or a terminal that died
+   *  before it was registered) — otherwise a session shows "live" until the
+   *  window reloads. */
+  private pruneClosedTerminals(): void {
+    const live = new Set(vscode.window.terminals);
+    let changed = false;
+    for (const [id, term] of this.terminals) {
+      if (!live.has(term)) {
+        this.terminals.delete(id);
+        this.lastActivity.delete(id);
+        changed = true;
+      }
+    }
+    if (changed) this._onDidChange.fire();
   }
 
   /** Record a write on a terminal we own and ensure the blink timer is running. */
@@ -402,6 +423,7 @@ export class SessionManager {
   }
 
   async open(session: SavedSession): Promise<vscode.Terminal> {
+    this.pruneClosedTerminals();
     const existing = this.terminals.get(session.id);
     if (existing) {
       existing.show();
@@ -450,6 +472,10 @@ export class SessionManager {
         shellPath: launch.command,
         shellArgs: launch.args,
       });
+      // Register before any await below — if the terminal dies during the
+      // save, onDidCloseTerminal must find it in the map or the session
+      // would show "live" forever.
+      this.terminals.set(session.id, term);
       this.showStartupOverlay(term);
       if (!session.launched || session.claudeSessionId !== launch.claudeSessionId) {
         const sessions = this.list();
@@ -575,6 +601,7 @@ export class SessionManager {
    *  `worktreePath` is given, only that worktree's sessions are considered.
    *  Returns the number of sessions removed. */
   async closeInactive(worktreePath?: string): Promise<number> {
+    this.pruneClosedTerminals();
     const sessions = this.list();
     const remaining: SavedSession[] = [];
     let removed = 0;

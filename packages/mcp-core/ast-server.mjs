@@ -43,6 +43,7 @@ import {
 } from "./ast-core.mjs";
 import { searchCode } from "./code-search.mjs";
 import { detectClones } from "./clone-detect.mjs";
+import { normalizeFingerprints } from "./scan-server-kit.mjs";
 
 // ── Path validation ───────────────────────────────────────────────────────────
 
@@ -355,20 +356,6 @@ async function toolFindDuplicates({
     acknowledgedHidden: postFiltered.length - visible.length,
     groups: visible,
   };
-}
-
-/** Coalesce a single fingerprint and/or a fingerprints array into a unique, trimmed list. */
-function normalizeFingerprints(fingerprint, fingerprints) {
-  const raw = [];
-  if (typeof fingerprint === "string") raw.push(fingerprint);
-  else if (Array.isArray(fingerprint)) raw.push(...fingerprint);
-  if (Array.isArray(fingerprints)) raw.push(...fingerprints);
-  else if (typeof fingerprints === "string") raw.push(fingerprints);
-  return [
-    ...new Set(
-      raw.map((f) => (typeof f === "string" ? f.trim() : "")).filter(Boolean),
-    ),
-  ];
 }
 
 async function toolAcknowledgeDuplicate({ fingerprint, fingerprints, unack }) {

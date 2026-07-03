@@ -1,6 +1,5 @@
 import { ScanPanel } from './ScanPanel';
-import { AccordionRow } from './primitives';
-import { FileLink, ScanRowActions } from './ScanRowParts';
+import { ScanItemRow } from './ScanRowParts';
 import type { DeadCodeItem, DeadCodeKind, ScanPaneApi, OpenFileFn } from '../types';
 
 interface Props {
@@ -32,76 +31,6 @@ const KIND_CLASS: Record<DeadCodeKind, string> = {
   'unused-local': 'dc-kind-local',
   'commented-code': 'dc-kind-comment',
 };
-
-function ItemRow({
-  item,
-  acknowledged,
-  repoPath,
-  onAck,
-  onUnack,
-  onCreateTask,
-  onOpenFile,
-}: {
-  item: DeadCodeItem;
-  acknowledged: boolean;
-  repoPath: string | null;
-  onAck: (fp: string) => void;
-  onUnack: (fp: string) => void;
-  onCreateTask?: (title: string) => void;
-  onOpenFile?: OpenFileFn;
-}) {
-  const clickable = !!onOpenFile && !!repoPath;
-  return (
-    <AccordionRow
-      summary={
-        <>
-          <span className={`dc-kind-badge ${KIND_CLASS[item.kind]}`}>{KIND_LABEL[item.kind]}</span>
-          <span
-            className={`dc-item-name${clickable ? ' dc-item-name-link' : ''}`}
-            title={clickable ? `Open ${item.file}:${item.startLine}` : undefined}
-            onClick={
-              clickable
-                ? (e) => {
-                    e.stopPropagation();
-                    onOpenFile!(
-                      `${repoPath}/${item.file}`,
-                      item.file.split('/').pop() ?? item.file,
-                      item.startLine,
-                    );
-                  }
-                : undefined
-            }
-          >
-            {item.name}
-          </span>
-        </>
-      }
-    >
-      <div className="dc-item-detail">
-        <div className="dc-item-location">
-          <FileLink
-            file={item.file}
-            line={item.startLine}
-            repoPath={repoPath}
-            onOpenFile={onOpenFile}
-            baseClass="dc-item-file"
-          />
-        </div>
-        <div className="dc-item-desc">{item.detail}</div>
-        <div className="dc-item-actions">
-          <ScanRowActions
-            acknowledged={acknowledged}
-            fingerprint={item.fingerprint}
-            taskTitle={`Fix ${KIND_LABEL[item.kind].toLowerCase()}: ${item.name}`}
-            onAck={onAck}
-            onUnack={onUnack}
-            onCreateTask={onCreateTask}
-          />
-        </div>
-      </div>
-    </AccordionRow>
-  );
-}
 
 export function DeadCodePanel({
   repoPath,
@@ -135,10 +64,12 @@ export function DeadCodePanel({
       onResultsChange={onResultsChange}
       resizable={resizable}
       renderRow={({ item, acknowledged, onAck, onUnack }) => (
-        <ItemRow
+        <ScanItemRow
           item={item}
           acknowledged={acknowledged}
           repoPath={repoPath}
+          kindLabel={KIND_LABEL}
+          kindClass={KIND_CLASS}
           onAck={onAck}
           onUnack={onUnack}
           onCreateTask={onCreateTask}
