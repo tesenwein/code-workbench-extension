@@ -346,10 +346,7 @@
         "command": "codeWorkbench.sessions.newFromEditor",
         "category": "Code Workbench",
         "title": "New Session…",
-        "icon": {
-          "light": "media/spark-amber.svg",
-          "dark": "media/spark-amber.svg"
-        }
+        "icon": "media/spark.svg"
       },
       {
         "command": "codeWorkbench.sessions.open",

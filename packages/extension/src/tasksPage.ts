@@ -16,6 +16,7 @@ export function showTasksPage(
   getRepoKey: () => string | undefined,
   getRepoRoot: () => string | undefined,
   getActiveWorktree: () => string | undefined,
+  selectTaskId?: string,
 ): void {
   const pushContext = async (rpc: { postEvent(name: string, payload: unknown): void }) => {
     rpc.postEvent('context', {
@@ -25,16 +26,23 @@ export function showTasksPage(
       surface: 'page',
     });
   };
+  const pushSelection = (rpc: { postEvent(name: string, payload: unknown): void }) => {
+    if (selectTaskId) rpc.postEvent('select-task', selectTaskId);
+  };
   showPage({
     ctx,
     viewType: VIEW_TYPE,
     title: 'Task Board',
     entry: 'tasks',
     handlers: buildTaskRpcHandlers(getRepoKey),
-    onReady: (rpc) => void pushContext(rpc),
+    onReady: (rpc) => {
+      void pushContext(rpc);
+      pushSelection(rpc);
+    },
     onReveal: (rpc) => {
       rpc.postEvent('tasks-changed', null);
       void pushContext(rpc);
+      pushSelection(rpc);
     },
     // The watcher poll skips while the page is hidden (see isTasksPageOpen),
     // so re-list on return to catch anything that changed meanwhile.

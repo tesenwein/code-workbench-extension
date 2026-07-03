@@ -268,6 +268,18 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
         () => sessionMgr.getActiveWorktree() ?? undefined,
       ),
     ),
+    // Opening a task from the sidebar reveals the full-width board with that
+    // task selected in its detail editor — editing lives in the main panel,
+    // never squeezed into the narrow side view.
+    vscode.commands.registerCommand('codeWorkbench.tasks.openTaskInPage', (id?: string) =>
+      showTasksPage(
+        ctx,
+        () => repoKey,
+        () => repoRoot,
+        () => sessionMgr.getActiveWorktree() ?? undefined,
+        typeof id === 'string' ? id : undefined,
+      ),
+    ),
     vscode.commands.registerCommand('codeWorkbench.arch.refresh', () => archProvider.refresh()),
     vscode.commands.registerCommand('codeWorkbench.searchCode', () =>
       runSearchCodeCommand(ctx, repoRoot),

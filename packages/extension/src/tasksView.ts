@@ -134,7 +134,16 @@ export class TasksProvider implements vscode.WebviewViewProvider {
     };
     view.webview.html = reactWebviewHtml(view.webview, this.extensionUri, 'tasks');
 
-    attachRpc(view.webview, buildTaskRpcHandlers(this.getRepoKey), (rpc) => {
+    // The sidebar gets one extra handler over the shared set: clicking a task
+    // opens the full-width board page with that task selected, so editing
+    // happens in the main editor area rather than inline in this narrow view.
+    const handlers = {
+      ...buildTaskRpcHandlers(this.getRepoKey),
+      openTaskPage: async (id: unknown) => {
+        await vscode.commands.executeCommand('codeWorkbench.tasks.openTaskInPage', String(id));
+      },
+    };
+    attachRpc(view.webview, handlers, (rpc) => {
       this.rpc = rpc;
       void this.pushContext();
     });
