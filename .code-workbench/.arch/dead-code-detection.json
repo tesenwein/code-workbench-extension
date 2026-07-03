@@ -1,7 +1,7 @@
 {
   "slug": "dead-code-detection",
   "name": "Dead Code Detection",
-  "description": "Workspace scanner for unused exports, unused locals, and commented-out code blocks. Analysed via dead-code-detect.mjs (TypeScript compiler API). The host runs the scan and persists results to <repo>/.code-workbench/dead-code-findings.json; the cw-dead-code MCP tool reads that file and applies acks at read time. Surfaced as the VS Code extension's DeadCodeView React webview (rendering the shared @code-workbench/ui DeadCodePanel) and the MCP tool detect_dead_code.",
+  "description": "Workspace scanner for unused exports, unused locals, and commented-out code blocks. Analysed via dead-code-detect.mjs (TypeScript compiler API). The host runs the scan and persists results to <repo>/.code-workbench/dead-code-findings.json; the cw-dead-code MCP tool reads that file and applies acks at read time. Surfaced as the MCP tool detect_dead_code and the VS Code extension's full editor-tab Dead Code page (scanPages.ts, replacing the old sidebar DeadCodeView) rendering the shared @code-workbench/ui DeadCodePanel; opened from the Code Health action bar via codeWorkbench.deadCode.scan.",
   "files": [
     "packages/mcp-core/dead-code-detect.mjs",
     "packages/mcp-core/dead-code-server.mjs",
@@ -50,6 +50,6 @@
     "shared-scan-service",
     "ui-shared-panels"
   ],
-  "updatedAt": "2026-05-26T08:28:19.226Z",
+  "updatedAt": "2026-07-03T04:36:45.138Z",
   "createdAt": "2026-05-19T12:16:22.033Z"
 }

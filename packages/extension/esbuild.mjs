@@ -136,6 +136,7 @@ configs.push({
     'webview/duplicates': 'webview/duplicates.tsx',
     'webview/typeescapes': 'webview/typeescapes.tsx',
     'webview/arch': 'webview/arch.tsx',
+    'webview/search': 'webview/search.tsx',
   },
   outdir: 'dist',
 });

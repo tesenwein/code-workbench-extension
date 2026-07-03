@@ -10,6 +10,7 @@ export { TypeEscapePanel } from './components/TypeEscapePanel';
 export { DuplicatesPanel } from './components/DuplicatesPanel';
 export { TasksPanel } from './components/TasksPanel';
 export { ArchPanel } from './components/ArchPanel';
+export { SearchPanel } from './components/SearchPanel';
 
 export type {
   TaskPriority,
@@ -29,4 +30,6 @@ export type {
   OpenFileFn,
   ArchCard,
   ArchApi,
+  CodeSearchResult,
+  SearchApi,
 } from './types';

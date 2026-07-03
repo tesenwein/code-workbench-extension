@@ -1,0 +1,40 @@
+{
+  "slug": "editor-tab-pages",
+  "name": "Editor-Tab Pages",
+  "description": "Full editor-tab webview pages + the \"Code Health\" sidebar action bar. pagePanel.ts is the generic singleton WebviewPanel host (showPage/getPage, one reusable tab per viewType; re-invoking reveals + fires onReveal). Pages: search results (searchPanel.ts), the three code-health scans (scanPages.ts — same scan/ack/exclude RPC set the old sidebar scan views had, auto-scan on open, re-scan on reveal; duplicates scan attaches per-member snippets via snippets.ts widenSnippet), and the tasks board (tasksPage.ts — reuses buildTaskRpcHandlers/taskPanelContext from tasksView.ts; refreshed by the same watchTasks watcher as the sidebar). The old Dead Code / Duplicates / Type Safety sidebar WebviewViews were REMOVED; codeHealthView.ts is a native TreeView action bar (Search Code, Duplicate Code, Dead Code, Type Safety) whose items run the unchanged command ids (codeWorkbench.deadCode.scan etc.), which now open pages. Tasks keeps its sidebar view AND gains codeWorkbench.tasks.openAsPage (view/title icon).",
+  "files": [
+    "packages/extension/src/pagePanel.ts",
+    "packages/extension/src/scanPages.ts",
+    "packages/extension/src/searchPanel.ts",
+    "packages/extension/src/tasksPage.ts",
+    "packages/extension/src/codeHealthView.ts",
+    "packages/extension/src/snippets.ts",
+    "packages/extension/src/tasksView.ts"
+  ],
+  "guidelines": [
+    "New full-page views go through pagePanel.showPage — never hand-roll a createWebviewPanel singleton.",
+    "Pages reuse the existing dist/webview/<entry> bundles; sidebar and page surfaces must answer the same RPC set so the shared ui components stay host-agnostic.",
+    "Snippet widening is best-effort file reads (snippets.ts) — keep the ranking/compact data as fallback.",
+    "Command ids for the scans are unchanged (codeWorkbench.*.scan) — they now open pages; don't add parallel command ids."
+  ],
+  "anti_patterns": [],
+  "decisions": [],
+  "tags": [
+    "page",
+    "webview panel",
+    "editor tab",
+    "code health",
+    "action bar",
+    "sidebar",
+    "task board",
+    "scan page"
+  ],
+  "dependsOn": [
+    "shared-scan-service",
+    "ui-shared-panels",
+    "tasks-view",
+    "search-results-panel"
+  ],
+  "updatedAt": "2026-07-03T04:36:31.727Z",
+  "createdAt": "2026-07-03T04:36:31.727Z"
+}

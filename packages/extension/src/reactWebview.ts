@@ -9,7 +9,7 @@
 
 import * as vscode from 'vscode';
 
-export type WebviewEntry = 'tasks' | 'deadcode' | 'duplicates' | 'typeescapes' | 'arch';
+export type WebviewEntry = 'tasks' | 'deadcode' | 'duplicates' | 'typeescapes' | 'arch' | 'search';
 
 function makeNonce(): string {
   const cs = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';

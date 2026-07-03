@@ -75,25 +75,10 @@
           "visibility": "visible"
         },
         {
-          "id": "codeWorkbench.deadCode",
-          "name": "Dead Code",
-          "type": "webview",
-          "initialSize": 3,
-          "visibility": "collapsed"
-        },
-        {
-          "id": "codeWorkbench.duplicates",
-          "name": "Duplicates",
-          "type": "webview",
-          "initialSize": 3,
-          "visibility": "collapsed"
-        },
-        {
-          "id": "codeWorkbench.typeEscapes",
-          "name": "Type Safety",
-          "type": "webview",
-          "initialSize": 3,
-          "visibility": "collapsed"
+          "id": "codeWorkbench.codeHealth",
+          "name": "Code Health",
+          "initialSize": 1,
+          "visibility": "visible"
         },
         {
           "id": "codeWorkbench.arch",
@@ -244,20 +229,20 @@
       {
         "command": "codeWorkbench.deadCode.scan",
         "category": "Code Workbench",
-        "title": "Scan for Dead Code",
-        "icon": "$(refresh)"
+        "title": "Dead Code: Scan & Open Page",
+        "icon": "$(trash)"
       },
       {
         "command": "codeWorkbench.duplicates.scan",
         "category": "Code Workbench",
-        "title": "Scan for Duplicate Code",
-        "icon": "$(refresh)"
+        "title": "Duplicate Code: Scan & Open Page",
+        "icon": "$(copy)"
       },
       {
         "command": "codeWorkbench.typeEscapes.scan",
         "category": "Code Workbench",
-        "title": "Scan for Type Escapes",
-        "icon": "$(refresh)"
+        "title": "Type Safety: Scan & Open Page",
+        "icon": "$(shield)"
       },
       {
         "command": "codeWorkbench.searchCode",
@@ -388,6 +373,12 @@
         "category": "Code Workbench",
         "title": "Remove Inactive Sessions",
         "icon": "$(clear-all)"
+      },
+      {
+        "command": "codeWorkbench.tasks.openAsPage",
+        "category": "Code Workbench",
+        "title": "Open Task Board as Page",
+        "icon": "$(link-external)"
       }
     ],
     "menus": {
@@ -473,21 +464,6 @@
           "group": "navigation"
         },
         {
-          "command": "codeWorkbench.deadCode.scan",
-          "when": "view == codeWorkbench.deadCode",
-          "group": "navigation"
-        },
-        {
-          "command": "codeWorkbench.duplicates.scan",
-          "when": "view == codeWorkbench.duplicates",
-          "group": "navigation"
-        },
-        {
-          "command": "codeWorkbench.typeEscapes.scan",
-          "when": "view == codeWorkbench.typeEscapes",
-          "group": "navigation"
-        },
-        {
           "command": "codeWorkbench.arch.refresh",
           "when": "view == codeWorkbench.arch",
           "group": "navigation"
@@ -500,6 +476,11 @@
         {
           "command": "codeWorkbench.sessions.newFromEditor",
           "when": "view == codeWorkbench.sessions",
+          "group": "navigation@1"
+        },
+        {
+          "command": "codeWorkbench.tasks.openAsPage",
+          "when": "view == codeWorkbench.tasks",
           "group": "navigation@1"
         }
       ]

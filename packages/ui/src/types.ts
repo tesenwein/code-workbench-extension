@@ -47,6 +47,10 @@ export interface DuplicateMember {
   startLine: number;
   endLine: number;
   lines: number;
+  /** Source of the member (host-widened, capped). When present, the
+   *  duplicates page renders the group's members side by side for
+   *  comparison; absent in compact/sidebar contexts. */
+  snippet?: string;
 }
 
 export interface DuplicateGroup {
@@ -106,6 +110,26 @@ export interface TasksApi {
 
 /** Open a file in the host editor. `loc` is an absolute-ish path. */
 export type OpenFileFn = (loc: string, name: string, line?: number) => void;
+
+/** A single ranked symbol match from the hybrid code search. Mirrors
+ *  mcp-core's CodeSearchResult (scan-types.d.ts) so the ui package stays
+ *  self-contained; the host enriches `snippet` with more context lines than
+ *  the raw search result carries. */
+export interface CodeSearchResult {
+  name: string;
+  kind: string;
+  file: string;
+  startLine: number;
+  endLine: number;
+  score: number;
+  snippet: string;
+}
+
+/** The host IO calls the code-search results panel needs. */
+export interface SearchApi {
+  search: (query: string) => Promise<CodeSearchResult[]>;
+  openFile: (file: string, line: number) => Promise<void>;
+}
 
 /** A single architecture-wiki component card, stored as one JSON file under
  *  `.code-workbench/.arch/<slug>.json`. Shared by the arch MCP server, the
