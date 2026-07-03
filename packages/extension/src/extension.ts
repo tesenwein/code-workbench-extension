@@ -197,7 +197,6 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
   const worktreesProvider = new WorktreesProvider(
     () => repoRoot,
     () => sessionMgr.getActiveWorktree(),
-    (wt) => sessionMgr.listForWorktree(wt).length,
     (wt) => sessionMgr.getPrefs(wt).color,
     (wt) => sessionMgr.getPrefs(wt).note,
   );

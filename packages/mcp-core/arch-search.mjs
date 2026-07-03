@@ -5,13 +5,22 @@
 // { slug, score } sorted best-first. Prints `[]` when semantic search is
 // unavailable (no embedding model) so the caller falls back to substring
 // filtering — the same graceful-degradation contract code-search uses.
+//
+// Modes: one-shot CLI (--query/--root/--limit), or `--serve` — a long-lived
+// worker speaking JSON-lines over stdin/stdout ({id, root, query, limit} →
+// {id, results}), so the embedding model loads once and stays warm across
+// queries instead of being reloaded per spawn.
+//
 // Exports searchArchCards() for use as a library.
 
-import fs from "node:fs";
-import fsPromises from "node:fs/promises";
-import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { isCliEntry } from "./cli-entry.mjs";
+import { readArchCards } from "./arch-cards.mjs";
 import { semanticScores } from "./semantic-search.mjs";
+
+// Cards scoring below this cosine floor are noise for the query. Dropping
+// them keeps a nonsense query from surfacing the whole ranked corpus and
+// makes the caller's "no matches" empty state reachable.
+const MIN_SCORE = 0.25;
 
 // Flatten a card into one embedding document — name + prose + every list so a
 // query can match a guideline, a dependency, or a file path, not just the name.
@@ -30,71 +39,76 @@ function cardText(c) {
     .join("\n");
 }
 
-async function readCards(root) {
-  const dir = path.join(root, ".code-workbench", ".arch");
-  let entries;
-  try {
-    entries = await fsPromises.readdir(dir);
-  } catch {
-    return [];
-  }
-  const cards = [];
-  for (const entry of entries) {
-    if (!entry.endsWith(".json")) continue;
-    try {
-      const raw = await fsPromises.readFile(path.join(dir, entry), "utf8");
-      const c = JSON.parse(raw);
-      if (c && typeof c.slug === "string" && c.slug) cards.push(c);
-    } catch {
-      /* skip malformed */
-    }
-  }
-  return cards;
-}
-
 /**
  * Rank arch cards under `root` against `query` by embedding similarity.
+ * Cards below the relevance floor are dropped, so an off-topic query can
+ * legitimately return nothing.
  * @param {{ root: string; query: string; limit?: number }} opts
  * @returns {Promise<Array<{ slug: string; score: number }>>} best-first, or
- *   `[]` when there are no cards or semantic search is unavailable.
+ *   `[]` when there are no cards, no relevant cards, or semantic search is
+ *   unavailable.
  */
 export async function searchArchCards({ root, query, limit }) {
   if (!query || !root) return [];
-  const cards = await readCards(root);
+  const cards = await readArchCards(root);
   if (!cards.length) return [];
   const docs = cards.map((c) => ({ id: c.slug, text: cardText(c) }));
   const scores = await semanticScores({ query, docs });
   if (!scores) return []; // model absent — caller substring-filters instead
   const ranked = cards
     .map((c) => ({ slug: c.slug, score: scores.get(c.slug) ?? 0 }))
+    .filter((r) => r.score >= MIN_SCORE)
     .sort((a, b) => b.score - a.score);
   return typeof limit === "number" ? ranked.slice(0, limit) : ranked;
 }
 
+// Worker mode: answer JSON-line requests until stdin closes. Keeps the
+// embedder (and semantic-search's in-memory vector cache) warm.
+async function serve() {
+  const { createInterface } = await import("node:readline");
+  const rl = createInterface({ input: process.stdin });
+  rl.on("line", (line) => {
+    let req;
+    try {
+      req = JSON.parse(line);
+    } catch {
+      return; // ignore garbage lines
+    }
+    searchArchCards(req)
+      .then((results) => {
+        process.stdout.write(JSON.stringify({ id: req.id, results }) + "\n");
+      })
+      .catch((err) => {
+        process.stdout.write(
+          JSON.stringify({ id: req.id, error: String(err?.message ?? err) }) + "\n",
+        );
+      });
+  });
+  rl.on("close", () => process.exit(0));
+}
+
 function parseCliArgs(argv) {
-  const opts = { root: "", query: "" };
+  const opts = { root: "", query: "", serve: false };
   for (let i = 0; i < argv.length; i++) {
     const next = () => argv[++i] ?? "";
     if (argv[i] === "--query") opts.query = next();
     else if (argv[i] === "--root") opts.root = next();
     else if (argv[i] === "--limit") opts.limit = Number(next());
+    else if (argv[i] === "--serve") opts.serve = true;
   }
   return opts;
 }
 
-// realpathSync resolves pnpm symlinks so a spawn via the symlinked path still
-// matches node's canonicalised import.meta.url. The basename guard prevents a
-// false CLI-run when this file is bundled into another script.
-const __entry = process.argv[1] ? fs.realpathSync(process.argv[1]) : "";
-if (
-  __entry &&
-  path.basename(__entry) === "arch-search.mjs" &&
-  pathToFileURL(__entry).href === import.meta.url
-) {
-  searchArchCards(parseCliArgs(process.argv.slice(2)))
-    .then((results) => process.stdout.write(JSON.stringify(results)))
-    .catch((err) => {
-      process.stderr.write(`[arch-search] ${err?.stack ?? err}\n`);
-      process.exit(1);
-    });
+if (isCliEntry(import.meta.url, "arch-search.mjs")) {
+  const opts = parseCliArgs(process.argv.slice(2));
+  if (opts.serve) {
+    serve();
+  } else {
+    searchArchCards(opts)
+      .then((results) => process.stdout.write(JSON.stringify(results)))
+      .catch((err) => {
+        process.stderr.write(`[arch-search] ${err?.stack ?? err}\n`);
+        process.exit(1);
+      });
+  }
 }

@@ -14,12 +14,11 @@
 //
 // CLI: node type-escape-detect.mjs --root <path> [--exclude-dirs a,b] [--categories as-cast,any-type,non-null,ts-ignore]
 
-import fs from "node:fs";
 import fsPromises from "node:fs/promises";
 import path from "node:path";
 import { createHash } from "node:crypto";
-import { pathToFileURL } from "node:url";
 import ts from "typescript";
+import { isCliEntry } from "./cli-entry.mjs";
 import { walkFiles, MAX_FILE_BYTES } from "./file-walk.mjs";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -217,14 +216,7 @@ export async function detectTypeEscapes(
 
 // ── CLI ───────────────────────────────────────────────────────────────────────
 
-// See dead-code-detect.mjs for why both the symlink realpath and basename guard
-// are required before treating this as the CLI entry point.
-const __entry = process.argv[1] ? fs.realpathSync(process.argv[1]) : "";
-if (
-  __entry &&
-  path.basename(__entry) === "type-escape-detect.mjs" &&
-  pathToFileURL(__entry).href === import.meta.url
-) {
+if (isCliEntry(import.meta.url, "type-escape-detect.mjs")) {
   const args = process.argv.slice(2);
   const rootIdx = args.indexOf("--root");
   const root = rootIdx >= 0 ? args[rootIdx + 1] : process.cwd();

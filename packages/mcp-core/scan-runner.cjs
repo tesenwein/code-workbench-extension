@@ -10,7 +10,7 @@
 // Also exports groupFingerprint, previously duplicated in
 // app/main/duplicates.ts and ast-server.mjs.
 
-const { execFile } = require("node:child_process");
+const { execFile, spawn } = require("node:child_process");
 const { createHash } = require("node:crypto");
 const { writeFindings } = require("./findings-store.cjs");
 
@@ -258,13 +258,102 @@ async function runArchSearch({ nodeBin, scriptPath, root, query, limit, env }) {
   if (!query || !root) return [];
   const cliArgs = [scriptPath, "--query", query, "--root", root];
   if (limit != null) cliArgs.push("--limit", String(limit));
-  const raw = await spawnDetector(nodeBin, cliArgs, "arch-search", env);
-  return raw
+  return validateArchHits(await spawnDetector(nodeBin, cliArgs, "arch-search", env));
+}
+
+/** Validate raw arch-search output into { slug, score } hits. */
+function validateArchHits(raw) {
+  return (Array.isArray(raw) ? raw : [])
     .filter((r) => r && typeof r.slug === "string")
     .map((r) => ({
       slug: r.slug,
       score: typeof r.score === "number" ? r.score : 0,
     }));
+}
+
+/**
+ * Long-lived arch-search worker for interactive (per-keystroke) queries.
+ *
+ * Spawns `arch-search.mjs --serve` once and keeps it alive so the embedding
+ * model loads a single time instead of on every query (a one-shot spawn pays
+ * node startup + a multi-second ONNX model load per call). Speaks JSON lines:
+ * `{id, root, query, limit}` in, `{id, results}` or `{id, error}` out.
+ * The child is spawned lazily on the first search and re-spawned on the next
+ * search after a crash/exit.
+ *
+ * @param {{ nodeBin: string; scriptPath: string; env?: NodeJS.ProcessEnv }} opts
+ * @returns {{ search(req: { root: string; query: string; limit?: number }): Promise<Array<{slug: string; score: number}>>; dispose(): void }}
+ */
+function createArchSearchWorker({ nodeBin, scriptPath, env }) {
+  let child = null;
+  let nextId = 1;
+  let buf = "";
+  const pending = new Map();
+
+  function ensureChild() {
+    if (child) return child;
+    child = spawn(nodeBin, [scriptPath, "--serve"], {
+      env: env ?? process.env,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    buf = "";
+    child.stdout.on("data", (chunk) => {
+      buf += chunk.toString();
+      let nl;
+      while ((nl = buf.indexOf("\n")) >= 0) {
+        const line = buf.slice(0, nl);
+        buf = buf.slice(nl + 1);
+        if (!line.trim()) continue;
+        let msg;
+        try {
+          msg = JSON.parse(line);
+        } catch {
+          continue;
+        }
+        const req = pending.get(msg.id);
+        if (!req) continue;
+        pending.delete(msg.id);
+        clearTimeout(req.timer);
+        if (msg.error) req.reject(new Error(msg.error));
+        else req.resolve(validateArchHits(msg.results));
+      }
+    });
+    // Surface model-load / embed diagnostics in the host's log.
+    child.stderr.on("data", (chunk) => process.stderr.write(chunk));
+    child.on("error", () => {
+      /* 'exit' follows and handles cleanup */
+    });
+    child.on("exit", () => {
+      child = null;
+      for (const req of pending.values()) {
+        clearTimeout(req.timer);
+        req.reject(new Error("arch-search worker exited"));
+      }
+      pending.clear();
+    });
+    return child;
+  }
+
+  return {
+    search({ root, query, limit }) {
+      if (!query || !root) return Promise.resolve([]);
+      const proc = ensureChild();
+      const id = nextId++;
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          pending.delete(id);
+          reject(new Error("arch-search timed out"));
+        }, 120_000);
+        pending.set(id, { resolve, reject, timer });
+        proc.stdin.write(JSON.stringify({ id, root, query, limit }) + "\n");
+      });
+    },
+    dispose() {
+      const proc = child;
+      child = null;
+      if (proc) proc.kill(); // 'exit' rejects anything still pending
+    },
+  };
 }
 
 module.exports = {
@@ -274,4 +363,5 @@ module.exports = {
   runTypeEscapeScan,
   runCodeSearch,
   runArchSearch,
+  createArchSearchWorker,
 };

@@ -10,15 +10,13 @@ export class WorktreeItem extends vscode.TreeItem {
   constructor(
     public readonly wt: Worktree,
     isActive: boolean,
-    sessionCount: number,
     color: WorktreeColor,
   ) {
     super(path.basename(wt.path), vscode.TreeItemCollapsibleState.None);
     const ahead = wt.ahead ? ` ↑${wt.ahead}` : '';
     const behind = wt.behind ? ` ↓${wt.behind}` : '';
     const dirty = wt.uncommittedCount ? ` ●${wt.uncommittedCount}` : '';
-    const sess = sessionCount ? ` · ${sessionCount} session${sessionCount === 1 ? '' : 's'}` : '';
-    this.description = `${isActive ? '★ ' : ''}${wt.branch}${ahead}${behind}${dirty}${sess}`;
+    this.description = `${isActive ? '★ ' : ''}${wt.branch}${ahead}${behind}${dirty}`;
     this.tooltip = `${wt.path}\nbranch: ${wt.branch}\nHEAD: ${wt.head}\ncolor: ${color}`;
     const themed = worktreeIconColor(color);
     this.iconPath = themed
@@ -84,7 +82,6 @@ function render(st){
       meta.appendChild(ab);
     }
     if(w.dirty){ meta.appendChild(sep()); var dd=document.createElement('span'); dd.className='dirty'; dd.textContent='●'+w.dirty; dd.title=w.dirty+' uncommitted file'+(w.dirty===1?'':'s'); meta.appendChild(dd); }
-    if(w.sessions){ meta.appendChild(sep()); var ss=document.createElement('span'); ss.className='sess'; ss.textContent=w.sessions+(w.sessions===1?' session':' sessions'); meta.appendChild(ss); }
     if(w.note){ meta.appendChild(sep()); var nn=document.createElement('span'); nn.className='ab'; nn.textContent='✎ note'; nn.title=w.note; meta.appendChild(nn); }
     body.appendChild(meta); row.appendChild(body);
 
@@ -120,7 +117,6 @@ export class WorktreesProvider implements vscode.WebviewViewProvider {
   constructor(
     private getRepoRoot: () => string | undefined,
     private getActiveWorktree: () => string | undefined,
-    private countSessions: (worktreePath: string) => number,
     private getColor: (worktreePath: string) => WorktreeColor,
     private getNote: (worktreePath: string) => string | undefined = () => undefined,
   ) {}
@@ -164,7 +160,6 @@ export class WorktreesProvider implements vscode.WebviewViewProvider {
           dirty: wt.uncommittedCount ?? 0,
           ahead: wt.ahead ?? 0,
           behind: wt.behind ?? 0,
-          sessions: this.countSessions(wt.path),
           active: wt.path === active,
           isMain: wt.isMain,
           color: this.getColor(wt.path),

@@ -1,10 +1,10 @@
 /* Full editor-tab Architecture board.
  *
  * The Architecture sidebar view stays (quick glance while coding); this page
- * is the same shared ArchPanel at full width, with semantic (embedding) search
- * over cards instead of only the sidebar's substring filter. Both surfaces
- * answer the identical RPC set (buildArchRpcHandlers) and refresh off the same
- * `.code-workbench/.arch` file watcher. */
+ * is the same shared ArchPanel at full width. Both surfaces answer the
+ * identical RPC set (buildArchRpcHandlers) — including semantic card search —
+ * and refresh off the same `.code-workbench/.arch` file watcher owned by
+ * ArchViewProvider. */
 
 import * as vscode from 'vscode';
 import { showPage, getPage } from './pagePanel';
@@ -24,9 +24,6 @@ export function showArchPage(
 ): void {
   const pushContext = (rpc: { postEvent(name: string, payload: unknown): void }) => {
     rpc.postEvent('repo-root', getRepoRoot() ?? null);
-    // The same React bundle serves the sidebar and this page; the surface flag
-    // switches ArchPanel into page mode (semantic search enabled).
-    rpc.postEvent('surface', 'page');
   };
   const pushIntent = (rpc: { postEvent(name: string, payload: unknown): void }) => {
     if (intent.focusSlug) rpc.postEvent('focus-card', intent.focusSlug);
@@ -41,12 +38,13 @@ export function showArchPage(
       pushContext(rpc);
       pushIntent(rpc);
     },
+    // No 'arch-changed' on reveal/visible: card edits already reach the page
+    // through the ArchViewProvider file watcher, and re-pushing here would
+    // re-run the panel's semantic search for identical results.
     onReveal: (rpc) => {
       pushContext(rpc);
-      rpc.postEvent('arch-changed', null);
       pushIntent(rpc);
     },
-    onVisible: (rpc) => rpc.postEvent('arch-changed', null),
   });
 }
 

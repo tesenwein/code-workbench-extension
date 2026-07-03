@@ -70,7 +70,12 @@ export class ArchViewProvider implements vscode.WebviewViewProvider {
     private readonly getRepoRoot: () => string | undefined,
     /** Notified whenever cards change so the full-page arch board can refresh too. */
     private readonly onCardsChanged?: () => void,
-  ) {}
+  ) {
+    // The watcher lives with the provider (i.e. the extension), not the
+    // sidebar webview — the full-page board must refresh on external card
+    // writes even in a window where the sidebar view was never resolved.
+    this.setupWatcher();
+  }
 
   /** Re-pull cards in the webview — wired to the view/title refresh command. */
   refresh(): void {
@@ -91,13 +96,10 @@ export class ArchViewProvider implements vscode.WebviewViewProvider {
       (rpc: RpcContext) => {
         this.rpc = rpc;
         rpc.postEvent('repo-root', this.getRepoRoot() ?? null);
-        this.setupWatcher();
       },
     );
 
     view.onDidDispose(() => {
-      this.watcher?.dispose();
-      this.watcher = undefined;
       this.rpc = undefined;
     });
   }
@@ -123,9 +125,7 @@ export class ArchViewProvider implements vscode.WebviewViewProvider {
 
   /** Re-point the watcher and reload after the workspace folder changes. */
   onRepoChanged(): void {
-    if (this.rpc) {
-      this.rpc.postEvent('repo-root', this.getRepoRoot() ?? null);
-      this.setupWatcher();
-    }
+    this.rpc?.postEvent('repo-root', this.getRepoRoot() ?? null);
+    this.setupWatcher();
   }
 }

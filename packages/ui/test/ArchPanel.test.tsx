@@ -74,6 +74,22 @@ describe('ArchPanel', () => {
     expect(names[0]).toHaveTextContent('Database layer');
   });
 
+  it('shows the empty state when neither semantic nor substring matches', async () => {
+    const auth = card({ slug: 'auth', name: 'Auth service' });
+    const api = mockApi([auth]);
+    // Model present but no card cleared the relevance floor.
+    api.search = vi.fn(async () => []);
+
+    render(<ArchPanel repoPath="/repo" api={api} />);
+    await screen.findByText('Auth service');
+
+    await userEvent.type(screen.getByPlaceholderText('Search components…'), 'zzzqq');
+    await waitFor(() => expect(api.search).toHaveBeenCalledWith('zzzqq'));
+
+    expect(await screen.findByText(/No components match/)).toBeInTheDocument();
+    expect(screen.queryByText('Auth service')).not.toBeInTheDocument();
+  });
+
   it('falls back to substring filtering when api.search returns nothing', async () => {
     const auth = card({ slug: 'auth', name: 'Auth service' });
     const db = card({ slug: 'db', name: 'Database layer' });

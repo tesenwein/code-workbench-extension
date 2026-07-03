@@ -1,13 +1,13 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import {
-  runArchSearch,
+  createArchSearchWorker,
   runCodeSearch,
   runDeadCodeScan,
   runDuplicateScan,
   runTypeEscapeScan,
 } from '@code-workbench/mcp-core/scan-runner';
-import type { ArchSearchHit } from '@code-workbench/mcp-core/scan-runner';
+import type { ArchSearchHit, ArchSearchWorker } from '@code-workbench/mcp-core/scan-runner';
 import {
   readAcks,
   writeAcks,
@@ -112,11 +112,17 @@ export async function searchCode(
 
 export type { ArchSearchHit };
 
+// Arch search runs per keystroke, so it uses a single long-lived worker
+// (`arch-search.mjs --serve`) instead of a spawn per query — a one-shot spawn
+// pays node startup plus a multi-second embedding-model load every time.
+let archSearchWorker: ArchSearchWorker | undefined;
+
 /**
  * Semantic search over the repo's architecture cards — ranks each card by
- * local-embedding similarity to `query`. Returns [] when the embedding model
- * is absent (@xenova/transformers not installed), so callers fall back to
- * substring filtering.
+ * local-embedding similarity to `query`; cards below the relevance floor are
+ * dropped. Returns [] when the embedding model is absent
+ * (@xenova/transformers not installed), so callers fall back to substring
+ * filtering.
  */
 export async function searchArchCards(
   ctx: vscode.ExtensionContext,
@@ -124,14 +130,20 @@ export async function searchArchCards(
   query: string,
   limit?: number,
 ): Promise<ArchSearchHit[]> {
-  return runArchSearch({
-    nodeBin,
-    env: detectorEnv,
-    scriptPath: detectorPath(ctx, 'arch-search.mjs'),
-    root: repoPath,
-    query,
-    limit,
-  });
+  if (!archSearchWorker) {
+    archSearchWorker = createArchSearchWorker({
+      nodeBin,
+      env: detectorEnv,
+      scriptPath: detectorPath(ctx, 'arch-search.mjs'),
+    });
+    ctx.subscriptions.push({
+      dispose: () => {
+        archSearchWorker?.dispose();
+        archSearchWorker = undefined;
+      },
+    });
+  }
+  return archSearchWorker.search({ root: repoPath, query, limit });
 }
 
 export { readAcks, writeAcks, readExcludeDirs, writeExcludeDirs };

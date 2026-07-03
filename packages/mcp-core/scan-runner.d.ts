@@ -101,3 +101,26 @@ export interface ArchSearchHit {
 export function runArchSearch(
   opts: ArchSearchOpts,
 ): Promise<ArchSearchHit[]>;
+
+export interface ArchSearchWorkerOpts {
+  nodeBin: string;
+  scriptPath: string;
+  /** Environment for the spawned worker process. */
+  env?: NodeJS.ProcessEnv;
+}
+
+/** Long-lived `arch-search.mjs --serve` child that keeps the embedding model warm. */
+export interface ArchSearchWorker {
+  /** Rank cards for `query`; lazily (re)spawns the worker child. */
+  search(req: {
+    root: string;
+    query: string;
+    limit?: number;
+  }): Promise<ArchSearchHit[]>;
+  /** Kill the worker child; a later search() re-spawns it. */
+  dispose(): void;
+}
+
+export function createArchSearchWorker(
+  opts: ArchSearchWorkerOpts,
+): ArchSearchWorker;

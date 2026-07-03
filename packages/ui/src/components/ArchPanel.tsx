@@ -304,7 +304,8 @@ export function ArchPanel({
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
   // Semantic ranking (host embeddings) — best-first slug order for the current
   // query, or null while the substring filter is the source of truth (no
-  // api.search, empty query, or the model is unavailable so search returned []).
+  // api.search, empty query, a ranking still in flight, or search returned []
+  // because the model is unavailable / no card cleared the relevance floor).
   const [semanticOrder, setSemanticOrder] = useState<string[] | null>(null);
 
   // Selecting a card opens its `<slug>.json` file in the host's normal editor
@@ -325,15 +326,16 @@ export function ArchPanel({
   }, [focusSlug, cards.length, onFocusSlugHandled, selectCard]);
 
   // Debounced semantic search: ask the host to embed-rank cards for the query.
-  // Runs only when the host wired api.search; an empty result (model absent)
-  // clears semanticOrder so the substring filter below takes over.
+  // Runs only when the host wired api.search; an empty result (model absent or
+  // nothing relevant) clears semanticOrder so the substring filter below takes
+  // over.
   const search = api.search;
   useEffect(() => {
     const q = query.trim();
-    if (!search || !q) {
-      setSemanticOrder(null);
-      return;
-    }
+    // Drop the previous query's ranking immediately — substring order is the
+    // honest interim state while the new ranking is in flight.
+    setSemanticOrder(null);
+    if (!search || !q) return;
     let cancelled = false;
     const timer = setTimeout(async () => {
       try {
@@ -371,27 +373,24 @@ export function ArchPanel({
     );
   }, [cards, query]);
 
-  // When semantic ranking is live, order cards by it and keep only the
-  // stronger half of the corpus (embedding scores are relative, so a fixed
-  // cosine cutoff misfires) — but always fold in exact substring matches so a
-  // literal term never disappears. Otherwise fall back to substring filtering.
+  // When semantic ranking is live, order cards by it (the host already drops
+  // cards below its relevance floor, so an off-topic query can rank nothing
+  // and the empty state stays reachable) — but always fold in substring
+  // matches so a literal term never disappears. Otherwise fall back to
+  // substring filtering.
   const semanticActive = semanticOrder !== null && query.trim().length > 0;
   const filteredCards = useMemo(() => {
     if (!semanticActive || !semanticOrder) return substringMatches;
     const bySlug = new Map(cards.map((c) => [c.slug, c]));
-    const substringSlugs = new Set(substringMatches.map((c) => c.slug));
-    const keep = Math.max(6, Math.ceil(semanticOrder.length / 2));
     const seen = new Set<string>();
     const ranked: ArchCard[] = [];
-    semanticOrder.forEach((slug, i) => {
+    for (const slug of semanticOrder) {
       const card = bySlug.get(slug);
-      if (!card || seen.has(slug)) return;
-      if (i < keep || substringSlugs.has(slug)) {
+      if (card && !seen.has(slug)) {
         seen.add(slug);
         ranked.push(card);
       }
-    });
-    // Substring matches the model ranked low still belong in the results.
+    }
     for (const c of substringMatches) {
       if (!seen.has(c.slug)) {
         seen.add(c.slug);
