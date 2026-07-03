@@ -284,11 +284,13 @@ function TaskEditForm({
   worktrees,
   onSave,
   onCancel,
+  submitLabel = 'Save',
 }: {
   task: WorkspaceTask;
   worktrees: string[];
   onSave: (patch: Partial<WorkspaceTask>) => Promise<void>;
   onCancel: () => void;
+  submitLabel?: string;
 }) {
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description);
@@ -298,95 +300,130 @@ function TaskEditForm({
   const [worktree, setWorktree] = useState(worktreeKey(task.worktree));
   const [epic, setEpic] = useState(task.epic ?? '');
   const [tagsInput, setTagsInput] = useState((task.tags ?? []).join(', '));
+  const [saving, setSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSave({
-      title,
-      description,
-      memo,
-      priority,
-      status,
-      worktree: worktree || null,
-      epic: epic.trim() || null,
-      tags: parseTags(tagsInput),
-    });
+    if (!title.trim() || saving) return;
+    setSaving(true);
+    try {
+      await onSave({
+        title: title.trim(),
+        description,
+        memo,
+        priority,
+        status,
+        worktree: worktree || null,
+        epic: epic.trim() || null,
+        tags: parseTags(tagsInput),
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <form className="task-edit-form" onSubmit={(e) => void handleSubmit(e)}>
-      <input
-        className="task-input"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Title"
-        autoFocus
-      />
-      <textarea
-        className="task-textarea"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        placeholder="Description (optional)"
-        rows={3}
-      />
-      <textarea
-        className="task-textarea"
-        value={memo}
-        onChange={(e) => setMemo(e.target.value)}
-        placeholder="Memo (agent notes, findings, blockers…)"
-        rows={4}
-      />
+      <label className="task-field">
+        <span className="task-field-label">Title</span>
+        <input
+          className="task-input"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="What needs doing?"
+          autoFocus
+        />
+      </label>
+      <label className="task-field">
+        <span className="task-field-label">Description</span>
+        <textarea
+          className="task-textarea"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Details, acceptance criteria…"
+          rows={4}
+        />
+      </label>
+      <label className="task-field">
+        <span className="task-field-label">Memo</span>
+        <textarea
+          className="task-textarea"
+          value={memo}
+          onChange={(e) => setMemo(e.target.value)}
+          placeholder="Agent notes, findings, blockers…"
+          rows={4}
+        />
+      </label>
       <div className="task-edit-row">
-        <input
-          className="task-input"
-          value={epic}
-          onChange={(e) => setEpic(e.target.value)}
-          placeholder="Epic (optional)"
-        />
-        <input
-          className="task-input"
-          value={tagsInput}
-          onChange={(e) => setTagsInput(e.target.value)}
-          placeholder="Tags (comma-separated)"
-        />
+        <label className="task-field">
+          <span className="task-field-label">Epic</span>
+          <input
+            className="task-input"
+            value={epic}
+            onChange={(e) => setEpic(e.target.value)}
+            placeholder="Optional"
+          />
+        </label>
+        <label className="task-field">
+          <span className="task-field-label">Tags</span>
+          <input
+            className="task-input"
+            value={tagsInput}
+            onChange={(e) => setTagsInput(e.target.value)}
+            placeholder="comma, separated"
+          />
+        </label>
       </div>
       <div className="task-edit-row">
-        <select
-          className="task-select"
-          value={priority}
-          onChange={(e) => setPriority(e.target.value as WorkspaceTask['priority'])}
-        >
-          <option value="high">High priority</option>
-          <option value="medium">Medium priority</option>
-          <option value="low">Low priority</option>
-        </select>
-        <select
-          className="task-select"
-          value={status}
-          onChange={(e) => setStatus(e.target.value as WorkspaceTask['status'])}
-        >
-          <option value="open">Open</option>
-          <option value="in-progress">In progress</option>
-          <option value="done">Done</option>
-        </select>
-        {!task.parentId && (
+        <label className="task-field">
+          <span className="task-field-label">Priority</span>
           <select
             className="task-select"
-            value={worktree}
-            onChange={(e) => setWorktree(e.target.value)}
+            value={priority}
+            onChange={(e) => setPriority(e.target.value as WorkspaceTask['priority'])}
           >
-            <option value="">Unassigned</option>
-            {worktrees.map((wt) => (
-              <option key={wt} value={worktreeKey(wt)}>
-                {wt.split(/[/\\]/).pop() ?? wt}
-              </option>
-            ))}
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
           </select>
+        </label>
+        <label className="task-field">
+          <span className="task-field-label">Status</span>
+          <select
+            className="task-select"
+            value={status}
+            onChange={(e) => setStatus(e.target.value as WorkspaceTask['status'])}
+          >
+            <option value="open">Open</option>
+            <option value="in-progress">In progress</option>
+            <option value="done">Done</option>
+          </select>
+        </label>
+        {!task.parentId && (
+          <label className="task-field">
+            <span className="task-field-label">Worktree</span>
+            <select
+              className="task-select"
+              value={worktree}
+              onChange={(e) => setWorktree(e.target.value)}
+            >
+              <option value="">Unassigned</option>
+              {worktrees.map((wt) => (
+                <option key={wt} value={worktreeKey(wt)}>
+                  {wt.split(/[/\\]/).pop() ?? wt}
+                </option>
+              ))}
+            </select>
+          </label>
         )}
       </div>
-      <div className="task-edit-row">
-        <button type="submit" className="task-action-btn task-action-primary">
-          Save
+      <div className="task-edit-actions">
+        <button
+          type="submit"
+          className="task-action-btn task-action-primary"
+          disabled={saving || !title.trim()}
+        >
+          {saving ? 'Saving…' : submitLabel}
         </button>
         <button type="button" className="task-action-btn" onClick={onCancel}>
           Cancel
@@ -607,10 +644,18 @@ function TaskDetailPane({
   return (
     <div className="task-detail-pane">
       <div className="task-detail-header">
+        <span
+          className="task-priority-dot"
+          title={`${task.priority} priority`}
+          style={{ background: PRIORITY_COLORS[task.priority] }}
+        />
+        <span className={`task-status-chip task-status-${task.status}`}>
+          {STATUS_LABELS[task.status]}
+        </span>
         <span className="task-detail-id" title={`Task ${task.id}`}>
           {task.id.slice(0, 8)}
         </span>
-        {saved && <span className="task-detail-saved">saved</span>}
+        {saved && <span className="task-detail-saved">✓ saved</span>}
         {onOpenInEditor && (
           <button
             className="task-icon-btn"
@@ -668,6 +713,82 @@ function TaskDetailPane({
             onCancel={() => setAddingSubtask(false)}
           />
         )}
+      </div>
+    </div>
+  );
+}
+
+// ── TaskCreatePane ────────────────────────────────────────────────────────────
+
+const BLANK_TASK: WorkspaceTask = {
+  id: '',
+  title: '',
+  priority: 'medium',
+  status: 'open',
+  worktree: null,
+  description: '',
+  memo: '',
+  created: '',
+  updated: '',
+  parentId: null,
+  epic: null,
+  tags: [],
+};
+
+/** New-task editor rendered in the detail column (page mode) — same chrome as
+ *  TaskDetailPane so creating and editing feel like one surface. */
+function TaskCreatePane({
+  worktrees,
+  defaultWorktree,
+  onCreate,
+  onClose,
+}: {
+  worktrees: string[];
+  defaultWorktree: string | null;
+  onCreate: (task: NewWorkspaceTask) => Promise<void>;
+  onClose: () => void;
+}) {
+  return (
+    <div className="task-detail-pane">
+      <div className="task-detail-header">
+        <span className="task-detail-title">New task</span>
+        <button className="task-icon-btn" title="Cancel" onClick={onClose}>
+          ✕
+        </button>
+      </div>
+      <TaskEditForm
+        task={{ ...BLANK_TASK, worktree: defaultWorktree }}
+        worktrees={worktrees}
+        submitLabel="Create task"
+        onSave={async (patch) => {
+          await onCreate({
+            title: patch.title ?? '',
+            description: patch.description ?? '',
+            memo: patch.memo ?? '',
+            priority: patch.priority ?? 'medium',
+            status: patch.status ?? 'open',
+            worktree: patch.worktree ?? null,
+            parentId: null,
+            epic: patch.epic ?? null,
+            tags: patch.tags ?? [],
+          });
+        }}
+        onCancel={onClose}
+      />
+    </div>
+  );
+}
+
+/** Placeholder shown in the detail column when nothing is selected. */
+function TaskDetailEmpty({ onCreate }: { onCreate: () => void }) {
+  return (
+    <div className="task-detail-pane task-detail-empty">
+      <div className="task-detail-empty-inner">
+        <div className="task-detail-empty-icon">✎</div>
+        <p className="task-detail-empty-text">Select a task to view and edit it.</p>
+        <button className="task-action-btn task-action-primary" onClick={onCreate}>
+          + New task
+        </button>
       </div>
     </div>
   );
@@ -825,6 +946,9 @@ interface TasksPanelProps {
   /** Bumped by the host alongside `openTaskId` so re-requesting the same id
    *  re-opens its editor even if it is already the selection. */
   openTaskNonce?: number;
+  /** Page mode: bump to open a blank new-task editor in the detail column
+   *  (e.g. the host's "New task" command). */
+  newTaskNonce?: number;
 }
 
 type GroupBy = 'worktree' | 'epic' | 'none';
@@ -846,6 +970,7 @@ export function TasksPanel({
   pageMode = false,
   openTaskId,
   openTaskNonce,
+  newTaskNonce,
 }: TasksPanelProps) {
   const [tasks, setTasks] = useState<WorkspaceTask[]>([]);
   const [loading, setLoading] = useState(false);
@@ -855,6 +980,7 @@ export function TasksPanel({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
   const [tagFilter, setTagFilter] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
   const [bodyHeight, setBodyHeight] = useState(280);
   const dragRef = useRef<{ startY: number; startHeight: number } | null>(null);
   const requestIdRef = useRef(0);
@@ -882,14 +1008,36 @@ export function TasksPanel({
   // Page mode: open the detail editor for a task the host asks us to focus
   // (e.g. clicked in the sidebar). Keyed on the nonce so the same id re-opens.
   useEffect(() => {
-    if (pageMode && openTaskId) setSelectedId(openTaskId);
+    if (pageMode && openTaskId) {
+      setCreating(false);
+      setSelectedId(openTaskId);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageMode, openTaskId, openTaskNonce]);
+
+  // Page mode: host asked to start a new task — open a blank editor.
+  useEffect(() => {
+    if (pageMode && newTaskNonce) {
+      setSelectedId(null);
+      setCreating(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageMode, newTaskNonce]);
 
   const createTask = useCallback(
     async (task: NewWorkspaceTask) => {
       await api.create(task);
       await reload();
+    },
+    [api, reload],
+  );
+  // Page mode: create then select the new task so it stays open for editing.
+  const createAndOpen = useCallback(
+    async (task: NewWorkspaceTask) => {
+      const created = await api.create(task);
+      await reload();
+      setCreating(false);
+      if (created?.id) setSelectedId(created.id);
     },
     [api, reload],
   );
@@ -1111,6 +1259,16 @@ export function TasksPanel({
                     </option>
                   ))}
                 </select>
+                <button
+                  className="task-action-btn task-action-primary task-toolbar-new"
+                  title="Create a new task"
+                  onClick={() => {
+                    setSelectedId(null);
+                    setCreating(true);
+                  }}
+                >
+                  + New task
+                </button>
               </>
             )}
           </div>
@@ -1121,13 +1279,16 @@ export function TasksPanel({
             style={pageMode ? undefined : { display: 'contents' }}
           >
             <div
+              className={pageMode ? 'task-list-col' : undefined}
               style={
                 resizable
                   ? { height: bodyHeight, overflowY: 'auto', flex: '0 0 auto' }
-                  : { flex: 1, overflowY: 'auto', minWidth: 0 }
+                  : pageMode
+                    ? undefined
+                    : { flex: 1, overflowY: 'auto', minWidth: 0 }
               }
             >
-              {adding && (
+              {adding && !pageMode && (
                 <NewTaskForm
                   worktrees={worktrees}
                   onSubmit={async (t) => {
@@ -1182,18 +1343,33 @@ export function TasksPanel({
                 </React.Fragment>
               ))}
             </div>
-            {selectedTask && (
-              <TaskDetailPane
-                task={selectedTask}
-                subtasks={childMap.get(selectedTask.id) ?? NO_SUBTASKS}
-                worktrees={worktrees}
-                onUpdate={updateTask}
-                onDelete={deleteTask}
-                onCreateSubtask={handleCreateSubtask}
-                onOpenInEditor={openInEditor}
-                onClose={() => setSelectedId(null)}
-              />
-            )}
+            {pageMode &&
+              (creating ? (
+                <TaskCreatePane
+                  worktrees={worktrees}
+                  defaultWorktree={activeWorktree}
+                  onCreate={createAndOpen}
+                  onClose={() => setCreating(false)}
+                />
+              ) : selectedTask ? (
+                <TaskDetailPane
+                  task={selectedTask}
+                  subtasks={childMap.get(selectedTask.id) ?? NO_SUBTASKS}
+                  worktrees={worktrees}
+                  onUpdate={updateTask}
+                  onDelete={deleteTask}
+                  onCreateSubtask={handleCreateSubtask}
+                  onOpenInEditor={openInEditor}
+                  onClose={() => setSelectedId(null)}
+                />
+              ) : (
+                <TaskDetailEmpty
+                  onCreate={() => {
+                    setSelectedId(null);
+                    setCreating(true);
+                  }}
+                />
+              ))}
           </div>
         </>
       )}
