@@ -24,6 +24,9 @@ export function showArchPage(
 ): void {
   const pushContext = (rpc: { postEvent(name: string, payload: unknown): void }) => {
     rpc.postEvent('repo-root', getRepoRoot() ?? null);
+    // The same React bundle serves the sidebar and this page; surface:'page'
+    // switches ArchPanel to the master/detail detail viewer.
+    rpc.postEvent('context', { surface: 'page' });
   };
   const pushIntent = (rpc: { postEvent(name: string, payload: unknown): void }) => {
     if (intent.focusSlug) rpc.postEvent('focus-card', intent.focusSlug);

@@ -1,24 +1,23 @@
 {
   "slug": "arch-view",
   "name": "Architecture View",
-  "description": "VS Code WebviewView sidebar panel (\"Architecture\") that renders the architecture wiki as a searchable list of component cards. Hosts the shared @code-workbench/ui ArchPanel React component and answers its RPC calls (list/upsert/remove/openCard/search) against the repo's .code-workbench/.arch/<slug>.json cards — the SAME store the bundled arch MCP server (arch-server.mjs) reads and writes, so cards Claude authors via seed-arch/arch_upsert and cards edited in the panel are one and the same files. Clicking a card opens its <slug>.json file in the normal editor (openCard RPC → showTextDocument); there is no in-webview graph, card-detail, or editor form. The RPC handler set is built by buildArchRpcHandlers(ctx, getRepoRoot) exported from archView.ts and shared with the full-page board (archPage.ts). The .arch FileSystemWatcher is owned by ArchViewProvider itself (created in the constructor and re-pointed in onRepoChanged) — NOT by the webview lifecycle — so external card writes refresh both the sidebar and the full page even in a window where the sidebar view was never resolved; onCardsChanged (wired to refreshArchPage) fans the watcher out to the page. The page does not re-push 'arch-changed' on reveal/visible — the watcher is the only change signal, which keeps the panel from re-running semantic search for identical results. Originally ported from the removed Electron app's ArchWikiPane; the force-directed ArchGraph and the in-webview CardEditor form were later removed.",
+  "description": "VS Code WebviewView sidebar panel (\"Architecture\") that renders the architecture wiki as a searchable list of component cards. Hosts the shared @code-workbench/ui ArchPanel React component and answers its RPC calls (list/upsert/remove/openCard/search) against the repo's .code-workbench/.arch/<slug>.json cards — the SAME store the bundled arch MCP server (arch-server.mjs) reads and writes, so cards Claude authors via seed-arch/arch_upsert and cards edited in the panel are one and the same files. The RPC handler set is built by buildArchRpcHandlers(ctx, getRepoRoot) exported from archView.ts and shared with the full-page board (archPage.ts). The .arch FileSystemWatcher is owned by ArchViewProvider itself (created in the constructor and re-pointed in onRepoChanged) — NOT by the webview lifecycle — so external card writes refresh both the sidebar and the full page even in a window where the sidebar view was never resolved; onCardsChanged (wired to refreshArchPage) fans the watcher out to the page. The page does not re-push 'arch-changed' on reveal/visible — the watcher is the only change signal, which keeps the panel from re-running semantic search for identical results. Originally ported from the removed Electron app's ArchWikiPane; the force-directed ArchGraph was removed.\n\nArchPanel has two surfaces distinguished by a pageMode prop (like TasksPanel): the sidebar is narrow and clicking a card opens its <slug>.json file in the normal editor (openCard RPC → showTextDocument). The full-page board (archPage posts context {surface:'page'} → arch.tsx sets pageMode) renders a master/detail layout: a capped list column plus an in-webview read-only ArchDetail viewer (name, slug, tags/dependsOn chips, description, Files (mono), Guidelines, Anti-patterns, Decisions sections, created/updated meta). In page mode selecting a card shows the detail pane instead of opening the file; an \"Open .json\" button still opens the raw file to edit, and a Delete button removes the card. dependsOn renders as chips that navigate to the linked card (disabled for unknown slugs).",
   "files": [
     "packages/extension/src/archView.ts",
     "packages/extension/src/archPage.ts",
-    "packages/extension/src/archHost.ts",
     "packages/extension/webview/arch.tsx",
-    "packages/ui/src/components/ArchPanel.tsx"
+    "packages/ui/src/components/ArchPanel.tsx",
+    "packages/ui/src/styles.css"
   ],
   "guidelines": [
-    "RPC handlers live in buildArchRpcHandlers(ctx, getRepoRoot) in archView.ts — reuse it in both the sidebar provider and archPage; do not duplicate the list/upsert/remove/openCard/search bodies.",
-    "The full-width board is codeWorkbench.arch.openAsPage (archPage.ts showArchPage), mirroring codeWorkbench.tasks.openAsPage; it reuses the same webview/arch.tsx bundle.",
-    "ArchPanel semantic search is gated on api.search being wired; the sidebar and page both pass it, so semantic ranking is available in both surfaces.",
-    "Keep the .arch watcher's lifetime tied to the provider/extension, not to resolveWebviewView — the full-page board depends on it even when the sidebar was never opened."
+    "Both sidebar and full-page board share one ArchPanel bundle; branch behavior on the pageMode prop derived from context {surface:'page'} rather than forking the component.",
+    "In page mode do NOT call api.openCard on select (that opens the raw JSON); show the ArchDetail pane. Keep openCard for the explicit 'Open .json' button and for card creation (which needs the file to edit).",
+    "Detail viewer is read-only — editing stays in the .json file. Use decodeEntities on all card text before display (names/descriptions may contain HTML entities).",
+    "New CSS classes are prefixed arch-* and reuse the shared theme tokens (--bg-card/--bg-1/--rule/--border/--fg-*/--clay); the webviewTheme contract test requires every var(--…) in styles.css be declared."
   ],
   "anti_patterns": [
-    "Don't re-sort the card list in ListView when semantic ranking is active — pass preserveOrder so the embedding order survives.",
-    "Don't treat an empty api.search result as an error — [] means the model is unavailable OR no card cleared the relevance floor; the panel falls back to substring filtering (which may legitimately show the empty state).",
-    "Don't post 'arch-changed' from page reveal/visible hooks — it re-runs the panel's semantic search for identical results; the file watcher is the only change signal."
+    "Don't add a full in-webview edit form — the card file in the normal editor is the single edit surface (the old Electron CardEditor was deliberately removed).",
+    "Don't push 'arch-changed' on page reveal/visible — it re-runs semantic search for identical results; rely on the ArchViewProvider file watcher."
   ],
   "decisions": [
     "The Architecture panel was ported from the removed Electron app's ArchWikiPane into the shared ui package so it renders identically; the Electron useArchWiki/window.api hook was replaced by an injected ArchApi adapter wired over the webview postMessage RPC bridge (webviewRpc.ts / bridge.ts).",
@@ -30,17 +29,18 @@
   "tags": [
     "architecture",
     "arch wiki",
-    "component cards",
-    "ArchPanel",
-    "openAsPage",
-    "semantic search"
+    "arch panel",
+    "card detail",
+    "master detail",
+    "pageMode",
+    "arch page",
+    "component cards"
   ],
   "dependsOn": [
     "ui-shared-panels",
     "arch-server",
-    "editor-tab-pages",
     "semantic-arch-search"
   ],
-  "updatedAt": "2026-07-03T10:28:23.771Z",
+  "updatedAt": "2026-07-03T10:52:50.792Z",
   "createdAt": "2026-06-30T04:19:16.595Z"
 }

@@ -20,12 +20,17 @@ function App() {
   const [repoPath, setRepoPath] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [focusSlug, setFocusSlug] = useState<string | null>(null);
+  // The same bundle serves the sidebar view and the full-page board; the host
+  // posts surface:'page' so the page renders the master/detail detail viewer.
+  const [pageMode, setPageMode] = useState(false);
 
   useEffect(() => {
     bridge.onEvent((name, payload) => {
       if (name === 'repo-root') setRepoPath((payload as string | null) ?? null);
       else if (name === 'arch-changed') setReloadKey((k) => k + 1);
       else if (name === 'focus-card') setFocusSlug((payload as string | null) ?? null);
+      else if (name === 'context')
+        setPageMode((payload as { surface?: string } | null)?.surface === 'page');
     });
     bridge.ready();
   }, []);
@@ -38,6 +43,7 @@ function App() {
       hideHeaderTitle
       focusSlug={focusSlug}
       onFocusSlugHandled={() => setFocusSlug(null)}
+      pageMode={pageMode}
     />
   );
 }

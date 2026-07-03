@@ -9,13 +9,17 @@
  *   exclude_type_escape_dir  – skip a directory basename from future scans
  */
 
-import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
-import { recordToolUse } from "./usage-log.mjs";
 import { readFindings, writeFindings } from "./findings-store.mjs";
-
-const STALE_MS = 24 * 60 * 60 * 1000;
+import {
+  STALE_MS,
+  resolveRoots,
+  readJsonArray,
+  makeAcknowledgeTool,
+  makeExcludeDirTool,
+  makeHandle,
+} from "./scan-server-kit.mjs";
 
 const CATEGORIES = ["as-cast", "any-type", "non-null", "ts-ignore"];
 
@@ -30,19 +34,7 @@ async function loadDetector() {
   return _detectTypeEscapes;
 }
 
-// ── Allowed roots ─────────────────────────────────────────────────────────────
-
-const ALLOWED_ROOTS = (() => {
-  const env = process.env.CODE_WORKBENCH_REPO_PATH;
-  if (env) return [path.resolve(env)];
-  const astEnv = process.env.CODE_WORKBENCH_AST_ROOTS;
-  const roots = astEnv
-    ? astEnv.split(path.delimiter).filter(Boolean)
-    : [process.cwd()];
-  return roots.map((r) => path.resolve(r));
-})();
-
-const ROOT = ALLOWED_ROOTS[0];
+const ROOT = resolveRoots()[0];
 
 // ── Persistence helpers (shared with desktop UI) ──────────────────────────────
 
@@ -52,20 +44,6 @@ function ackFilePath() {
 
 function excludeFilePath() {
   return path.join(ROOT, ".code-workbench", "type-escapes-exclude.json");
-}
-
-function readJsonArray(file) {
-  try {
-    const parsed = JSON.parse(readFileSync(file, "utf8"));
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeJsonArray(file, items) {
-  mkdirSync(path.dirname(file), { recursive: true });
-  writeFileSync(file, JSON.stringify(items, null, 2));
 }
 
 // ── Git diff scoping ───────────────────────────────────────────────────────────
@@ -215,51 +193,8 @@ async function toolDetectTypeEscapes({
   return filterAndShape(findings.items, cats, acked, findings.generatedAt);
 }
 
-/** Coalesce a single fingerprint and/or a fingerprints array into a unique, trimmed list. */
-function normalizeFingerprints(fingerprint, fingerprints) {
-  const raw = [];
-  if (typeof fingerprint === "string") raw.push(fingerprint);
-  else if (Array.isArray(fingerprint)) raw.push(...fingerprint);
-  if (Array.isArray(fingerprints)) raw.push(...fingerprints);
-  else if (typeof fingerprints === "string") raw.push(fingerprints);
-  return [
-    ...new Set(
-      raw.map((f) => (typeof f === "string" ? f.trim() : "")).filter(Boolean),
-    ),
-  ];
-}
-
-function toolAcknowledgeTypeEscape({ fingerprint, fingerprints, unack }) {
-  const list = normalizeFingerprints(fingerprint, fingerprints);
-  if (list.length === 0) {
-    throw new Error("fingerprint (or fingerprints) is required");
-  }
-  const current = readJsonArray(ackFilePath());
-  const set = new Set(current);
-  if (unack) {
-    for (const f of list) set.delete(f);
-  } else {
-    for (const f of list) set.add(f);
-  }
-  const updated = [...set];
-  writeJsonArray(ackFilePath(), updated);
-  return { acknowledged: updated, count: updated.length };
-}
-
-function toolExcludeTypeEscapeDir({ dir, unexclude }) {
-  if (typeof dir !== "string" || !dir.trim()) {
-    throw new Error("dir is required");
-  }
-  const name = dir.trim();
-  const current = readJsonArray(excludeFilePath());
-  const updated = unexclude
-    ? current.filter((d) => d !== name)
-    : current.includes(name)
-      ? current
-      : [...current, name];
-  writeJsonArray(excludeFilePath(), updated);
-  return { excludeDirs: updated, count: updated.length };
-}
+const toolAcknowledgeTypeEscape = makeAcknowledgeTool(ackFilePath);
+const toolExcludeTypeEscapeDir = makeExcludeDirTool(excludeFilePath);
 
 // ── MCP tool definitions ──────────────────────────────────────────────────────
 
@@ -379,48 +314,9 @@ const HANDLERS = {
 
 // ── MCP JSON-RPC protocol ─────────────────────────────────────────────────────
 
-function send(msg) {
-  process.stdout.write(JSON.stringify(msg) + "\n");
-}
-
-export async function handle(req) {
-  const { method, params } = req;
-
-  switch (method) {
-    case "initialize":
-      return {
-        protocolVersion: "2024-11-05",
-        capabilities: { tools: {} },
-        serverInfo: { name: "code-workbench-type-safety", version: "1.0.0" },
-      };
-
-    case "tools/list":
-      return { tools: TOOLS };
-
-    case "tools/call": {
-      const name = params?.name;
-      const args = params?.arguments ?? {};
-      if (name) recordToolUse("cw-type-safety", name);
-      const handler = HANDLERS[name];
-      if (!handler) {
-        return { _error: { code: -32601, message: `Unknown tool: ${name}` } };
-      }
-      const result = await handler(args);
-      return {
-        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-      };
-    }
-
-    case "notifications/initialized":
-    case "notifications/cancelled":
-      return null;
-
-    case "ping":
-      return {};
-
-    default:
-      return {
-        _error: { code: -32601, message: `Method not found: ${method}` },
-      };
-  }
-}
+export const handle = makeHandle({
+  serverName: "code-workbench-type-safety",
+  usageKey: "cw-type-safety",
+  tools: TOOLS,
+  handlers: HANDLERS,
+});
