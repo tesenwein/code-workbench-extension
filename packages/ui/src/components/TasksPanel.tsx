@@ -30,6 +30,9 @@ const STATUS_LABELS: Record<WorkspaceTask['status'], string> = {
 // because `childMap.get(id) ?? []` produced a fresh empty array each render.
 const NO_SUBTASKS: WorkspaceTask[] = [];
 
+/** localStorage key for the page-mode list-column width the user dragged. */
+const LIST_WIDTH_KEY = 'cwTaskPageListWidth';
+
 function buildChildMap(tasks: WorkspaceTask[]): Map<string, WorkspaceTask[]> {
   const map = new Map<string, WorkspaceTask[]>();
   for (const t of tasks) {
@@ -86,11 +89,15 @@ const SubtaskRow = React.memo(function SubtaskRow({
   onUpdate,
   onDelete,
   onOpenInEditor,
+  onOpen,
 }: {
   task: WorkspaceTask;
   onUpdate: (id: string, patch: Partial<WorkspaceTask>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onOpenInEditor?: (id: string) => void;
+  /** When set, clicking the title opens the subtask in the host viewer (the
+   *  page's detail editor / the sidebar's board page) — same as parent rows. */
+  onOpen?: (id: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -172,13 +179,15 @@ const SubtaskRow = React.memo(function SubtaskRow({
             className="task-subtask-title"
             onClick={(e) => {
               e.stopPropagation();
-              if (hasDetail) setExpanded((x) => !x);
+              if (onOpen) onOpen(task.id);
+              else if (hasDetail) setExpanded((x) => !x);
             }}
             onDoubleClick={(e) => {
               e.stopPropagation();
               setEditing(true);
             }}
-            title="Click to view · double-click to edit"
+            title={onOpen ? 'Open task · double-click to rename' : 'Click to view · double-click to edit'}
+            style={onOpen ? { cursor: 'pointer' } : undefined}
           >
             {task.title}
           </span>
@@ -597,6 +606,7 @@ const TaskRow = React.memo(function TaskRow({
           onUpdate={onUpdate}
           onDelete={onDelete}
           onOpenInEditor={onOpenInEditor}
+          onOpen={onOpenTask}
         />
       ))}
       {addingSubtask && (
@@ -619,20 +629,26 @@ const TaskRow = React.memo(function TaskRow({
 function TaskDetailPane({
   task,
   subtasks,
+  parent,
   worktrees,
   onUpdate,
   onDelete,
   onCreateSubtask,
   onOpenInEditor,
+  onOpenTask,
   onClose,
 }: {
   task: WorkspaceTask;
   subtasks: WorkspaceTask[];
+  /** Parent task when `task` is a subtask — rendered as a backlink. */
+  parent?: WorkspaceTask | null;
   worktrees: string[];
   onUpdate: (id: string, patch: Partial<WorkspaceTask>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onCreateSubtask: (parentId: string, title: string) => Promise<void>;
   onOpenInEditor?: (id: string) => void;
+  /** Switch this pane to another task (a clicked subtask / the parent). */
+  onOpenTask?: (id: string) => void;
   onClose: () => void;
 }) {
   const [addingSubtask, setAddingSubtask] = useState(false);
@@ -691,29 +707,52 @@ function TaskDetailPane({
         }}
         onCancel={onClose}
       />
-      <div className="task-detail-subtasks">
-        <div className="task-detail-subhead">
-          <span>Subtasks</span>
-          <button className="task-action-btn" onClick={() => setAddingSubtask((x) => !x)}>
-            + Subtask
+      {task.parentId ? (
+        /* Subtasks can't nest, so instead of a dead Subtasks section a subtask
+           links back up to its parent. */
+        <div className="task-detail-subtasks">
+          <div className="task-detail-subhead">
+            <span>Part of</span>
+          </div>
+          <button
+            className="task-detail-parent-link"
+            onClick={() => onOpenTask?.(task.parentId!)}
+            title="Open parent task"
+          >
+            ↑ {parent?.title ?? task.parentId}
           </button>
         </div>
-        {subtasks.length === 0 && !addingSubtask && (
-          <div className="cw-empty">No subtasks.</div>
-        )}
-        {subtasks.map((sub) => (
-          <SubtaskRow key={sub.id} task={sub} onUpdate={onUpdate} onDelete={onDelete} />
-        ))}
-        {addingSubtask && (
-          <AddSubtaskForm
-            onSubmit={async (t) => {
-              await onCreateSubtask(task.id, t);
-              setAddingSubtask(false);
-            }}
-            onCancel={() => setAddingSubtask(false)}
-          />
-        )}
-      </div>
+      ) : (
+        <div className="task-detail-subtasks">
+          <div className="task-detail-subhead">
+            <span>Subtasks</span>
+            <button className="task-action-btn" onClick={() => setAddingSubtask((x) => !x)}>
+              + Subtask
+            </button>
+          </div>
+          {subtasks.length === 0 && !addingSubtask && (
+            <div className="cw-empty">No subtasks.</div>
+          )}
+          {subtasks.map((sub) => (
+            <SubtaskRow
+              key={sub.id}
+              task={sub}
+              onUpdate={onUpdate}
+              onDelete={onDelete}
+              onOpen={onOpenTask}
+            />
+          ))}
+          {addingSubtask && (
+            <AddSubtaskForm
+              onSubmit={async (t) => {
+                await onCreateSubtask(task.id, t);
+                setAddingSubtask(false);
+              }}
+              onCancel={() => setAddingSubtask(false)}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -983,6 +1022,18 @@ export function TasksPanel({
   const [creating, setCreating] = useState(false);
   const [bodyHeight, setBodyHeight] = useState(280);
   const dragRef = useRef<{ startY: number; startHeight: number } | null>(null);
+  // Page mode: user-dragged list-column width (px); null = the default CSS
+  // split (40% capped at 620px). Persisted so the board reopens as left.
+  const [listWidth, setListWidth] = useState<number | null>(() => {
+    try {
+      const raw = localStorage.getItem(LIST_WIDTH_KEY);
+      const n = raw == null ? NaN : Number(raw);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    } catch {
+      return null;
+    }
+  });
+  const layoutRef = useRef<HTMLDivElement>(null);
   const requestIdRef = useRef(0);
 
   const reload = useCallback(async () => {
@@ -1099,6 +1150,48 @@ export function TasksPanel({
     },
     [bodyHeight],
   );
+
+  // Page mode: drag the divider between the list column and the detail pane.
+  const handleColResizerMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const listEl = layoutRef.current?.querySelector('.task-list-col');
+      let width = listWidth ?? (listEl instanceof HTMLElement ? listEl.offsetWidth : 480);
+      const startX = e.clientX;
+      const startWidth = width;
+      document.body.style.cursor = 'col-resize';
+      const onMove = (mv: MouseEvent) => {
+        const container = layoutRef.current;
+        // Keep both columns usable: the detail pane needs its min-width plus
+        // some padding, the list stays readable at 260px.
+        const max = Math.max(260, (container?.clientWidth ?? 1200) - 380);
+        width = Math.max(260, Math.min(max, startWidth + (mv.clientX - startX)));
+        setListWidth(width);
+      };
+      const onUp = () => {
+        document.body.style.cursor = '';
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+        try {
+          localStorage.setItem(LIST_WIDTH_KEY, String(Math.round(width)));
+        } catch {
+          /* persistence is best-effort */
+        }
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    },
+    [listWidth],
+  );
+  const resetListWidth = useCallback(() => {
+    setListWidth(null);
+    try {
+      localStorage.removeItem(LIST_WIDTH_KEY);
+    } catch {
+      /* persistence is best-effort */
+    }
+  }, []);
 
   const childMap = useMemo(() => buildChildMap(tasks), [tasks]);
   const rootTasks = useMemo(() => {
@@ -1275,6 +1368,7 @@ export function TasksPanel({
           {/* display:contents keeps the sidebar layout identical — the wrapper
               only becomes a real flex row in page mode (list + detail pane). */}
           <div
+            ref={layoutRef}
             className={pageMode ? 'task-page-layout' : undefined}
             style={pageMode ? undefined : { display: 'contents' }}
           >
@@ -1284,7 +1378,9 @@ export function TasksPanel({
                 resizable
                   ? { height: bodyHeight, overflowY: 'auto', flex: '0 0 auto' }
                   : pageMode
-                    ? undefined
+                    ? listWidth != null
+                      ? { flex: '0 0 auto', width: listWidth, maxWidth: 'none' }
+                      : undefined
                     : { flex: 1, overflowY: 'auto', minWidth: 0 }
               }
             >
@@ -1343,6 +1439,14 @@ export function TasksPanel({
                 </React.Fragment>
               ))}
             </div>
+            {pageMode && (
+              <div
+                className="task-col-resizer"
+                title="Drag to resize · double-click to reset"
+                onMouseDown={handleColResizerMouseDown}
+                onDoubleClick={resetListWidth}
+              />
+            )}
             {pageMode &&
               (creating ? (
                 <TaskCreatePane
@@ -1355,11 +1459,17 @@ export function TasksPanel({
                 <TaskDetailPane
                   task={selectedTask}
                   subtasks={childMap.get(selectedTask.id) ?? NO_SUBTASKS}
+                  parent={
+                    selectedTask.parentId
+                      ? (tasks.find((t) => t.id === selectedTask.parentId) ?? null)
+                      : null
+                  }
                   worktrees={worktrees}
                   onUpdate={updateTask}
                   onDelete={deleteTask}
                   onCreateSubtask={handleCreateSubtask}
                   onOpenInEditor={openInEditor}
+                  onOpenTask={setSelectedId}
                   onClose={() => setSelectedId(null)}
                 />
               ) : (

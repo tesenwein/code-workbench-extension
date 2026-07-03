@@ -589,25 +589,28 @@ export async function handle(req) {
           };
         }
         const key = requireRepoKey();
-        return await withLock(`${key}:${args.id}`, async () => {
-          const resolved = await resolveTaskId(key, args.id);
-          if (!resolved)
-            return {
-              content: [
-                { type: "text", text: `Error: task ${args.id} not found.` },
-              ],
-            };
-          if (typeof resolved === "object" && resolved.ambiguous) {
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: `Error: id "${args.id}" is ambiguous, matches: ${resolved.ambiguous.map((m) => m.slice(0, 8)).join(", ")}. Use a longer prefix.`,
-                },
-              ],
-            };
-          }
-          const fullId = resolved;
+        // Resolve before locking: the mutex must key on the FULL id, otherwise
+        // a caller using an 8-char prefix and one using the full id for the
+        // same task take different locks and race the read-modify-write.
+        const resolved = await resolveTaskId(key, args.id);
+        if (!resolved)
+          return {
+            content: [
+              { type: "text", text: `Error: task ${args.id} not found.` },
+            ],
+          };
+        if (typeof resolved === "object" && resolved.ambiguous) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Error: id "${args.id}" is ambiguous, matches: ${resolved.ambiguous.map((m) => m.slice(0, 8)).join(", ")}. Use a longer prefix.`,
+              },
+            ],
+          };
+        }
+        const fullId = resolved;
+        return await withLock(`${key}:${fullId}`, async () => {
           const patch = {};
           if (args.title != null) patch.title = args.title;
           if (args.description != null) patch.description = args.description;
@@ -689,25 +692,27 @@ export async function handle(req) {
             content: [{ type: "text", text: "Error: id is required." }],
           };
         const key = requireRepoKey();
-        return await withLock(`${key}:${args.id}`, async () => {
-          const resolved = await resolveTaskId(key, args.id);
-          if (!resolved)
-            return {
-              content: [
-                { type: "text", text: `Error: task ${args.id} not found.` },
-              ],
-            };
-          if (typeof resolved === "object" && resolved.ambiguous) {
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: `Error: id "${args.id}" is ambiguous, matches: ${resolved.ambiguous.map((m) => m.slice(0, 8)).join(", ")}. Use a longer prefix.`,
-                },
-              ],
-            };
-          }
-          const fullId = resolved;
+        // Resolve before locking so the mutex keys on the full id (see
+        // task_update above).
+        const resolved = await resolveTaskId(key, args.id);
+        if (!resolved)
+          return {
+            content: [
+              { type: "text", text: `Error: task ${args.id} not found.` },
+            ],
+          };
+        if (typeof resolved === "object" && resolved.ambiguous) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Error: id "${args.id}" is ambiguous, matches: ${resolved.ambiguous.map((m) => m.slice(0, 8)).join(", ")}. Use a longer prefix.`,
+              },
+            ],
+          };
+        }
+        const fullId = resolved;
+        return await withLock(`${key}:${fullId}`, async () => {
           // The store deletes the task and its whole subtree in one call.
           const removed = await deleteTask(key, fullId);
           if (removed.length === 0)

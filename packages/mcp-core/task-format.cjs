@@ -135,13 +135,15 @@ function parseTask(raw) {
   const rawEpic = get("epic");
   const rawTags = get("tags");
   const MEMO_SENTINEL = "\n<!-- memo -->\n";
-  const memoIdx = description.lastIndexOf(MEMO_SENTINEL);
+  // Prepend a newline so the sentinel also matches when the description is
+  // empty (trimStart left the marker at index 0) — otherwise the memo would
+  // bleed into the description and be lost on the next round-trip.
+  const padded = "\n" + description;
+  const memoIdx = padded.lastIndexOf(MEMO_SENTINEL);
   const descriptionBody =
-    memoIdx >= 0
-      ? description.slice(0, memoIdx).trimEnd()
-      : description.trimEnd();
+    memoIdx >= 0 ? padded.slice(1, memoIdx).trimEnd() : description.trimEnd();
   const memo =
-    memoIdx >= 0 ? description.slice(memoIdx + MEMO_SENTINEL.length) : "";
+    memoIdx >= 0 ? padded.slice(memoIdx + MEMO_SENTINEL.length) : "";
   const tags = (() => {
     if (!rawTags || rawTags === "null") return [];
     const result = [];

@@ -126,10 +126,14 @@ export function ScanPanel<T extends ScanItem>({
   const resizerStartY = useRef<number | null>(null);
   const resizerStartH = useRef<number>(DEFAULT_HEIGHT);
 
-  // Load the persisted ack + exclude lists when the project changes.
+  // Load the persisted ack + exclude lists when the project changes. Also
+  // drop any previous project's results/trend — otherwise stale rows render
+  // under the new repo and open wrong file paths on click.
   useEffect(() => {
     setError(null);
     setScanned(false);
+    setItems([] as T[]);
+    setTrend(undefined);
     if (!repoPath) {
       setAckedFingerprints([]);
       setExcludeDirs([]);
@@ -153,7 +157,7 @@ export function ScanPanel<T extends ScanItem>({
     return () => {
       cancelled = true;
     };
-  }, [repoPath, api]);
+  }, [repoPath, api, setItems]);
 
   const handleScan = useCallback(async () => {
     if (!repoPath) return;

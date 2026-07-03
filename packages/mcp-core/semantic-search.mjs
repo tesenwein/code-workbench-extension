@@ -67,7 +67,11 @@ function loadCache() {
 function saveCache(cache) {
   try {
     fs.mkdirSync(CACHE_ROOT, { recursive: true });
-    fs.writeFileSync(VEC_CACHE_FILE, JSON.stringify(cache));
+    // tmp + rename: several MCP processes share this file; a torn concurrent
+    // write would corrupt the JSON and wipe the whole embedding cache.
+    const tmp = `${VEC_CACHE_FILE}.${process.pid}.tmp`;
+    fs.writeFileSync(tmp, JSON.stringify(cache));
+    fs.renameSync(tmp, VEC_CACHE_FILE);
   } catch (err) {
     process.stderr.write(
       `[semantic-search] cache write failed: ${err?.message ?? err}\n`,

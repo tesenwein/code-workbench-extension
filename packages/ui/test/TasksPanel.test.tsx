@@ -108,6 +108,33 @@ describe('TasksPanel', () => {
     );
   });
 
+  it('page mode: clicking a subtask opens it in the detail editor with a parent backlink', async () => {
+    const user = userEvent.setup();
+    const api = mockApi([ROOT, SUB]);
+    render(<TasksPanel api={api} activeWorktree={null} worktrees={[]} pageMode />);
+
+    await user.click(await screen.findByText('Subtask one'));
+    const pane = document.querySelector('.task-detail-pane');
+    expect(pane).not.toBeNull();
+    expect(within(pane as HTMLElement).getByPlaceholderText('What needs doing?')).toHaveValue(
+      'Subtask one',
+    );
+    // A subtask shows a parent backlink instead of a Subtasks section…
+    const backlink = within(pane as HTMLElement).getByTitle('Open parent task');
+    expect(backlink).toHaveTextContent('Root task A');
+    // …and clicking it navigates the pane to the parent.
+    await user.click(backlink);
+    expect(within(pane as HTMLElement).getByPlaceholderText('What needs doing?')).toHaveValue(
+      'Root task A',
+    );
+  });
+
+  it('page mode: renders the column resizer between list and detail', async () => {
+    render(<TasksPanel api={mockApi([ROOT])} activeWorktree={null} worktrees={[]} pageMode />);
+    await screen.findByText('Root task A');
+    expect(document.querySelector('.task-col-resizer')).not.toBeNull();
+  });
+
   it('page mode: "+ New task" opens a blank create editor and creates the task', async () => {
     const user = userEvent.setup();
     const created = task({ id: 'new-1', title: 'Fresh task' });
