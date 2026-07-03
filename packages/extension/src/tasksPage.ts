@@ -18,7 +18,12 @@ export function showTasksPage(
   getActiveWorktree: () => string | undefined,
 ): void {
   const pushContext = async (rpc: { postEvent(name: string, payload: unknown): void }) => {
-    rpc.postEvent('context', await taskPanelContext(getRepoRoot, getActiveWorktree));
+    rpc.postEvent('context', {
+      ...(await taskPanelContext(getRepoRoot, getActiveWorktree)),
+      // The same React bundle serves the sidebar and this page; the surface
+      // flag switches TasksPanel into page mode (detail editor + filter bar).
+      surface: 'page',
+    });
   };
   showPage({
     ctx,

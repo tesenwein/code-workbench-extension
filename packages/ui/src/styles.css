@@ -1064,9 +1064,68 @@
  * below the pane header — keeps the header title from being squeezed. */
 .task-search-row {
   flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
   padding: 7px 8px;
   background: var(--bg-0);
   border-bottom: 1px solid var(--border);
+}
+.task-search-row .task-search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.task-toolbar-select {
+  flex: 0 0 auto;
+  max-width: 150px;
+}
+
+/* ── Page mode: full editor-tab board (list + detail editor) ───── */
+.task-page-layout {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+.task-detail-pane {
+  flex: 0 0 42%;
+  max-width: 560px;
+  min-width: 300px;
+  overflow-y: auto;
+  border-left: 1px solid var(--border);
+  background: var(--bg-card);
+  padding: 10px 12px;
+}
+.task-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.task-detail-id {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  margin-right: auto;
+}
+.task-detail-saved {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ok);
+}
+.task-detail-subtasks {
+  margin-top: 14px;
+  border-top: 1px solid var(--rule);
+  padding-top: 8px;
+}
+.task-detail-subhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  margin-bottom: 6px;
 }
 
 /* fade-in for freshly rendered rows */
