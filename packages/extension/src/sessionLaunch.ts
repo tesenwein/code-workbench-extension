@@ -36,10 +36,10 @@ export function shellQuote(s: string): string {
   return `'${s.replace(/'/g, `'\\''`)}'`;
 }
 
-/** 24-bit RGB for the colored banner background. Matches the Paper & Clay
- *  terminal ANSI palette in themes/code-workbench-color-theme.json so the
- *  banner visually matches the terminal tab tint and tree icon for each
- *  worktree color. */
+/** 24-bit RGB for the colored banner background. Matches the terminal ANSI
+ *  palette of the Paper & Clay theme (github.com/tesenwein/paper-and-clay-theme)
+ *  so the banner visually matches the terminal tab tint and tree icon for
+ *  each worktree color. */
 function ansiBgRgb(color: WorktreeColor): [number, number, number] | undefined {
   switch (color) {
     case 'red':

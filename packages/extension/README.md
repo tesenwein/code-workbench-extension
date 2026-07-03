@@ -40,10 +40,10 @@ A VS Code extension that turns your editor into a multi-worktree command center 
   - `notify_chat_title` — rename the session tab as the task evolves.
   - `notify_done` / `notify_needs_input` / `notify_info` — surface progress and blockers as VS Code toasts.
 
-### 🎨 Theme
+### 🎨 Appearance
 
-- Bundled **"Paper & Clay"** dark theme tuned for long Claude sessions.
 - Optional commands to apply workbench fonts and a minimal layout.
+- Pairs well with the standalone [Paper & Clay](https://github.com/tesenwein/paper-and-clay-theme) theme.
 
 ## Install
 
