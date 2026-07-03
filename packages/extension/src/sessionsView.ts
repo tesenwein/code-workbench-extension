@@ -73,7 +73,11 @@ function sessionRow(s,accent){
   if(accent){ row.style.boxShadow='inset 2px 0 0 '+accent; }
   row.addEventListener('click',function(){ vscode.postMessage({type:'open',id:s.id}); });
 
-  var lead=document.createElement('div'); lead.className='lead';
+  var lead=document.createElement('div'); lead.className='lead icn';
+  var ic=document.createElement('span');
+  var iid=(s.icon||'').replace(/[^a-z0-9-]/g,'');
+  ic.className='sicon codicon codicon-'+(iid||'sparkle');
+  lead.appendChild(ic);
   var live=document.createElement('span');
   live.className='live'+(s.isOpen?' on':'')+(s.isActive&&blinkPhase?' blink':'');
   if(s.isActive){ live.setAttribute('data-active','1'); }
@@ -135,7 +139,6 @@ export class SessionsProvider implements vscode.WebviewViewProvider {
     private mgr: SessionManager,
     private extensionUri: vscode.Uri,
   ) {
-    void this.extensionUri;
     mgr.onDidChange(() => this.post());
     mgr.onBlink(() => {
       void this.view?.webview.postMessage({
@@ -151,8 +154,17 @@ export class SessionsProvider implements vscode.WebviewViewProvider {
 
   resolveWebviewView(view: vscode.WebviewView): void {
     this.view = view;
-    view.webview.options = { enableScripts: true };
-    view.webview.html = panelHtml(view.webview.cspSource, makeNonce(), SESSIONS_SCRIPT);
+    const distUri = vscode.Uri.joinPath(this.extensionUri, 'dist');
+    view.webview.options = { enableScripts: true, localResourceRoots: [distUri] };
+    const codiconUri = view.webview
+      .asWebviewUri(vscode.Uri.joinPath(distUri, 'codicon', 'codicon.css'))
+      .toString();
+    view.webview.html = panelHtml(
+      view.webview.cspSource,
+      makeNonce(),
+      SESSIONS_SCRIPT,
+      codiconUri,
+    );
     view.webview.onDidReceiveMessage((m) => this.onMessage(m));
   }
 
@@ -188,6 +200,7 @@ export class SessionsProvider implements vscode.WebviewViewProvider {
           id: s.id,
           title: s.title,
           kind: s.kind,
+          icon: sessionIconId(s),
           isOpen: this.mgr.isOpen(s.id),
           isActive: this.mgr.isActive(s.id),
           selected: s.id === selectedId,

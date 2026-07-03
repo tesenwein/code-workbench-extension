@@ -141,6 +141,24 @@ const panelCss = () => `
     box-shadow:0 0 0 2px var(--bg-0),0 0 7px var(--clay);
   }
 
+  /* session tab icon (codicon) shown in the row lead */
+  .lead.icn { position:relative; }
+  .sicon.codicon { font-size:15px; }
+  .sicon {
+    line-height:1; color:var(--fg-2);
+    transition:color .13s ease;
+  }
+  .row:hover .sicon { color:var(--fg-0); }
+  .row.selected .sicon, .row.active .sicon { color:var(--clay-bright); }
+  /* live-status badge, tucked into the icon's lower-right corner */
+  .lead.icn .live {
+    position:absolute; right:-2px; bottom:-2px;
+    box-shadow:0 0 0 2px var(--bg-1);
+  }
+  .row:hover .lead.icn .live { box-shadow:0 0 0 2px var(--bg-2); }
+  .lead.icn .live.on { box-shadow:0 0 0 2px var(--bg-1),0 0 6px color-mix(in srgb, var(--ok) 70%, transparent); }
+  .lead.icn .live.on.blink { box-shadow:0 0 0 2px var(--bg-1),0 0 6px color-mix(in srgb, var(--warn) 70%, transparent); }
+
   .body { flex:1 1 auto; min-width:0; }
   .title {
     font-size:12px; color:var(--fg-0); font-weight:500;
@@ -236,14 +254,28 @@ const panelCss = () => `
 `;
 
 /** Build the full webview document. The body is an empty `#root` that the
- *  per-panel script populates from `state` messages posted by the provider. */
-export function panelHtml(cspSource: string, nonce: string, script: string): string {
+ *  per-panel script populates from `state` messages posted by the provider.
+ *
+ *  `codiconUri`, when supplied, is the `asWebviewUri` of the bundled
+ *  `dist/codicon/codicon.css`; it is linked so the panel script can render
+ *  `<span class="codicon codicon-<id>">` glyphs (used by the Sessions panel to
+ *  show each session's tab icon). Loading a stylesheet needs the source host in
+ *  `style-src`, and the font it references needs `font-src`. */
+export function panelHtml(
+  cspSource: string,
+  nonce: string,
+  script: string,
+  codiconUri?: string,
+): string {
+  const styleSrc = codiconUri ? `${cspSource} 'unsafe-inline'` : `'unsafe-inline'`;
+  const fontSrc = codiconUri ? ` font-src ${cspSource};` : '';
+  const codiconLink = codiconUri ? `\n<link href="${codiconUri}" rel="stylesheet" />` : '';
   return `<!doctype html>
 <html>
 <head>
 <meta charset="utf-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource} https: data:; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';" />
-<style>${panelCss()}</style>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource} https: data:; style-src ${styleSrc};${fontSrc} script-src 'nonce-${nonce}';" />
+<style>${panelCss()}</style>${codiconLink}
 </head>
 <body>
 <div id="root"></div>
