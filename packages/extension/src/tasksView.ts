@@ -45,8 +45,17 @@ export interface TaskFilter {
 
 /** RPC handler set the shared TasksPanel React component needs — used by
  *  both the sidebar view (TasksProvider) and the full-page tasks board
- *  (tasksPage.ts), so the two surfaces stay behaviorally identical. */
-export function buildTaskRpcHandlers(getRepoKey: () => string | undefined) {
+ *  (tasksPage.ts), so the two surfaces stay behaviorally identical.
+ *
+ *  `afterMutation` is invoked after any create/update/remove so the host can
+ *  push a `tasks-changed` event to BOTH surfaces immediately — the fs.watch on
+ *  `~/.code-workbench` is unreliable (macOS FSEvents) and the poll only runs
+ *  when a panel is visible, so a mutation in one surface would otherwise not
+ *  reflect in the other until the next poll tick (or not at all). */
+export function buildTaskRpcHandlers(
+  getRepoKey: () => string | undefined,
+  afterMutation?: () => void,
+) {
   return {
     list: async () => {
       const key = getRepoKey();
@@ -55,17 +64,21 @@ export function buildTaskRpcHandlers(getRepoKey: () => string | undefined) {
     create: async (task: unknown) => {
       const key = getRepoKey();
       if (!key) throw new Error('No repository open');
-      return createTask(key, task as Parameters<typeof createTask>[1]);
+      const created = await createTask(key, task as Parameters<typeof createTask>[1]);
+      afterMutation?.();
+      return created;
     },
     update: async (id: unknown, patch: unknown) => {
       const key = getRepoKey();
       if (!key) return;
       await updateTask(key, String(id), patch as Parameters<typeof updateTask>[2]);
+      afterMutation?.();
     },
     remove: async (id: unknown) => {
       const key = getRepoKey();
       if (!key) return;
       await deleteTask(key, String(id));
+      afterMutation?.();
     },
     openInEditor: async (id: unknown) => {
       const key = getRepoKey();
@@ -122,6 +135,9 @@ export class TasksProvider implements vscode.WebviewViewProvider {
     private extensionUri: vscode.Uri = vscode.Uri.file('.'),
     private getRepoRoot: () => string | undefined = () => undefined,
     private memento?: vscode.Memento,
+    /** Called after any task mutation so the host can refresh the sibling
+     *  full-page board (and this view) without waiting on the file watcher. */
+    private afterMutation: () => void = () => undefined,
   ) {
     if (memento) this.filter = memento.get<TaskFilter>('tasks.filter', {});
   }
@@ -138,7 +154,7 @@ export class TasksProvider implements vscode.WebviewViewProvider {
     // opens the full-width board page with that task selected, so editing
     // happens in the main editor area rather than inline in this narrow view.
     const handlers = {
-      ...buildTaskRpcHandlers(this.getRepoKey),
+      ...buildTaskRpcHandlers(this.getRepoKey, this.afterMutation),
       openTaskPage: async (id: unknown) => {
         await vscode.commands.executeCommand('codeWorkbench.tasks.openTaskInPage', String(id));
       },

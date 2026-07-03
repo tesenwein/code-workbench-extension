@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": 1783076372987,
+  "generatedAt": 1783077667593,
   "root": "/Users/theodoresenwein/Code/code-workbench-extension",
   "groups": [
     {
@@ -96,30 +96,6 @@
           "startLine": 149,
           "endLine": 194,
           "lines": 46
-        }
-      ]
-    },
-    {
-      "cloneType": "structural",
-      "similarity": 0.89,
-      "count": 2,
-      "fingerprint": "f35cdc1cb059e04a",
-      "members": [
-        {
-          "file": "packages/extension/src/archPage.ts",
-          "name": "showArchPage",
-          "kind": "function",
-          "startLine": 20,
-          "endLine": 52,
-          "lines": 33
-        },
-        {
-          "file": "packages/extension/src/tasksPage.ts",
-          "name": "showTasksPage",
-          "kind": "function",
-          "startLine": 21,
-          "endLine": 62,
-          "lines": 42
         }
       ]
     },
@@ -405,16 +381,16 @@
           "file": "packages/ui/test/ArchPanel.test.tsx",
           "name": "<anonymous>",
           "kind": "function",
-          "startLine": 77,
-          "endLine": 91,
+          "startLine": 78,
+          "endLine": 92,
           "lines": 15
         },
         {
           "file": "packages/ui/test/ArchPanel.test.tsx",
           "name": "<anonymous>",
           "kind": "function",
-          "startLine": 131,
-          "endLine": 146,
+          "startLine": 133,
+          "endLine": 148,
           "lines": 16
         }
       ]
@@ -751,6 +727,30 @@
           "kind": "function",
           "startLine": 736,
           "endLine": 744,
+          "lines": 9
+        }
+      ]
+    },
+    {
+      "cloneType": "renamed",
+      "similarity": 1,
+      "count": 2,
+      "fingerprint": "a22dc201790a18d8",
+      "members": [
+        {
+          "file": "packages/extension/src/commands/taskCommands.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 90,
+          "endLine": 98,
+          "lines": 9
+        },
+        {
+          "file": "packages/extension/src/commands/taskCommands.ts",
+          "name": "<anonymous>",
+          "kind": "function",
+          "startLine": 100,
+          "endLine": 108,
           "lines": 9
         }
       ]

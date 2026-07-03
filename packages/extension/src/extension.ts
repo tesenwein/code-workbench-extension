@@ -7,7 +7,11 @@ import { TasksProvider, watchTasks } from './tasksView';
 import { SessionItem, SessionManager, SessionsProvider, SessionKind } from './sessions';
 import { clearTaskWorktree } from './tasks';
 import { initProjectWorkspace } from './workspaceInit';
-import { installWorkbenchSkills } from './skillsBundle';
+import {
+  checkWorkbenchSkills,
+  installWorkbenchSkills,
+  skillsBundleSignature,
+} from './skillsBundle';
 import { registerWorkbenchMcpServers } from './mcpRegister';
 import { GlobalPrefsPanel } from './globalPrefsPanel';
 import { loadGlobalPrefs, loadGlobalPrefsSync, saveGlobalPrefs } from './globalPrefs';
@@ -200,12 +204,20 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     (wt) => sessionMgr.getPrefs(wt).color,
     (wt) => sessionMgr.getPrefs(wt).note,
   );
+  // Refresh BOTH task surfaces (sidebar view + full-page board) at once. Wired
+  // into every task mutation so an edit in one surface reflects in the other
+  // immediately, rather than waiting on the unreliable fs.watch / 3s poll.
+  const refreshTaskSurfaces = () => {
+    tasksProvider.refresh();
+    refreshTasksPage();
+  };
   const tasksProvider = new TasksProvider(
     () => repoKey,
     () => sessionMgr.getActiveWorktree() ?? undefined,
     ctx.extensionUri,
     () => repoRoot,
     ctx.workspaceState,
+    refreshTaskSurfaces,
   );
   const sessionsProvider = new SessionsProvider(sessionMgr, ctx.extensionUri);
 
@@ -266,6 +278,8 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
         () => repoKey,
         () => repoRoot,
         () => sessionMgr.getActiveWorktree() ?? undefined,
+        {},
+        refreshTaskSurfaces,
       ),
     ),
     // Opening a task from the sidebar reveals the full-width board with that
@@ -278,6 +292,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
         () => repoRoot,
         () => sessionMgr.getActiveWorktree() ?? undefined,
         { selectTaskId: typeof id === 'string' ? id : undefined },
+        refreshTaskSurfaces,
       ),
     ),
     // Creating a task opens the board with a blank editor in the detail
@@ -289,6 +304,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
         () => repoRoot,
         () => sessionMgr.getActiveWorktree() ?? undefined,
         { create: true },
+        refreshTaskSurfaces,
       ),
     ),
     vscode.commands.registerCommand('codeWorkbench.arch.refresh', () => archProvider.refresh()),
@@ -465,6 +481,44 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
       },
     ),
   );
+
+  // ── Skills drift check ─ where workbench skills were previously installed,
+  // detect copies that differ from this release's bundled versions and prompt
+  // to update (never auto-write). A dismissal is remembered per scope until
+  // the bundled skill set changes again.
+  const promptSkillsDrift = async (scope: 'user' | 'project', target: string) => {
+    try {
+      const drift = await checkWorkbenchSkills(target);
+      if (!drift.installedAny) return; // never opted in here — don't nag
+      const parts: string[] = [];
+      if (drift.stale.length) parts.push(`${drift.stale.length} outdated`);
+      if (drift.missing.length) parts.push(`${drift.missing.length} not installed`);
+      if (drift.legacy.length) parts.push(`${drift.legacy.length} legacy`);
+      if (!parts.length) return;
+      const promptKey = `codeWorkbench.skillsDriftDismissed.${scope}`;
+      const sig = skillsBundleSignature();
+      if (ctx.globalState.get<string>(promptKey) === sig) return;
+      const where = scope === 'user' ? '~/.claude' : path.basename(target);
+      const pick = await vscode.window.showInformationMessage(
+        `Code Workbench skills in ${where} are out of date (${parts.join(', ')}).`,
+        'Update skills',
+        'Not now',
+      );
+      if (pick === 'Update skills') {
+        await vscode.commands.executeCommand('codeWorkbench.installWorkbenchSkills', scope);
+      } else {
+        await ctx.globalState.update(promptKey, sig);
+      }
+    } catch (e) {
+      console.error('Skills drift check failed', e);
+    }
+  };
+  const projectTarget = sessionMgr.getActiveWorktree() ?? repoRoot;
+  void (async () => {
+    // Sequential so the two scopes never stack notifications on one activation.
+    await promptSkillsDrift('user', os.homedir());
+    if (projectTarget) await promptSkillsDrift('project', projectTarget);
+  })();
 
   // ── Register workbench MCP servers into .claude.json ──────────────────
   ctx.subscriptions.push(

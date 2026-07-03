@@ -56,6 +56,22 @@ describe('DuplicatesPanel', () => {
     expect(screen.getAllByText(/more line\(s\)/).length).toBe(2);
   });
 
+  it('opens the file when a member snippet card is clicked (whole card is clickable)', async () => {
+    const onOpenFile = vi.fn();
+    render(
+      <DuplicatesPanel
+        repoPath="/repo"
+        api={mockApi([GROUP_WITH_SNIPPETS])}
+        onOpenFile={onOpenFile}
+      />,
+    );
+    await userEvent.click(screen.getByTitle('Scan for duplicate code'));
+    await userEvent.click(await screen.findByText(/parseOne/, { selector: '.dup-group-title' }));
+    // Click the snippet code body — not a link — the whole card should open.
+    await userEvent.click(screen.getByText('function parseOne(x) {'));
+    expect(onOpenFile).toHaveBeenCalledWith('/repo//repo/src/a.ts', 'a.ts', 10);
+  });
+
   it('falls back to the compact member list when no snippets are attached', async () => {
     const group: DuplicateGroup = {
       ...GROUP_WITH_SNIPPETS,

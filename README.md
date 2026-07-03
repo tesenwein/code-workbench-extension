@@ -26,19 +26,28 @@ Working with Claude Code across several branches means juggling worktrees, termi
 
 |                          |                                                                                                                                           |
 | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| 🌳 **Worktree-first**    | Create, switch, and prune Git worktrees per repo — each with branch, ahead/behind, uncommitted count, and live session count.             |
-| 🤖 **Claude sessions**   | Per-worktree Claude, Claude Yolo (`--dangerously-skip-permissions`), or plain shell.                                                      |
-| ✅ **Shared task board** | Markdown-backed tasks with priority, status, subtasks, and due dates — kept in sync by the bundled tasks MCP server.                      |
+| 🌳 **Worktree-first**    | Create, switch, and prune Git worktrees per repo — each with branch, ahead/behind, and uncommitted count. Start a worktree from a branch, task, or GitHub issue. |
+| 🤖 **Claude sessions**   | Per-worktree Claude, Claude Yolo (`--dangerously-skip-permissions`), or plain shell, each with a pickable tab icon.                       |
+| ✅ **Shared task board** | Markdown-backed tasks with priority, status, subtasks, and due dates — kept in sync by the bundled tasks MCP server. Edit in the sidebar or a full-page Task Board. |
 | 🔔 **Notifications MCP** | Toast notifications from Claude sessions (`notify_done`, `notify_needs_input`, `notify_info`) plus tab renaming.                          |
-| 🔎 **Semantic code search** | AST-backed hybrid search (`search_code`) so Claude finds symbols by intent, plus file outlines and symbol source lookup.                |
-| 🗺️ **Architecture wiki**  | Git-tracked component cards (`arch` MCP) capturing guidelines, anti-patterns, and decisions — with drift auditing against the code.       |
-| 🧹 **Code health**       | Duplicate detection (exact/renamed/structural), dead-code scanning (unused exports/locals, commented code), and type-safety escape hatch detection (`as`/`any`/`!`/`@ts-ignore`) — all with per-repo acknowledgements. |
+| 🔎 **Semantic code search** | AST-backed hybrid search (`search_code`) so Claude finds symbols by intent, plus file outlines and symbol source lookup — with a results page showing code snippets. |
+| 🗺️ **Architecture wiki**  | Git-tracked component cards (`arch` MCP) capturing guidelines, anti-patterns, and decisions — with drift auditing and semantic card search. |
+| 🧹 **Code health**       | Duplicate detection (exact/renamed/structural), dead-code scanning (unused exports/locals, commented code), and type-safety escape hatch detection (`as`/`any`/`!`/`@ts-ignore`) — full editor-tab pages with clickable snippets and per-repo acknowledgements. |
+| 🧩 **Bundled skills**    | Ships `cw-*` Claude Code skills (`cw-work`, `cw-plan`, `cw-arch`, `cw-tasks`, `cw-dead-code`, `cw-duplicate-cleanup`, `cw-type-safety`, …), installable per-user or per-worktree and auto-synced when updated. |
+| 🎨 **Theme-aware UI**    | Webview panels derive their palette from the active VS Code theme, tinted per-worktree, with high-contrast support.                       |
 
 ## 💻 Installation
 
-Download the latest `.vsix` from [**GitHub Releases**](https://github.com/tesenwein/code-workbench-extension/releases/latest), then in VS Code run _Extensions: Install from VSIX…_.
+Code Workbench isn't on the Marketplace yet — install it from the packaged `.vsix`:
+
+1. **Download** the latest `code-workbench-*.vsix` from the [**GitHub Releases**](https://github.com/tesenwein/code-workbench-extension/releases/latest) page (under **Assets**).
+2. In VS Code, open the Command Palette (`Cmd/Ctrl + Shift + P`) and run **Extensions: Install from VSIX…**, then pick the file you downloaded.
+   - Or from a terminal: `code --install-extension code-workbench-<version>.vsix`.
+3. Reload VS Code if prompted, then open the **Code Workbench** icon in the Activity Bar.
 
 You'll also need the [`claude` CLI](https://docs.claude.com/en/docs/claude-code) on your `PATH` for Claude sessions.
+
+> Building from source instead? Run `pnpm run dist:extension` to produce your own `.vsix` under `release/extension/` (see [Development](#%EF%B8%8F-development)).
 
 ## 🚀 Quick start
 

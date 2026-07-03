@@ -8,6 +8,7 @@
  * auto-scans on open. The duplicates page additionally widens each clone
  * member with its code snippet so groups can be compared side by side. */
 
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { showPage } from './pagePanel';
 import type { WebviewEntry } from './reactWebview';
@@ -28,6 +29,10 @@ import type { ScanFeature } from '@code-workbench/mcp-core/scan-state';
 /** Max code lines shown per duplicate-group member on the page. */
 const MEMBER_SNIPPET_LINES = 30;
 
+/** Context lines shown for a dead-code finding (no end line is reported, so a
+ *  fixed window from the start line gives the reader enough to judge it). */
+const DEAD_CODE_SNIPPET_LINES = 8;
+
 interface ScanPage {
   feature: ScanFeature;
   entry: WebviewEntry;
@@ -38,7 +43,9 @@ interface ScanPage {
 }
 
 /** Attach the source snippet to every clone-group member — the page renders
- *  them side by side, which is the whole point of a full-width view. */
+ *  them side by side, which is the whole point of a full-width view. Member
+ *  `file` is repo-relative (the UI needs it that way), so widening reads from
+ *  the absolute path. */
 async function scanDuplicatesWithSnippets(
   ctx: vscode.ExtensionContext,
   root: string,
@@ -51,8 +58,38 @@ async function scanDuplicatesWithSnippets(
       members: await Promise.all(
         g.members.map(async (m) => ({
           ...m,
-          snippet: await widenSnippet(m, MEMBER_SNIPPET_LINES, '', cache),
+          snippet: await widenSnippet(
+            { ...m, file: path.join(root, m.file) },
+            MEMBER_SNIPPET_LINES,
+            '',
+            cache,
+          ),
         })),
+      ),
+    })),
+  );
+}
+
+/** Attach a source snippet to every dead-code finding so the page can show it
+ *  in the same line-numbered style as the code-search results. */
+async function scanDeadCodeWithSnippets(
+  ctx: vscode.ExtensionContext,
+  root: string,
+): Promise<unknown[]> {
+  const items = await scanDeadCode(ctx, root);
+  const cache = new Map<string, Promise<string[] | undefined>>();
+  return Promise.all(
+    items.map(async (item) => ({
+      ...item,
+      snippet: await widenSnippet(
+        {
+          file: path.join(root, item.file),
+          startLine: item.startLine,
+          endLine: item.startLine + DEAD_CODE_SNIPPET_LINES - 1,
+        },
+        DEAD_CODE_SNIPPET_LINES,
+        '',
+        cache,
       ),
     })),
   );
@@ -65,7 +102,7 @@ const SCAN_PAGES: ScanPage[] = [
     command: 'codeWorkbench.deadCode.scan',
     title: 'Dead Code',
     scanErrorLabel: 'Dead code scan failed',
-    scan: scanDeadCode,
+    scan: scanDeadCodeWithSnippets,
   },
   {
     feature: 'duplicates',

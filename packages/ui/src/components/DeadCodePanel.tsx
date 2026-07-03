@@ -1,5 +1,6 @@
 import { ScanPanel } from './ScanPanel';
-import { ScanItemRow } from './ScanRowParts';
+import { ScanRowActions } from './ScanRowParts';
+import { SnippetCard } from './SnippetCard';
 import type { DeadCodeItem, DeadCodeKind, ScanPaneApi, OpenFileFn } from '../types';
 
 interface Props {
@@ -64,16 +65,27 @@ export function DeadCodePanel({
       onResultsChange={onResultsChange}
       resizable={resizable}
       renderRow={({ item, acknowledged, onAck, onUnack }) => (
-        <ScanItemRow
-          item={item}
-          acknowledged={acknowledged}
+        <SnippetCard
+          name={item.name}
+          kind={
+            <span className={`dc-kind-badge ${KIND_CLASS[item.kind]}`}>{KIND_LABEL[item.kind]}</span>
+          }
+          file={item.file}
+          startLine={item.startLine}
           repoPath={repoPath}
-          kindLabel={KIND_LABEL}
-          kindClass={KIND_CLASS}
-          onAck={onAck}
-          onUnack={onUnack}
-          onCreateTask={onCreateTask}
+          snippet={item.snippet}
           onOpenFile={onOpenFile}
+          detail={<span className="cw-snip-desc">{item.detail}</span>}
+          actions={
+            <ScanRowActions
+              acknowledged={acknowledged}
+              fingerprint={item.fingerprint}
+              taskTitle={`Fix ${KIND_LABEL[item.kind].toLowerCase()}: ${item.name}`}
+              onAck={onAck}
+              onUnack={onUnack}
+              onCreateTask={onCreateTask}
+            />
+          }
         />
       )}
     />

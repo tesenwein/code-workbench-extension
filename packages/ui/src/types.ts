@@ -38,6 +38,9 @@ export interface DeadCodeItem {
   detail: string;
   /** SHA-1 fingerprint used for ack persistence. */
   fingerprint: string;
+  /** Source of the finding (host-widened, capped). When present, the dead-code
+   *  page renders it as a line-numbered snippet; absent in the sidebar. */
+  snippet?: string;
 }
 
 export interface DuplicateMember {
