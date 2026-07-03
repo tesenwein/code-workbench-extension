@@ -67,6 +67,13 @@ export async function searchArchCards({ root, query, limit }) {
 async function serve() {
   const { createInterface } = await import("node:readline");
   const rl = createInterface({ input: process.stdin });
+  // Exit only once stdin has closed AND every accepted request has answered —
+  // exiting straight on 'close' would drop in-flight responses.
+  let inFlight = 0;
+  let closed = false;
+  const maybeExit = () => {
+    if (closed && inFlight === 0) process.exit(0);
+  };
   rl.on("line", (line) => {
     let req;
     try {
@@ -74,6 +81,7 @@ async function serve() {
     } catch {
       return; // ignore garbage lines
     }
+    inFlight++;
     searchArchCards(req)
       .then((results) => {
         process.stdout.write(JSON.stringify({ id: req.id, results }) + "\n");
@@ -82,9 +90,16 @@ async function serve() {
         process.stdout.write(
           JSON.stringify({ id: req.id, error: String(err?.message ?? err) }) + "\n",
         );
+      })
+      .finally(() => {
+        inFlight--;
+        maybeExit();
       });
   });
-  rl.on("close", () => process.exit(0));
+  rl.on("close", () => {
+    closed = true;
+    maybeExit();
+  });
 }
 
 function parseCliArgs(argv) {
