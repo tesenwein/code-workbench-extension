@@ -2,12 +2,10 @@
    Code Workbench — shared panel component styles.
 
    Component classes only. Design tokens (--bg-*, --fg-*, --clay*,
-   --border*, --radius*, --font-*) are provided by the HOST:
-     • Electron app  → renderer/styles/global.css :root
-     • VS Code ext   → panelTheme.ts PANEL_CSS :root
-   Both hosts define the identical clay-on-charcoal palette, so the
-   three panels (Tasks, Dead Code, Duplicates) render the same in
-   either surface.
+   --border*, --radius*, --font-*) are provided by the HOST — in the
+   VS Code extension via webviewTheme.ts, which derives them from the
+   active theme's --vscode-* variables so every panel adapts to the
+   user's selected color theme.
    ─────────────────────────────────────────────────────────────── */
 
 /* ── Pane shell ──────────────────────────────────────────────── */
@@ -386,19 +384,19 @@
   border: 1px solid;
 }
 .dc-kind-export {
-  color: #818cf8;
-  border-color: rgba(129, 140, 248, 0.35);
-  background: rgba(129, 140, 248, 0.09);
+  color: var(--vscode-charts-purple, #818cf8);
+  border-color: color-mix(in srgb, var(--vscode-charts-purple, #818cf8) 35%, transparent);
+  background: color-mix(in srgb, var(--vscode-charts-purple, #818cf8) 9%, transparent);
 }
 .dc-kind-local {
-  color: #c9a96b;
-  border-color: rgba(201, 169, 107, 0.35);
-  background: rgba(201, 169, 107, 0.09);
+  color: var(--vscode-charts-yellow, #c9a96b);
+  border-color: color-mix(in srgb, var(--vscode-charts-yellow, #c9a96b) 35%, transparent);
+  background: color-mix(in srgb, var(--vscode-charts-yellow, #c9a96b) 9%, transparent);
 }
 .dc-kind-comment {
   color: var(--fg-3);
-  border-color: rgba(107, 114, 128, 0.35);
-  background: rgba(107, 114, 128, 0.12);
+  border-color: color-mix(in srgb, var(--fg-3) 35%, transparent);
+  background: color-mix(in srgb, var(--fg-3) 12%, transparent);
 }
 .dc-item-name {
   flex: 1;
@@ -467,19 +465,19 @@
   border: 1px solid;
 }
 .dup-clone-exact {
-  color: #cf7a63;
-  border-color: rgba(207, 122, 99, 0.35);
-  background: rgba(207, 122, 99, 0.09);
+  color: var(--vscode-charts-orange, #cf7a63);
+  border-color: color-mix(in srgb, var(--vscode-charts-orange, #cf7a63) 35%, transparent);
+  background: color-mix(in srgb, var(--vscode-charts-orange, #cf7a63) 9%, transparent);
 }
 .dup-clone-renamed {
-  color: #c9a96b;
-  border-color: rgba(201, 169, 107, 0.35);
-  background: rgba(201, 169, 107, 0.09);
+  color: var(--vscode-charts-yellow, #c9a96b);
+  border-color: color-mix(in srgb, var(--vscode-charts-yellow, #c9a96b) 35%, transparent);
+  background: color-mix(in srgb, var(--vscode-charts-yellow, #c9a96b) 9%, transparent);
 }
 .dup-clone-structural {
-  color: #7d9b6a;
-  border-color: rgba(125, 155, 106, 0.35);
-  background: rgba(125, 155, 106, 0.09);
+  color: var(--vscode-charts-green, #7d9b6a);
+  border-color: color-mix(in srgb, var(--vscode-charts-green, #7d9b6a) 35%, transparent);
+  background: color-mix(in srgb, var(--vscode-charts-green, #7d9b6a) 9%, transparent);
 }
 .dup-group-title {
   flex: 1;
@@ -748,7 +746,7 @@
 .task-subtask-progress {
   font-size: 10px;
   color: var(--fg-2);
-  background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--fg-0) 6%, transparent);
   border-radius: 8px;
   padding: 1px 5px;
   flex-shrink: 0;
@@ -811,7 +809,7 @@
   font-size: 9px;
   font-family: var(--font-mono);
   color: var(--fg-3);
-  background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--fg-0) 6%, transparent);
   border-radius: 8px;
   padding: 1px 5px;
   white-space: nowrap;
@@ -859,19 +857,19 @@
   border: 1px solid transparent;
 }
 .task-status-open {
-  color: #6fa8dc;
-  background: rgba(92, 157, 224, 0.13);
-  border-color: rgba(92, 157, 224, 0.3);
+  color: var(--vscode-charts-blue, #6fa8dc);
+  background: color-mix(in srgb, var(--vscode-charts-blue, #6fa8dc) 13%, transparent);
+  border-color: color-mix(in srgb, var(--vscode-charts-blue, #6fa8dc) 30%, transparent);
 }
 .task-status-in-progress {
-  color: #e0a93a;
-  background: rgba(212, 148, 42, 0.15);
-  border-color: rgba(212, 148, 42, 0.34);
+  color: var(--vscode-charts-yellow, #e0a93a);
+  background: color-mix(in srgb, var(--vscode-charts-yellow, #e0a93a) 15%, transparent);
+  border-color: color-mix(in srgb, var(--vscode-charts-yellow, #e0a93a) 34%, transparent);
 }
 .task-status-done {
-  color: #5cba7d;
-  background: rgba(92, 186, 125, 0.14);
-  border-color: rgba(92, 186, 125, 0.32);
+  color: var(--vscode-charts-green, #5cba7d);
+  background: color-mix(in srgb, var(--vscode-charts-green, #5cba7d) 14%, transparent);
+  border-color: color-mix(in srgb, var(--vscode-charts-green, #5cba7d) 32%, transparent);
 }
 .task-worktree-label {
   flex-shrink: 0;
@@ -909,8 +907,8 @@
 }
 .task-delete-btn:hover {
   opacity: 1;
-  color: #e05c5c;
-  background: color-mix(in srgb, #e05c5c 10%, transparent);
+  color: var(--danger, #e05c5c);
+  background: color-mix(in srgb, var(--danger, #e05c5c) 10%, transparent);
 }
 .task-icon-btn {
   flex-shrink: 0;

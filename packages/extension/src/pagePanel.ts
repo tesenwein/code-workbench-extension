@@ -56,7 +56,7 @@ export function showPage(opts: PageOptions): void {
       localResourceRoots: [vscode.Uri.joinPath(opts.ctx.extensionUri, 'dist')],
     },
   );
-  panel.webview.html = reactWebviewHtml(panel.webview, opts.ctx.extensionUri, opts.entry);
+  panel.webview.html = reactWebviewHtml(panel.webview, opts.ctx.extensionUri, opts.entry, 'editor');
   const instance: PageInstance = { panel };
   pages.set(opts.viewType, instance);
   panel.onDidDispose(() => pages.delete(opts.viewType));

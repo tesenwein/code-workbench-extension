@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { SessionManager } from './sessions';
+import { themeTokenDecls } from './webviewTheme';
 
 function escapeHtml(s: string): string {
   return s
@@ -41,19 +42,8 @@ export class BrandViewProvider implements vscode.WebviewViewProvider {
 <head>
 <meta charset="utf-8" />
 <style>
-  :root {
-    color-scheme: dark;
-    --bg-1: #232220;
-    --bg-glow: #3a2a22;
-    --fg-0: #f3f0e7;
-    --fg-2: #a8a39a;
-    --clay: #d97757;
-    --clay-bright: #e8916f;
-    --clay-line: rgba(217,119,87, 0.32);
-    --border-soft: #2a2825;
-    --font-ui: 'Hanken Grotesk', system-ui, sans-serif;
-    --font-serif: 'Newsreader', 'Iowan Old Style', Georgia, serif;
-    --font-mono: ui-monospace, SFMono-Regular, 'JetBrains Mono', monospace;
+  :root {${themeTokenDecls('sidebar')}
+    --bg-glow: color-mix(in srgb, var(--clay) 14%, var(--bg-0));
   }
   html, body { margin: 0; padding: 0; height: 100%; background: var(--bg-1); overflow: hidden; }
   body {

@@ -1,6 +1,8 @@
 /** Shared chrome for the Code Workbench sidebar webview panels
- *  (Worktrees, Tasks, Saved Sessions). Dark theme, matching the
- *  preference panels' clay-on-charcoal aesthetic. */
+ *  (Worktrees, Tasks, Saved Sessions). Design tokens derive from the
+ *  active VS Code theme (see webviewTheme.ts). */
+
+import { themeTokenDecls } from './webviewTheme';
 
 /** Worktree accent colors for the webview panels. Brighter and more saturated
  *  than the terminal ANSI palette so they read clearly on the dark panel
@@ -23,18 +25,7 @@ export function makeNonce(): string {
 }
 
 const PANEL_CSS = `
-  :root {
-    color-scheme: dark;
-    --bg-0:#181715; --bg-1:#1f1e1c; --bg-2:#262522; --bg-3:#2f2e2a;
-    --bg-card:#1c1b19;
-    --fg-0:#f3f0e7; --fg-1:#c4c0b4; --fg-2:#8b877c; --fg-3:#5f5c54; --fg-4:#403d38;
-    --clay:#d97757; --clay-bright:#e8916f; --clay-deep:#b85c3e;
-    --clay-ghost:rgba(217,119,87,.12); --clay-line:rgba(217,119,87,.30);
-    --rule:#2a2825; --border:#34322e;
-    --ok:#7faa6e; --warn:#cf9f4f; --danger:#e0705e;
-    --font-ui:'Hanken Grotesk',system-ui,sans-serif;
-    --font-mono:'JetBrains Mono',Menlo,monospace;
-    --font-serif:'Newsreader','Iowan Old Style',Georgia,serif;
+  :root {${themeTokenDecls('sidebar')}
   }
   * { box-sizing:border-box; }
   html,body { margin:0; padding:0; }
@@ -48,8 +39,8 @@ const PANEL_CSS = `
     content:''; position:fixed; inset:0;
     pointer-events:none; z-index:-1;
     background-image:
-      radial-gradient(circle at 8% -8%, rgba(217,119,87,0.10), transparent 40%),
-      radial-gradient(circle at 108% 108%, rgba(217,119,87,0.05), transparent 52%);
+      radial-gradient(circle at 8% -8%, color-mix(in srgb, var(--clay) 10%, transparent), transparent 40%),
+      radial-gradient(circle at 108% 108%, color-mix(in srgb, var(--clay) 5%, transparent), transparent 52%);
     background-repeat:no-repeat;
   }
   #root { padding:4px 5px 9px; }
@@ -63,7 +54,7 @@ const PANEL_CSS = `
     color:var(--fg-1); cursor:pointer; text-align:center;
     transition:background .14s ease,border-color .14s ease;
   }
-  .empty:hover { background:rgba(217,119,87,.22); border-color:var(--clay); }
+  .empty:hover { background:color-mix(in srgb, var(--clay) 22%, transparent); border-color:var(--clay); }
   .empty .x {
     display:block; margin-top:9px;
     font-family:var(--font-mono); font-style:normal; font-size:9px;
@@ -123,7 +114,7 @@ const PANEL_CSS = `
      which chat the user is looking at. */
   .row.selected {
     border-color:var(--clay);
-    background:linear-gradient(90deg,rgba(217,119,87,.20),var(--bg-2) 70%);
+    background:linear-gradient(90deg,color-mix(in srgb, var(--clay) 20%, transparent),var(--bg-2) 70%);
     box-shadow:0 0 0 1px var(--clay-line);
   }
   .row.selected::before {
@@ -188,8 +179,8 @@ const PANEL_CSS = `
     background:var(--fg-4); flex:0 0 auto;
     transition:background .2s ease;
   }
-  .live.on { background:var(--ok); box-shadow:0 0 7px rgba(127,170,110,.7); }
-  .live.on.blink { background:var(--warn); box-shadow:0 0 7px rgba(207,159,79,.7); }
+  .live.on { background:var(--ok); box-shadow:0 0 7px color-mix(in srgb, var(--ok) 70%, transparent); }
+  .live.on.blink { background:var(--warn); box-shadow:0 0 7px color-mix(in srgb, var(--warn) 70%, transparent); }
 
   /* status toggle (tasks) */
   .statusbtn {
@@ -217,7 +208,7 @@ const PANEL_CSS = `
     transition:all .12s ease;
   }
   .ibtn:hover { color:var(--fg-0); background:var(--bg-3); border-color:var(--rule); }
-  .ibtn.danger:hover { color:var(--danger); border-color:rgba(224,112,94,.42); }
+  .ibtn.danger:hover { color:var(--danger); border-color:color-mix(in srgb, var(--danger) 42%, transparent); }
   .ibtn.clay:hover { color:var(--clay-bright); border-color:var(--clay-line); }
   .ibtn svg { width:13px; height:13px; }
 
