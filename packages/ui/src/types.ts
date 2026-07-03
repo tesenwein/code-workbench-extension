@@ -88,8 +88,12 @@ export type ScanFeature = 'dead-code' | 'duplicates' | 'type-escapes';
  *  these to its own transport (Electron IPC, or VS Code postMessage). */
 export interface ScanPaneApi<T extends ScanItem> {
   /** Run a scan and atomically return its results together with the current
-   *  acknowledged fingerprint list so callers never see a stale mismatch. */
-  scan: (repoPath: string) => Promise<{ items: T[]; ackedFingerprints: string[] }>;
+   *  acknowledged fingerprint list so callers never see a stale mismatch.
+   *  `trend` is the optional per-scan active-count history (oldest first)
+   *  including this scan — hosts that persist scan history supply it. */
+  scan: (
+    repoPath: string,
+  ) => Promise<{ items: T[]; ackedFingerprints: string[]; trend?: number[] }>;
   listAck: (repoPath: string) => Promise<string[]>;
   listExclude: (repoPath: string) => Promise<string[]>;
   ack: (repoPath: string, fingerprint: string, remove: boolean) => Promise<string[]>;

@@ -209,6 +209,12 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+.cw-trend-spark {
+  flex: 0 0 auto;
+  align-self: center;
+  margin-right: 8px;
+  opacity: 0.9;
+}
 
 /* ── Scan-in-progress indicator ──────────────────────────────── */
 .cw-scan-progress {

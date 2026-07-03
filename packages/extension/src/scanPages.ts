@@ -22,6 +22,7 @@ import {
 } from './scanHost';
 import { widenSnippet } from './snippets';
 import { createTask } from './tasks';
+import { appendTrendPoint } from './scanTrends';
 import type { ScanFeature } from '@code-workbench/mcp-core/scan-state';
 
 /** Max code lines shown per duplicate-group member on the page. */
@@ -105,7 +106,22 @@ function openScanPage(
             page.scan(ctx, root),
             readAcks(root, feature),
           ]);
-          return { items, ackedFingerprints };
+          // Record this scan in the per-repo history; the page shows the
+          // active-count series as a sparkline. Best-effort — a trend write
+          // failure must not fail the scan.
+          const acked = new Set(ackedFingerprints);
+          const active = (items as Array<{ fingerprint: string }>).filter(
+            (i) => !acked.has(i.fingerprint),
+          ).length;
+          const trend = await appendTrendPoint(root, feature, {
+            t: new Date().toISOString(),
+            total: items.length,
+            active,
+          }).then(
+            (series) => series.map((p) => p.active),
+            () => undefined,
+          );
+          return { items, ackedFingerprints, trend };
         } catch (e) {
           vscode.window.showErrorMessage(`${page.scanErrorLabel}: ${(e as Error).message}`);
           throw e;
