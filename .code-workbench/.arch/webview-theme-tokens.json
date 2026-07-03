@@ -1,7 +1,7 @@
 {
   "slug": "webview-theme-tokens",
   "name": "Webview theme tokens",
-  "description": "Shared design-token layer for all extension webviews. webviewTheme.ts exports themeTokenDecls(surface: 'sidebar' | 'editor') which emits the CSS custom-property block (--bg-*, --fg-*, --clay*, --border*, --ok/--warn/--danger, fonts, radii) derived from the active VS Code theme's --vscode-* variables via color-mix(), with the former Paper & Clay palette values as fallbacks. Consumed by reactWebview.ts (React sidebar views + editor pages, surface param), panelTheme.ts (string-built sidebar panels), prefsPanelHtml.ts, globalPrefsPanelHtml.ts, and brandView.ts. The Paper & Clay theme itself was extracted to github.com/tesenwein/paper-and-clay-theme.",
+  "description": "Shared design-token layer for all extension webviews. webviewTheme.ts exports themeTokenDecls(surface: 'sidebar' | 'editor') which emits the CSS custom-property block (--bg-*, --fg-*, --clay*, --border*, --ok/--warn/--danger, fonts, radii) derived from the active VS Code theme's --vscode-* variables via color-mix(), with the former Paper & Clay palette values as fallbacks. Consumed by reactWebview.ts (React sidebar views + editor pages, surface param), panelTheme.ts (string-built sidebar panels), prefsPanelHtml.ts, globalPrefsPanelHtml.ts, and brandView.ts. A contract test (packages/extension/test/webviewTheme.test.ts) asserts every non---vscode-* token consumed by ui/styles.css is declared. The Paper & Clay theme itself was extracted to github.com/tesenwein/paper-and-clay-theme.",
   "files": [
     "packages/extension/src/webviewTheme.ts",
     "packages/extension/src/reactWebview.ts",
@@ -9,17 +9,21 @@
     "packages/extension/src/prefsPanelHtml.ts",
     "packages/extension/src/globalPrefsPanelHtml.ts",
     "packages/extension/src/brandView.ts",
-    "packages/ui/src/styles.css"
+    "packages/ui/src/styles.css",
+    "packages/extension/test/webviewTheme.test.ts"
   ],
   "guidelines": [
     "Never hardcode palette hex/rgba values in webview CSS — reference the tokens, or derive tints with color-mix(in srgb, var(--token) N%, transparent).",
-    "Accent (--clay) maps to var(--vscode-focusBorder); semantic status colors map to --vscode-charts-* / --vscode-errorForeground with the legacy hex as fallback.",
+    "Accent (--clay) maps to var(--vscode-button-background, var(--vscode-focusBorder, …)) — button-background first because many themes ship a near-invisible focusBorder; --fg-2 prefers --vscode-descriptionForeground; --warn prefers --vscode-editorWarning-foreground; --border falls back widget-border → panel-border → mix.",
+    "Font tokens follow user settings: --font-ui = var(--vscode-font-family, …), --font-mono = var(--vscode-editor-font-family, …) — the legacy families are only fallbacks, no @font-face is bundled.",
     "Sidebar webviews use surface 'sidebar' (sideBar-background base); editor-tab pages use 'editor' (editor-background base).",
-    "Elevation steps (--bg-1..3) and fg fades (--fg-1..4) are color-mix ratios of --fg-0 into --bg-0 — they work in both light and dark themes; keep color-scheme: light dark."
+    "Elevation steps (--bg-1..3) and fg fades (--fg-1..4) are color-mix ratios of --fg-0 into --bg-0 — they work in both light and dark themes; keep color-scheme: light dark.",
+    "When adding a token that ui/styles.css consumes, the contract test in packages/extension/test/webviewTheme.test.ts must keep passing — it greps styles.css for var(--…) usages."
   ],
   "anti_patterns": [
     "Adding a new webview host with its own hardcoded :root palette instead of importing themeTokenDecls.",
-    "Using rgba(217,119,87, …) or other Paper & Clay literals in panel CSS."
+    "Using rgba(217,119,87, …) or other Paper & Clay literals in panel CSS.",
+    "Sourcing the accent from --vscode-focusBorder alone — prefer button-background first."
   ],
   "decisions": [],
   "tags": [
@@ -30,9 +34,11 @@
     "paper and clay",
     "dark mode",
     "light mode",
-    "css variables"
+    "css variables",
+    "fonts",
+    "accent color"
   ],
   "dependsOn": [],
-  "updatedAt": "2026-07-03T06:36:37.887Z",
+  "updatedAt": "2026-07-03T07:47:10.878Z",
   "createdAt": "2026-07-03T06:36:37.887Z"
 }

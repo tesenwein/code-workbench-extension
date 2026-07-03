@@ -580,6 +580,7 @@
     "watch": "node esbuild.mjs --watch",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "test": "vitest run",
     "dist": "npm run build && node -e \"require('fs').mkdirSync('../../release/extension',{recursive:true})\" && npx @vscode/vsce package --no-dependencies --out ../../release/extension/",
     "vscode:prepublish": "npm run build"
   },
