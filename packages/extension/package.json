@@ -249,6 +249,12 @@
         "icon": "$(symbol-color)"
       },
       {
+        "command": "codeWorkbench.worktrees.editNote",
+        "category": "Code Workbench",
+        "title": "Edit Handoff Note…",
+        "icon": "$(note)"
+      },
+      {
         "command": "codeWorkbench.arch.refresh",
         "category": "Code Workbench",
         "title": "Refresh Architecture",

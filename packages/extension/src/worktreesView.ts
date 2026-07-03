@@ -37,7 +37,8 @@ const SVG = {
   cfg:'<path d="M3 5.6h10"/><path d="M3 10.4h10"/><circle cx="6" cy="5.6" r="1.6"/><circle cx="10" cy="10.4" r="1.6"/>',
   trash:'<path d="M3.2 4.3h9.6"/><path d="M6 4.3V2.6h4v1.7"/><path d="M4.6 4.3 5.4 13h5.2l.8-8.7"/>',
   plus:'<path d="M8 3.4v9.2"/><path d="M3.4 8h9.2"/>',
-  pr:'<circle cx="4" cy="4" r="1.8"/><circle cx="4" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><path d="M4 5.8v4.4"/><path d="M12 10.2V7a3 3 0 0 0-3-3H6.6"/><path d="M8.4 2 6.4 4l2 2"/>'
+  pr:'<circle cx="4" cy="4" r="1.8"/><circle cx="4" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><path d="M4 5.8v4.4"/><path d="M12 10.2V7a3 3 0 0 0-3-3H6.6"/><path d="M8.4 2 6.4 4l2 2"/>',
+  note:'<path d="M3.4 2.6h9.2v8l-2.8 2.8H3.4z"/><path d="M9.8 13.4V10.6h2.8"/><path d="M5.4 5.6h5.2"/><path d="M5.4 8h3.4"/>'
 };
 function svg(n){ return '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">'+SVG[n]+'</svg>'; }
 function sep(){ var s=document.createElement('span'); s.className='sep'; s.textContent='·'; return s; }
@@ -84,12 +85,14 @@ function render(st){
     }
     if(w.dirty){ meta.appendChild(sep()); var dd=document.createElement('span'); dd.className='dirty'; dd.textContent='●'+w.dirty; dd.title=w.dirty+' uncommitted file'+(w.dirty===1?'':'s'); meta.appendChild(dd); }
     if(w.sessions){ meta.appendChild(sep()); var ss=document.createElement('span'); ss.className='sess'; ss.textContent=w.sessions+(w.sessions===1?' session':' sessions'); meta.appendChild(ss); }
+    if(w.note){ meta.appendChild(sep()); var nn=document.createElement('span'); nn.className='ab'; nn.textContent='✎ note'; nn.title=w.note; meta.appendChild(nn); }
     body.appendChild(meta); row.appendChild(body);
 
     var acts=document.createElement('div'); acts.className='acts';
     acts.appendChild(btn('ext','clay','Open in new window',function(){ vscode.postMessage({type:'open',path:w.path}); }));
     acts.appendChild(btn('term','clay','New session in this worktree',function(){ vscode.postMessage({type:'spawn',path:w.path}); }));
     acts.appendChild(btn('cfg','','Configure Claude',function(){ vscode.postMessage({type:'configure',path:w.path}); }));
+    acts.appendChild(btn('note','',w.note?('Handoff note: '+w.note):'Add handoff note',function(){ vscode.postMessage({type:'note',path:w.path}); }));
     if(!w.isMain){ acts.appendChild(btn('pr','clay','Open pull request',function(){ vscode.postMessage({type:'openPR',path:w.path}); })); }
     if(!w.isMain){ acts.appendChild(btn('trash','danger','Remove worktree',function(){ vscode.postMessage({type:'remove',path:w.path}); })); }
     row.appendChild(acts);
@@ -119,6 +122,7 @@ export class WorktreesProvider implements vscode.WebviewViewProvider {
     private getActiveWorktree: () => string | undefined,
     private countSessions: (worktreePath: string) => number,
     private getColor: (worktreePath: string) => WorktreeColor,
+    private getNote: (worktreePath: string) => string | undefined = () => undefined,
   ) {}
 
   refresh(): void {
@@ -164,6 +168,7 @@ export class WorktreesProvider implements vscode.WebviewViewProvider {
           active: wt.path === active,
           isMain: wt.isMain,
           color: this.getColor(wt.path),
+          note: this.getNote(wt.path) || undefined,
         })),
       };
     } catch {
@@ -207,6 +212,7 @@ export class WorktreesProvider implements vscode.WebviewViewProvider {
         configure: 'codeWorkbench.worktrees.configure',
         openPR: 'codeWorkbench.worktrees.openPR',
         remove: 'codeWorkbench.worktrees.remove',
+        note: 'codeWorkbench.worktrees.editNote',
       } as Record<string, string>
     )[m?.type ?? ''];
     if (cmd) void vscode.commands.executeCommand(cmd, { wt });

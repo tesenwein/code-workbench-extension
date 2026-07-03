@@ -198,6 +198,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     () => sessionMgr.getActiveWorktree(),
     (wt) => sessionMgr.listForWorktree(wt).length,
     (wt) => sessionMgr.getPrefs(wt).color,
+    (wt) => sessionMgr.getPrefs(wt).note,
   );
   const tasksProvider = new TasksProvider(
     () => repoKey,
@@ -230,6 +231,23 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
   });
   refreshStatusBar();
 
+  // Surface this worktree's handoff note once per window — the "where did I
+  // leave off" breadcrumb written at the end of the previous session.
+  if (repoRoot) {
+    const note = sessionMgr.getPrefs(repoRoot).note;
+    if (note) {
+      void vscode.window
+        .showInformationMessage(`Handoff note (${path.basename(repoRoot)}): ${note}`, 'Edit', 'Clear')
+        .then(async (choice) => {
+          if (choice === 'Edit') {
+            await vscode.commands.executeCommand('codeWorkbench.worktrees.editNote');
+          } else if (choice === 'Clear' && repoRoot) {
+            await sessionMgr.setPrefs(repoRoot, { note: undefined });
+          }
+        });
+    }
+  }
+
   const archProvider = new ArchViewProvider(ctx, () => repoRoot);
 
   ctx.subscriptions.push(
@@ -255,6 +273,24 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
       runSearchCodeCommand(ctx, repoRoot),
     ),
     vscode.commands.registerCommand('codeWorkbench.themeTokens', () => showThemeTokensPanel()),
+    vscode.commands.registerCommand(
+      'codeWorkbench.worktrees.editNote',
+      async (item?: WorktreeItem) => {
+        const target = item?.wt.path ?? repoRoot;
+        if (!target) {
+          vscode.window.showWarningMessage('Open a git repository first.');
+          return;
+        }
+        const current = sessionMgr.getPrefs(target).note ?? '';
+        const next = await vscode.window.showInputBox({
+          title: `Handoff note — ${path.basename(target)}`,
+          prompt: 'Where did you leave off? Shown when the next session opens this worktree. Empty clears the note.',
+          value: current,
+        });
+        if (next === undefined) return;
+        await sessionMgr.setPrefs(target, { note: next.trim() || undefined });
+      },
+    ),
     vscode.window.registerWebviewViewProvider(
       BrandViewProvider.viewId,
       new BrandViewProvider(sessionMgr),
