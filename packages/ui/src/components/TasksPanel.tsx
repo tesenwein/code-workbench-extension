@@ -819,6 +819,12 @@ interface TasksPanelProps {
    *  editor pane (instead of the accordion/file), and a filter toolbar
    *  (group-by, status, tag) appears next to the search box. */
   pageMode?: boolean;
+  /** Page mode: id of a task to open in the detail editor on mount / when the
+   *  host requests focus (e.g. opened from the sidebar). */
+  openTaskId?: string;
+  /** Bumped by the host alongside `openTaskId` so re-requesting the same id
+   *  re-opens its editor even if it is already the selection. */
+  openTaskNonce?: number;
 }
 
 type GroupBy = 'worktree' | 'epic' | 'none';
@@ -838,6 +844,8 @@ export function TasksPanel({
   hideHeaderTitle,
   hideHeaderActions,
   pageMode = false,
+  openTaskId,
+  openTaskNonce,
 }: TasksPanelProps) {
   const [tasks, setTasks] = useState<WorkspaceTask[]>([]);
   const [loading, setLoading] = useState(false);
@@ -870,6 +878,13 @@ export function TasksPanel({
   useEffect(() => {
     void reload();
   }, [reload, reloadKey]);
+
+  // Page mode: open the detail editor for a task the host asks us to focus
+  // (e.g. clicked in the sidebar). Keyed on the nonce so the same id re-opens.
+  useEffect(() => {
+    if (pageMode && openTaskId) setSelectedId(openTaskId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageMode, openTaskId, openTaskNonce]);
 
   const createTask = useCallback(
     async (task: NewWorkspaceTask) => {

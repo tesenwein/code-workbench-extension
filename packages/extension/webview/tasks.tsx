@@ -28,14 +28,21 @@ function App() {
     activeWorktree: null,
     worktrees: [],
   });
+  // Bumped each time the host asks the page to focus a task, so re-selecting
+  // the same id (e.g. reveal) still re-opens its editor.
+  const [openTask, setOpenTask] = useState<{ id: string; nonce: number } | null>(null);
 
   useEffect(() => {
     bridge.onEvent((name, payload) => {
       if (name === 'tasks-changed') setReloadKey((k) => k + 1);
       else if (name === 'context') setCtx(payload as Context);
+      else if (name === 'select-task')
+        setOpenTask((prev) => ({ id: String(payload), nonce: (prev?.nonce ?? 0) + 1 }));
     });
     bridge.ready();
   }, []);
+
+  const isPage = ctx.surface === 'page';
 
   return (
     <TasksPanel
@@ -45,7 +52,12 @@ function App() {
       reloadKey={reloadKey}
       hideHeaderTitle
       hideHeaderActions
-      pageMode={ctx.surface === 'page'}
+      pageMode={isPage}
+      // Sidebar: defer to the main-panel board for editing instead of
+      // expanding an inline form in this narrow view.
+      onOpenTask={isPage ? undefined : (id) => void bridge.call('openTaskPage', id)}
+      openTaskId={openTask?.id}
+      openTaskNonce={openTask?.nonce}
     />
   );
 }
