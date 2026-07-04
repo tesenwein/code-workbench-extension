@@ -69,7 +69,7 @@ function render(st){
 
     var body=document.createElement('div'); body.className='body';
     var title=document.createElement('div'); title.className='title';
-    if(w.active){ var s=document.createElement('span'); s.className='star'; s.textContent='★'; title.appendChild(s); }
+    if(w.active){ var s=document.createElement('span'); s.className='star'; s.textContent='★'; s.style.color=dc; title.appendChild(s); }
     title.appendChild(document.createTextNode(w.name));
     body.appendChild(title);
     var meta=document.createElement('div'); meta.className='meta';
