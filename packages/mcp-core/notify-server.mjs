@@ -9,8 +9,13 @@ import net from "node:net";
 import fs from "node:fs";
 import { recordToolUse } from "./usage-log.mjs";
 
-const PORT = Number(process.env.CODE_WORKBENCH_NOTIFY_PORT) || 0;
-if (!PORT) {
+const ENV_PORT = Number(process.env.CODE_WORKBENCH_NOTIFY_PORT) || 0;
+// The workbench also writes the port to a file and re-writes it whenever its
+// TCP server restarts (e.g. extension-host restart picks a new random port).
+// Reading it fresh on every send keeps long-lived Claude sessions reachable
+// even after the env-baked port went stale.
+const PORT_FILE = process.env.CODE_WORKBENCH_NOTIFY_PORT_FILE || "";
+if (!ENV_PORT && !PORT_FILE) {
   process.stderr.write(
     "[notify-server] CODE_WORKBENCH_NOTIFY_PORT is not set — notifications will be dropped silently.\n",
   );
@@ -77,9 +82,33 @@ const HOST_CANDIDATES = [
 
 let cachedHost = null;
 
-function tryConnect(host, payload) {
+// The port file is written with a Windows path; when this server runs inside
+// a WSL distro that path is only reachable through the /mnt drive mount.
+function portFileCandidates() {
+  if (!PORT_FILE) return [];
+  const candidates = [PORT_FILE];
+  const m = /^([A-Za-z]):[\\/](.*)$/.exec(PORT_FILE);
+  if (isWsl() && m) {
+    candidates.push(`/mnt/${m[1].toLowerCase()}/${m[2].replace(/\\/g, "/")}`);
+  }
+  return candidates;
+}
+
+function currentPort() {
+  for (const p of portFileCandidates()) {
+    try {
+      const n = Number(fs.readFileSync(p, "utf8").trim());
+      if (Number.isFinite(n) && n > 0) return n;
+    } catch {
+      /* unreadable — try next candidate */
+    }
+  }
+  return ENV_PORT;
+}
+
+function tryConnect(host, port, payload) {
   return new Promise((resolve) => {
-    const sock = net.createConnection({ host, port: PORT }, () => {
+    const sock = net.createConnection({ host, port }, () => {
       sock.end(JSON.stringify(payload) + "\n", () => resolve(true));
     });
     sock.on("error", () => resolve(false));
@@ -91,12 +120,13 @@ function tryConnect(host, payload) {
 }
 
 async function forward(payload) {
-  if (!PORT) return false;
+  const port = currentPort();
+  if (!port) return false;
   const order = cachedHost
     ? [cachedHost, ...HOST_CANDIDATES.filter((h) => h !== cachedHost)]
     : HOST_CANDIDATES;
   for (const host of order) {
-    if (await tryConnect(host, payload)) {
+    if (await tryConnect(host, port, payload)) {
       cachedHost = host;
       return true;
     }
