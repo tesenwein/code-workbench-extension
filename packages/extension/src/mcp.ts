@@ -37,6 +37,30 @@ export class McpConfigBuilder {
     return path.join(this.dir(), `session-${sessionId}.txt`);
   }
 
+  private portPath(sessionId: string): string {
+    return path.join(this.dir(), `session-${sessionId}.port`);
+  }
+
+  /**
+   * Re-write the notify-port files of already-launched sessions. The NotifyServer
+   * listens on a random port, so after an extension-host restart every running
+   * Claude session still holds the old port in its env — the port file is the
+   * live channel they re-read on each send. Only touches files that exist
+   * (i.e. sessions actually launched with notifications enabled).
+   */
+  async refreshNotifyPorts(sessionIds: string[], port: number): Promise<void> {
+    if (!port || port <= 0) return;
+    for (const id of sessionIds) {
+      const p = this.portPath(id);
+      try {
+        await fsp.access(p);
+        await fsp.writeFile(p, String(port) + '\n', 'utf8');
+      } catch {
+        /* never launched — nothing to refresh */
+      }
+    }
+  }
+
   private async serverScript(name: string): Promise<string | undefined> {
     // MCP servers are spawned as standalone `node <file>` processes. esbuild
     // bundles each one (from the @code-workbench/mcp-core package) into a
@@ -82,6 +106,9 @@ export class McpConfigBuilder {
       if (notifyEnabled) {
         env.CODE_WORKBENCH_NOTIFY_PORT = String(args.notifyPort);
         env.CODE_WORKBENCH_SESSION_ID = args.sessionId;
+        // Port file: re-read by the notify server on every send so a workbench
+        // restart (new random port) doesn't strand long-lived sessions.
+        env.CODE_WORKBENCH_NOTIFY_PORT_FILE = this.portPath(args.sessionId);
       }
       const disabled: string[] = [];
       if (!notifyEnabled) disabled.push('notify');
@@ -116,6 +143,9 @@ export class McpConfigBuilder {
           'arch_search',
           'arch_upsert',
           'arch_delete',
+          'arch_audit',
+          'acknowledge_duplicate',
+          'exclude_directory',
           'detect_dead_code',
           'acknowledge_dead_code',
           'exclude_dead_code_dir',
@@ -131,6 +161,9 @@ export class McpConfigBuilder {
     await fsp.mkdir(this.dir(), { recursive: true });
     const configPath = this.configPath(args.sessionId);
     await fsp.writeFile(configPath, JSON.stringify({ mcpServers }, null, 2) + '\n', 'utf8');
+    if (notifyEnabled && args.notifyPort) {
+      await fsp.writeFile(this.portPath(args.sessionId), String(args.notifyPort) + '\n', 'utf8');
+    }
 
     let promptPath: string | undefined;
     const extras = (args.extraPrompts ?? []).map((p) => p.trim()).filter(Boolean);
@@ -144,7 +177,11 @@ export class McpConfigBuilder {
   }
 
   async delete(sessionId: string): Promise<void> {
-    for (const p of [this.configPath(sessionId), this.promptPath(sessionId)]) {
+    for (const p of [
+      this.configPath(sessionId),
+      this.promptPath(sessionId),
+      this.portPath(sessionId),
+    ]) {
       try {
         await fsp.unlink(p);
       } catch {

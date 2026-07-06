@@ -98,9 +98,14 @@ export class SessionManager {
    *  checks against `git worktree list` output match exactly. */
   private currentWorktreePath: string | undefined;
 
+  /** Resolves once the notify TCP server is listening (port assigned). */
+  private notifyReady: Promise<void>;
+
   constructor(private ctx: vscode.ExtensionContext) {
     this.mcp = new McpConfigBuilder(ctx);
-    void this.notify.start();
+    this.notifyReady = this.notify.start().catch(() => {
+      /* notifications unavailable — sessions still work */
+    });
     this.notify.onTitle(({ sessionId, title }) => {
       void this.applyRemoteTitle(sessionId, title);
     });
@@ -229,6 +234,15 @@ export class SessionManager {
     if (this.repoKey === key) return;
     this.repoKey = key;
     if (key) await this.migrateLegacyIntoRepo(key);
+    // The notify server picked a fresh random port on this activation, but
+    // Claude sessions launched before an extension-host restart still hold the
+    // old one — refresh their port files so they can reach us again.
+    void this.notifyReady.then(() =>
+      this.mcp.refreshNotifyPorts(
+        this.list().map((s) => s.id),
+        this.notify.port,
+      ),
+    );
     this._onDidChange.fire();
   }
 
@@ -509,13 +523,32 @@ export class SessionManager {
     const sessions = this.list();
     const s = sessions.find((x) => x.id === sessionId);
     if (!s) return;
-    if (s.title === clean) return;
-    s.title = clean;
-    await this.save(sessions);
-
-    const term = this.terminals.get(sessionId);
-    if (term) await this.renameTerminalTab(term, clean);
+    // After an extension-host restart the session→terminal map is empty even
+    // though the terminal may still be alive — re-adopt it by its tab name.
+    const term = this.terminals.get(sessionId) ?? this.adoptTerminalByName(sessionId, s.title);
+    // Don't early-return on a matching saved title alone: a previous rename may
+    // have persisted the title but failed to retitle the tab (focus race) — a
+    // repeated notify_chat_title must be able to retry the tab rename.
+    if (s.title === clean && (!term || term.name === clean)) return;
+    if (s.title !== clean) {
+      s.title = clean;
+      await this.save(sessions);
+    }
+    if (term && term.name !== clean) await this.renameTerminalTab(term, clean);
     this._onDidChange.fire();
+  }
+
+  /** Find a live terminal not yet bound to any session whose tab name matches
+   *  the session's saved title, and bind it. Best-effort recovery after an
+   *  extension-host restart wiped the in-memory map. */
+  private adoptTerminalByName(sessionId: string, title: string): vscode.Terminal | undefined {
+    const bound = new Set(this.terminals.values());
+    const match = vscode.window.terminals.find((t) => !bound.has(t) && t.name === title);
+    if (match) {
+      this.terminals.set(sessionId, match);
+      this._onDidChange.fire();
+    }
+    return match;
   }
 
   /**
@@ -525,13 +558,31 @@ export class SessionManager {
    */
   private async renameTerminalTab(term: vscode.Terminal, name: string): Promise<void> {
     const prior = vscode.window.activeTerminal;
+    const hadEditorFocus = !prior && !!vscode.window.activeTextEditor;
     try {
-      term.show(true);
+      // renameWithArg operates on the ACTIVE terminal. show(true) preserves
+      // focus and does not reliably switch the active terminal before the
+      // command runs, so focus the target for real and wait until VS Code
+      // reports it active — otherwise the wrong tab (or none) gets renamed.
+      term.show(false);
+      for (let i = 0; i < 20 && vscode.window.activeTerminal !== term; i++) {
+        await new Promise((r) => setTimeout(r, 25));
+      }
+      if (vscode.window.activeTerminal !== term) return;
       await vscode.commands.executeCommand('workbench.action.terminal.renameWithArg', { name });
     } catch {
       /* command may not exist on older VS Code — ignore */
     } finally {
-      if (prior && prior !== term) prior.show(true);
+      if (prior && prior !== term) {
+        prior.show(false);
+      } else if (hadEditorFocus) {
+        // We stole focus from the editor to make the rename land — give it back.
+        try {
+          await vscode.commands.executeCommand('workbench.action.focusActiveEditorGroup');
+        } catch {
+          /* ignore */
+        }
+      }
     }
   }
 
