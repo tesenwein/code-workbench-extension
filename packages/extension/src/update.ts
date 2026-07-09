@@ -5,6 +5,9 @@
  * is that missing updater: compare the installed version against the latest
  * release, download the asset, and hand it to the built-in installer. */
 
+import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import * as vscode from 'vscode';
 
 /** packageJSON.repository points at the old monorepo path; releases live here. */
@@ -63,36 +66,37 @@ export function pickVsix(release: Release): ReleaseAsset | undefined {
   return release.assets.find((a) => a.name.endsWith('.vsix'));
 }
 
-async function downloadVsix(
-  ctx: vscode.ExtensionContext,
-  asset: ReleaseAsset,
-): Promise<vscode.Uri> {
+/**
+ * VS Code's `getManifest` only accepts `file:` (or `vscode-remote:`) URIs and
+ * rejects anything else with a bare `No Servers`, so the VSIX has to land on a
+ * real filesystem path — `globalStorageUri` is not guaranteed to be one.
+ */
+async function downloadVsix(asset: ReleaseAsset): Promise<vscode.Uri> {
   const res = await fetch(asset.browser_download_url, {
     headers: { 'User-Agent': 'code-workbench-extension' },
     redirect: 'follow',
   });
   if (!res.ok) throw new Error(`Download failed: ${res.status} ${res.statusText}`);
-  const bytes = new Uint8Array(await res.arrayBuffer());
-  await vscode.workspace.fs.createDirectory(ctx.globalStorageUri);
-  const target = vscode.Uri.joinPath(ctx.globalStorageUri, asset.name);
-  await vscode.workspace.fs.writeFile(target, bytes);
-  return target;
+  const bytes = Buffer.from(await res.arrayBuffer());
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'code-workbench-update-'));
+  const target = path.join(dir, asset.name);
+  await fs.writeFile(target, bytes);
+  return vscode.Uri.file(target);
 }
 
 async function installVsix(uri: vscode.Uri): Promise<void> {
-  await vscode.commands.executeCommand('workbench.extensions.installExtension', uri);
-  await vscode.workspace.fs.delete(uri).then(undefined, () => undefined);
+  try {
+    await vscode.commands.executeCommand('workbench.extensions.installExtension', uri);
+  } finally {
+    await fs.rm(path.dirname(uri.fsPath), { recursive: true, force: true }).catch(() => undefined);
+  }
 }
 
-async function downloadAndInstall(
-  ctx: vscode.ExtensionContext,
-  release: Release,
-  asset: ReleaseAsset,
-): Promise<void> {
+async function downloadAndInstall(release: Release, asset: ReleaseAsset): Promise<void> {
   await vscode.window.withProgress(
     { location: vscode.ProgressLocation.Notification, title: `Installing ${release.tag_name}…` },
     async () => {
-      const vsix = await downloadVsix(ctx, asset);
+      const vsix = await downloadVsix(asset);
       await installVsix(vsix);
     },
   );
@@ -162,11 +166,14 @@ export async function checkForUpdates(
   if (choice !== 'Update Now') return;
 
   try {
-    await downloadAndInstall(ctx, release, asset);
+    await downloadAndInstall(release, asset);
   } catch (err) {
-    void vscode.window.showErrorMessage(
-      `Update failed: ${err instanceof Error ? err.message : String(err)}`,
+    const message = err instanceof Error ? err.message : String(err);
+    const open = await vscode.window.showErrorMessage(
+      `Update failed: ${message}`,
+      'Open Release Page',
     );
+    if (open) await vscode.env.openExternal(vscode.Uri.parse(release.html_url));
   }
 }
 

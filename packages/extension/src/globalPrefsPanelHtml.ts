@@ -1,6 +1,11 @@
 import * as vscode from 'vscode';
 import { randomBytes } from 'crypto';
 import { CLAUDE_MODELS, EFFORT_LABELS } from './sessions';
+import {
+  PHASE_DESCRIPTIONS,
+  PHASE_META,
+  PHASE_ORDER,
+} from '@code-workbench/mcp-core/phase-prompts';
 import type { GlobalPrefs } from './globalPrefs';
 import { themeTokenDecls, hcOverrideCss } from './webviewTheme';
 
@@ -15,6 +20,11 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
   const models = CLAUDE_MODELS.map(
     (m) => `<option value="${m.value}">${m.label}</option>`,
   ).join('');
+  // The phase selects carry their own 'default' option ("inherit the phase's
+  // built-in model"), so the concrete models must not repeat that value.
+  const phaseModelOptions = CLAUDE_MODELS.filter((m) => m.value !== 'default')
+    .map((m) => `<option value="${m.value}">${m.label}</option>`)
+    .join('');
   const effortLabels = safeJson(EFFORT_LABELS);
   const modelMeta = safeJson(CLAUDE_MODELS);
   const sessionPanel = vscode.workspace
@@ -355,6 +365,7 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
         <a href="#sec-mcp"><span class="num">02b</span>MCP</a>
         <a href="#sec-layout"><span class="num">03</span>Layout</a>
         <a href="#sec-defaults"><span class="num">04</span>Defaults</a>
+        <a href="#sec-phases"><span class="num">04b</span>Task Flow</a>
         <a href="#sec-binary"><span class="num">05</span>Binary</a>
         <a href="#sec-prompts"><span class="num">06</span>Prompts</a>
       </nav>
@@ -465,6 +476,30 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
         </div>
       </section>
 
+      <section id="sec-phases">
+        <div class="secthead">
+          <span class="num">04b</span><h2>Task Flow</h2>
+          <span class="tag">model per phase</span>
+        </div>
+        <p class="sectlede">
+          Which model the Phase Board spawns for each phase of Plan → Implement → Review → Fix.
+          A worktree's own Claude settings can override any of these.
+        </p>
+        ${PHASE_ORDER.map(
+          (phase) => `
+        <div class="field">
+          <div class="field-head">
+            <label for="phase-${phase}">${PHASE_META[phase].label}</label>
+            <span class="aux">${PHASE_DESCRIPTIONS[phase]}</span>
+          </div>
+          <select id="phase-${phase}" class="phase-model" data-phase="${phase}">
+            <option value="default">phase default (${PHASE_META[phase].model})</option>
+            ${phaseModelOptions}
+          </select>
+        </div>`,
+        ).join('')}
+      </section>
+
       <section id="sec-binary">
         <div class="secthead">
           <span class="num">05</span><h2>Claude Binary</h2>
@@ -556,6 +591,16 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
   }
 
   const modelChipsEl = document.getElementById('modelChips');
+  const phaseModelEls = Array.from(document.querySelectorAll('.phase-model'));
+
+  for (const el of phaseModelEls) {
+    el.addEventListener('change', () => {
+      vscode.postMessage({
+        type: 'setPhaseModel',
+        value: { phase: el.dataset.phase, model: el.value },
+      });
+    });
+  }
 
   function render() {
     modelEl.value = state.defaults.model;
@@ -577,6 +622,9 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
     yoloArgsValueEl.textContent = state.claudeYoloArgs;
     if (document.activeElement !== claudeCommandEl) claudeCommandEl.value = state.claudeCommand;
     if (document.activeElement !== yoloArgsEl) yoloArgsEl.value = state.claudeYoloArgs;
+    for (const el of phaseModelEls) {
+      el.value = (state.phaseModels || {})[el.dataset.phase] || 'default';
+    }
     renderPrompts();
   }
 

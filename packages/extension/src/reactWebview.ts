@@ -10,7 +10,14 @@
 import * as vscode from 'vscode';
 import { themeTokenDecls, hcOverrideCss, type ThemeSurface } from './webviewTheme';
 
-export type WebviewEntry = 'tasks' | 'deadcode' | 'duplicates' | 'typeescapes' | 'arch' | 'search';
+export type WebviewEntry =
+  | 'tasks'
+  | 'phaseboard'
+  | 'deadcode'
+  | 'duplicates'
+  | 'typeescapes'
+  | 'arch'
+  | 'search';
 
 function makeNonce(): string {
   const cs = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';

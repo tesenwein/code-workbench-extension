@@ -49,6 +49,16 @@
         "default": "./skills.mjs"
       }
     },
+    "./phase-prompts": {
+      "require": {
+        "types": "./phase-prompts.d.cts",
+        "default": "./phase-prompts.cjs"
+      },
+      "import": {
+        "types": "./phase-prompts.d.ts",
+        "default": "./phase-prompts.mjs"
+      }
+    },
     "./scan-state": {
       "require": {
         "types": "./scan-state.d.cts",

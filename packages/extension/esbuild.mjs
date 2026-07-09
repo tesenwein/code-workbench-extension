@@ -151,6 +151,7 @@ configs.push({
   define: { 'process.env.NODE_ENV': watch ? '"development"' : '"production"' },
   entryPoints: {
     'webview/tasks': 'webview/tasks.tsx',
+    'webview/phaseboard': 'webview/phaseboard.tsx',
     'webview/deadcode': 'webview/deadcode.tsx',
     'webview/duplicates': 'webview/duplicates.tsx',
     'webview/typeescapes': 'webview/typeescapes.tsx',

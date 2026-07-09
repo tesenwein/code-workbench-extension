@@ -10,6 +10,14 @@ export type TaskStatus = 'open' | 'in-progress' | 'done';
  *  isn't in the flow. */
 export type TaskPhase = 'plan' | 'implement' | 'review' | 'fix';
 
+/** Resolved phase→model for each worktree, keyed by worktree key (lowercased
+ *  basename). `fallback` covers unassigned tasks, which run in the active
+ *  worktree. Hosts compute this — the panel only displays it. */
+export interface PhaseModelMap {
+  fallback: Record<TaskPhase, string>;
+  byWorktreeKey: Record<string, Record<TaskPhase, string>>;
+}
+
 export interface WorkspaceTask {
   id: string;
   title: string;

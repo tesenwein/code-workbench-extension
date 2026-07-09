@@ -4,7 +4,13 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { DOT_DIR } from './tasks';
-import { CLAUDE_MODEL_VALUES, type ClaudeEffort, type ClaudeModel } from './sessions';
+import {
+  CLAUDE_MODEL_VALUES,
+  type ClaudeEffort,
+  type ClaudeModel,
+  type PhaseModels,
+} from './sessions';
+import { PHASE_ORDER } from '@code-workbench/mcp-core/phase-prompts';
 
 export interface GlobalPrompt {
   id: string;
@@ -21,6 +27,9 @@ export interface GlobalDefaults {
 
 export interface GlobalPrefs {
   defaults: GlobalDefaults;
+  /** Model each task-flow phase runs on, unless a worktree overrides it.
+   *  Empty / 'default' entries fall through to the phase's built-in model. */
+  phaseModels: PhaseModels;
   prompts: GlobalPrompt[];
   claudeCommand: string;
   claudeYoloArgs: string;
@@ -31,6 +40,7 @@ export interface GlobalPrefs {
 
 export const DEFAULT_GLOBAL_PREFS: GlobalPrefs = {
   defaults: { model: 'default', effort: 1, yolo: false },
+  phaseModels: {},
   prompts: [],
   claudeCommand: 'claude',
   claudeYoloArgs: '--dangerously-skip-permissions',
@@ -74,6 +84,7 @@ function normalize(raw: unknown): GlobalPrefs {
 
   return {
     defaults: { model, effort, yolo },
+    phaseModels: normalizePhaseModels(r.phaseModels),
     prompts,
     claudeCommand:
       typeof r.claudeCommand === 'string' && r.claudeCommand.trim()
@@ -90,6 +101,18 @@ function normalize(raw: unknown): GlobalPrefs {
         ? r.syncBranch
         : DEFAULT_GLOBAL_PREFS.syncBranch,
   };
+}
+
+/** Keep only known phases mapped to known models — a hand-edited settings.json
+ *  must not smuggle an arbitrary string into `claude --model`. */
+export function normalizePhaseModels(raw: unknown): PhaseModels {
+  const source = (raw ?? {}) as Record<string, unknown>;
+  const out: PhaseModels = {};
+  for (const phase of PHASE_ORDER) {
+    const value = source[phase];
+    if (CLAUDE_MODEL_VALUES.includes(value as ClaudeModel)) out[phase] = value as ClaudeModel;
+  }
+  return out;
 }
 
 function cryptoId(): string {

@@ -9,12 +9,15 @@ export { DeadCodePanel } from './components/DeadCodePanel';
 export { TypeEscapePanel } from './components/TypeEscapePanel';
 export { DuplicatesPanel } from './components/DuplicatesPanel';
 export { TasksPanel } from './components/TasksPanel';
+export { PhaseBoard } from './components/PhaseBoard';
 export { ArchPanel } from './components/ArchPanel';
 export { SearchPanel } from './components/SearchPanel';
 
 export type {
   TaskPriority,
   TaskStatus,
+  TaskPhase,
+  PhaseModelMap,
   WorkspaceTask,
   NewWorkspaceTask,
   DeadCodeKind,

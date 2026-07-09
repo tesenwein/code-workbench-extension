@@ -5,6 +5,7 @@ import { findRepoKey, findRepoRoot, listWorktrees } from './git';
 import { NotifyServer } from './notifications';
 import { writeWorktreeWorkspaceColors } from './workspaceInit';
 import { loadGlobalPrefsSync, watchGlobalPrefs, type GlobalPrefs } from './globalPrefs';
+import { PHASE_META, PHASE_ORDER, type TaskPhase } from '@code-workbench/mcp-core/phase-prompts';
 import {
   EFFORT_FLAGS,
   WORKTREE_COLORS,
@@ -822,6 +823,26 @@ export class SessionManager {
     const palette = WORKTREE_COLORS.filter((c) => c !== 'default');
     for (const c of palette) if (!used.has(c)) return c;
     return palette[assignedCount % palette.length] ?? 'blue';
+  }
+
+  /**
+   * Model a task-flow phase runs on for this worktree: the worktree's override
+   * beats the global setting, which beats the phase's built-in model. A
+   * 'default' entry at either level means "keep falling through".
+   */
+  resolvePhaseModel(worktreePath: string, phase: TaskPhase): ClaudeModel {
+    const worktree = this.getPrefs(worktreePath).phaseModels?.[phase];
+    if (worktree && worktree !== 'default') return worktree;
+    const global = this.globalPrefs.phaseModels?.[phase];
+    if (global && global !== 'default') return global;
+    return PHASE_META[phase].model;
+  }
+
+  /** Resolved phase→model map for a worktree — what the Phase Board displays. */
+  resolvePhaseModels(worktreePath: string): Record<TaskPhase, ClaudeModel> {
+    return Object.fromEntries(
+      PHASE_ORDER.map((phase) => [phase, this.resolvePhaseModel(worktreePath, phase)]),
+    ) as Record<TaskPhase, ClaudeModel>;
   }
 
   /** Assign a fresh unused color to a worktree if it doesn't already have one. */

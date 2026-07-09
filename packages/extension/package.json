@@ -330,6 +330,12 @@
         "category": "Code Workbench",
         "title": "Open Task Board as Page",
         "icon": "$(link-external)"
+      },
+      {
+        "command": "codeWorkbench.tasks.openPhaseBoard",
+        "category": "Code Workbench",
+        "title": "Open Phase Board",
+        "icon": "$(run-all)"
       }
     ],
     "menus": {
@@ -443,6 +449,11 @@
           "command": "codeWorkbench.tasks.openAsPage",
           "when": "view == codeWorkbench.tasks",
           "group": "navigation@1"
+        },
+        {
+          "command": "codeWorkbench.tasks.openPhaseBoard",
+          "when": "view == codeWorkbench.tasks",
+          "group": "navigation@2"
         }
       ]
     },
