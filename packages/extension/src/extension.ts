@@ -13,12 +13,7 @@ import {
   installWorkbenchSkills,
   skillsBundleSignature,
 } from './skillsBundle';
-import {
-  checkWorkbenchPermissions,
-  hasClaudeSettingsFile,
-  installWorkbenchPermissions,
-  workbenchPermissionsSignature,
-} from './settingsPermissions';
+import { installWorkbenchPermissions } from './settingsPermissions';
 import { registerWorkbenchMcpServers } from './mcpRegister';
 import { GlobalPrefsPanel } from './globalPrefsPanel';
 import { loadGlobalPrefs, loadGlobalPrefsSync, saveGlobalPrefs } from './globalPrefs';
@@ -563,42 +558,24 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     ),
   );
 
-  // ── Permissions drift check ─ detect Code Workbench MCP tool calls (e.g.
-  // task_list/task_create/task_update) missing from a target's
-  // .claude/settings.json permissions.allow and prompt to backfill them
-  // (never auto-write). A dismissal is remembered per scope until the
-  // canonical permission list itself changes again.
-  const promptPermissionsDrift = async (scope: 'user' | 'project', target: string) => {
+  // ── Permissions backfill ─ merge Code Workbench's MCP permissions into
+  // ~/.claude/settings.json on every activation, so cw-code tool calls never
+  // prompt for approval in any project. Merges and no-ops when already there.
+  // Project scope is deliberately never written on activation: a repo's
+  // .claude/settings.json is usually tracked, and backfilling it would dirty
+  // the working tree. Reach it explicitly via Preferences instead.
+  const installUserPermissions = async () => {
     try {
-      if (!(await hasClaudeSettingsFile(target))) return; // never opted in here — don't nag
-      const missing = await checkWorkbenchPermissions(target);
-      if (!missing.length) return;
-      const promptKey = `codeWorkbench.permissionsDriftDismissed.${scope}`;
-      const sig = workbenchPermissionsSignature();
-      if (ctx.globalState.get<string>(promptKey) === sig) return;
-      const where = scope === 'user' ? '~/.claude' : path.basename(target);
-      const pick = await vscode.window.showInformationMessage(
-        `Code Workbench in ${where} is missing ${missing.length} MCP permission${missing.length === 1 ? '' : 's'} (${missing.join(', ')}) — every call will prompt for approval until added.`,
-        'Add permissions',
-        'Not now',
-      );
-      if (pick === 'Add permissions') {
-        await vscode.commands.executeCommand('codeWorkbench.installWorkbenchPermissions', scope);
-      } else {
-        await ctx.globalState.update(promptKey, sig);
-      }
+      await installWorkbenchPermissions(os.homedir());
     } catch (e) {
-      console.error('Permissions drift check failed', e);
+      console.error('User permissions backfill failed', e);
     }
   };
 
-  const projectTarget = sessionMgr.getActiveWorktree() ?? repoRoot;
   void (async () => {
     // Sequential so scopes/checks never stack notifications on one activation.
     await promptSkillsDrift('user', os.homedir());
-    if (projectTarget) await promptSkillsDrift('project', projectTarget);
-    await promptPermissionsDrift('user', os.homedir());
-    if (projectTarget) await promptPermissionsDrift('project', projectTarget);
+    await installUserPermissions();
   })();
 
   // ── Register workbench MCP servers into .claude.json ──────────────────
