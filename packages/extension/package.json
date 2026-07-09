@@ -110,6 +110,12 @@
         "icon": "$(settings-gear)"
       },
       {
+        "command": "codeWorkbench.checkForUpdates",
+        "category": "Code Workbench",
+        "title": "Check for Updates…",
+        "icon": "$(cloud-download)"
+      },
+      {
         "command": "codeWorkbench.toggleOpenOnStartup",
         "category": "Code Workbench",
         "title": "Toggle Open on Startup"
@@ -339,9 +345,14 @@
           "group": "navigation@0"
         },
         {
+          "command": "codeWorkbench.checkForUpdates",
+          "when": "view == codeWorkbench.brand",
+          "group": "navigation@1"
+        },
+        {
           "command": "codeWorkbench.openGlobalPrefs",
           "when": "view == codeWorkbench.brand",
-          "group": "navigation"
+          "group": "navigation@2"
         },
         {
           "command": "codeWorkbench.pinSidebar",
@@ -529,6 +540,11 @@
           "type": "boolean",
           "default": false,
           "description": "Reopen the saved session terminals for the active worktree when the workspace opens."
+        },
+        "codeWorkbench.autoCheckForUpdates": {
+          "type": "boolean",
+          "default": true,
+          "description": "Check GitHub Releases once a day for a newer Code Workbench release and offer to install it."
         }
       }
     }

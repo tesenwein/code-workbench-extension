@@ -24,6 +24,7 @@ import { registerWorktreeCommands } from './commands/worktreeCommands';
 import { registerScanPageCommands } from './scanPages';
 import { registerCodeHealthView } from './codeHealthView';
 import { registerCodeReviewCommand } from './commands/codeReview';
+import { registerUpdateCommand } from './update';
 import { showTasksPage, refreshTasksPage, isTasksPageOpen } from './tasksPage';
 import { ArchViewProvider } from './archView';
 import { showArchPage, refreshArchPage } from './archPage';
@@ -551,6 +552,8 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
   );
 
   registerLayoutCommands(ctx);
+
+  registerUpdateCommand(ctx);
 
   registerCodeReviewCommand(ctx, { sessionMgr, ensureActiveWorktree });
 
