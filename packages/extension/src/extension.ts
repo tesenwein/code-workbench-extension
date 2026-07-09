@@ -554,12 +554,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
 
   registerCodeReviewCommand(ctx, { sessionMgr, ensureActiveWorktree });
 
-  registerTaskCommands(ctx, {
-    tasksProvider,
-    getRepoKey: () => repoKey,
-    getRepoRoot: () => repoRoot,
-    sessionMgr,
-  });
+  registerTaskCommands(ctx, { tasksProvider });
 
   // ── Session commands ──────────────────────────────────────────────────
   const newSession = async (kind: SessionKind, model?: ClaudeModel) => {

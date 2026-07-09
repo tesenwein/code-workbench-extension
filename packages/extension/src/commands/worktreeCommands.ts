@@ -43,7 +43,7 @@ async function githubRepoUrl(cwd: string): Promise<string | null> {
 }
 import { WorktreeItem, WorktreesProvider } from '../worktreesView';
 import { TasksProvider } from '../tasksView';
-import { CLAUDE_MODELS, SessionManager, normalizeWtPath } from '../sessions';
+import { SessionManager, normalizeWtPath } from '../sessions';
 import { listTasks, updateTask } from '../tasks';
 import { PrefsPanel } from '../prefsPanel';
 import {
@@ -366,27 +366,6 @@ export function registerWorktreeCommands(
       );
     }),
 
-    vscode.commands.registerCommand(
-      'codeWorkbench.worktrees.openHere',
-      async (item: WorktreeItem) => {
-        if (!item) return;
-        await ensureWorktreeWindowTitle(item.wt);
-        await vscode.commands.executeCommand(
-          'vscode.openFolder',
-          vscode.Uri.file(item.wt.path),
-          false,
-        );
-      },
-    ),
-
-    vscode.commands.registerCommand(
-      'codeWorkbench.worktrees.reveal',
-      async (item: WorktreeItem) => {
-        if (!item) return;
-        await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(item.wt.path));
-      },
-    ),
-
     vscode.commands.registerCommand('codeWorkbench.worktrees.switch', async () => {
       const repoRoot = getRepoRoot();
       if (!repoRoot) {
@@ -409,31 +388,6 @@ export function registerWorktreeCommands(
         } else {
           await sessionMgr.create(launch.kind, item.wt.path);
         }
-      },
-    ),
-
-    vscode.commands.registerCommand(
-      'codeWorkbench.worktrees.setModel',
-      async (item: WorktreeItem) => {
-        if (!item) return;
-        const choice = await vscode.window.showQuickPick(
-          CLAUDE_MODELS.map((m) => ({ label: m.label, value: m.value })),
-          { placeHolder: `Default model for ${path.basename(item.wt.path)}` },
-        );
-        if (!choice) return;
-        await sessionMgr.setPrefs(item.wt.path, { model: choice.value });
-      },
-    ),
-
-    vscode.commands.registerCommand(
-      'codeWorkbench.worktrees.toggleYolo',
-      async (item: WorktreeItem) => {
-        if (!item) return;
-        const cur = sessionMgr.getPrefs(item.wt.path);
-        await sessionMgr.setPrefs(item.wt.path, { yolo: !cur.yolo });
-        vscode.window.showInformationMessage(
-          `${path.basename(item.wt.path)}: yolo ${!cur.yolo ? 'on' : 'off'}`,
-        );
       },
     ),
 

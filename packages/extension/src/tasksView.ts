@@ -7,36 +7,6 @@ import type { Task } from '@code-workbench/mcp-core/task-format';
 import { reactWebviewHtml } from './reactWebview';
 import { attachRpc, type RpcContext } from './webviewRpc';
 
-const STATUS_ICON: Record<Task['status'], string> = {
-  open: 'circle-large-outline',
-  'in-progress': 'sync',
-  done: 'check',
-};
-
-const PRIORITY_GLYPH: Record<Task['priority'], string> = {
-  high: '▲',
-  medium: '·',
-  low: '▽',
-};
-
-/** Plain data carrier passed to task commands. The commands only read
- *  `.task`, so this stays compatible with the old TreeItem-based callers. */
-export class TaskItem extends vscode.TreeItem {
-  constructor(
-    public readonly task: Task,
-    hasChildren: boolean,
-    activeWorktree: string | undefined,
-  ) {
-    super(
-      task.title,
-      hasChildren ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None,
-    );
-    void activeWorktree;
-    this.iconPath = new vscode.ThemeIcon(STATUS_ICON[task.status]);
-    this.description = `${PRIORITY_GLYPH[task.priority]} ${task.priority}`;
-  }
-}
-
 export interface TaskFilter {
   text?: string;
   priority?: Task['priority'];
