@@ -493,9 +493,9 @@ export function renderPrefsHtml(worktreePath: string, state: PrefsPanelState): s
       <section id="sec-integration">
         <div class="secthead">
           <span class="num">04</span><h2>Workbench Integration</h2>
-          <span class="tag">skills & mcp</span>
+          <span class="tag">skills, mcp & permissions</span>
         </div>
-        <p class="sectlede">Inject the bundled workbench skills and MCP servers into this repo so Claude Code sessions started outside the workbench can use them.</p>
+        <p class="sectlede">Inject the bundled workbench skills, MCP servers, and tool permissions into this repo so Claude Code sessions started outside the workbench can use them. Nothing here is written automatically — only <code>~/.claude/settings.json</code> is kept up to date on its own.</p>
 
         <div class="field">
           <div class="field-head">
