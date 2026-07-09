@@ -363,17 +363,17 @@
           "group": "2_manage@3"
         },
         {
-          "command": "codeWorkbench.sessions.newFromEditor",
+          "command": "codeWorkbench.checkForUpdates",
           "when": "view == codeWorkbench.brand",
           "group": "navigation@0"
         },
         {
-          "command": "codeWorkbench.checkForUpdates",
+          "command": "codeWorkbench.openGlobalPrefs",
           "when": "view == codeWorkbench.brand",
           "group": "navigation@1"
         },
         {
-          "command": "codeWorkbench.openGlobalPrefs",
+          "command": "codeWorkbench.sessions.newFromEditor",
           "when": "view == codeWorkbench.brand",
           "group": "navigation@2"
         },
