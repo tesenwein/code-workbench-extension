@@ -1,2317 +1,94 @@
 {
   "schemaVersion": 1,
-  "generatedAt": 1781286538256,
-  "root": "/Users/theodoresenwein/Code/code-workbench-monorepo",
+  "generatedAt": 1783591102525,
+  "root": "/Users/theodoresenwein/Code/code-workbench-extension",
   "items": [
     {
       "kind": "as-cast",
-      "file": "packages/app/src/main/ai.ts",
-      "name": "matched",
-      "startLine": 117,
-      "detail": "Type assertion: [] as string[]",
-      "content": "[] as string[]",
-      "fingerprint": "af12dba02863a15e"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/ai.ts",
-      "name": "json",
-      "startLine": 150,
-      "detail": "Type assertion: (await res.json()) as { content?: Array<{ type: string; text?: string }>; usage?",
-      "content": "(await res.json()) as { content?: Array<{ type: string; text?: string }>; usage?",
-      "fingerprint": "36741474082eb4bf"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/ai.ts",
-      "name": "json",
-      "startLine": 191,
-      "detail": "Type assertion: (await res.json()) as { choices?: Array<{ message?: { content?: string } }>; usa",
-      "content": "(await res.json()) as { choices?: Array<{ message?: { content?: string } }>; usa",
-      "fingerprint": "56176a3478176cc0"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/ai.ts",
-      "name": "parsed",
-      "startLine": 407,
-      "detail": "Type assertion: JSON.parse(result.text) as unknown[]",
-      "content": "JSON.parse(result.text) as unknown[]",
-      "fingerprint": "f3cb8470b145ccb4"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/ai.ts",
-      "name": "registerAiHandlers",
-      "startLine": 414,
-      "detail": "Type assertion: choices.slice(0, args.conflicts.length) as Array<'ours' | 'incoming' | 'both'>",
-      "content": "choices.slice(0, args.conflicts.length) as Array<'ours' | 'incoming' | 'both'>",
-      "fingerprint": "8bd64633b8f7ce1c"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/arch.ts",
-      "name": "next",
-      "startLine": 22,
-      "detail": "Type assertion: prev .catch(() => {}) .then(() => fn()) .finally(() => { if (archWriteLocks.get(",
-      "content": "prev .catch(() => {}) .then(() => fn()) .finally(() => { if (archWriteLocks.get(",
-      "fingerprint": "9bca82b57b8ab3e7"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/arch.ts",
+      "file": "packages/extension/src/archHost.ts",
       "name": "c",
-      "startLine": 34,
+      "startLine": 38,
       "detail": "Type assertion: raw as Record<string, unknown>",
       "content": "raw as Record<string, unknown>",
-      "fingerprint": "db03614243bba7c9"
+      "fingerprint": "b3f191f0fa638da3"
     },
     {
       "kind": "as-cast",
-      "file": "packages/app/src/main/arch.ts",
+      "file": "packages/extension/src/archHost.ts",
       "name": "normalizeCard",
-      "startLine": 40,
+      "startLine": 44,
       "detail": "Type assertion: c.files as string[]",
       "content": "c.files as string[]",
-      "fingerprint": "2b5664cac4da6271"
+      "fingerprint": "b7d47820c02d5887"
     },
     {
       "kind": "as-cast",
-      "file": "packages/app/src/main/arch.ts",
+      "file": "packages/extension/src/archHost.ts",
       "name": "normalizeCard",
-      "startLine": 41,
+      "startLine": 45,
       "detail": "Type assertion: c.guidelines as string[]",
       "content": "c.guidelines as string[]",
-      "fingerprint": "3ffe9dc17716b39c"
+      "fingerprint": "cde4cdca8ce22584"
     },
     {
       "kind": "as-cast",
-      "file": "packages/app/src/main/arch.ts",
+      "file": "packages/extension/src/archHost.ts",
       "name": "normalizeCard",
-      "startLine": 42,
+      "startLine": 46,
       "detail": "Type assertion: c.anti_patterns as string[]",
       "content": "c.anti_patterns as string[]",
-      "fingerprint": "5b7b425004a513c2"
+      "fingerprint": "9a3e1f848b5d6c76"
     },
     {
       "kind": "as-cast",
-      "file": "packages/app/src/main/arch.ts",
+      "file": "packages/extension/src/archHost.ts",
       "name": "normalizeCard",
-      "startLine": 43,
+      "startLine": 47,
       "detail": "Type assertion: c.decisions as string[]",
       "content": "c.decisions as string[]",
-      "fingerprint": "3f4654fc476eb76e"
+      "fingerprint": "1d3c3d1a08398a05"
     },
     {
       "kind": "as-cast",
-      "file": "packages/app/src/main/arch.ts",
+      "file": "packages/extension/src/archHost.ts",
       "name": "normalizeCard",
-      "startLine": 44,
+      "startLine": 48,
       "detail": "Type assertion: c.dependsOn as string[]",
       "content": "c.dependsOn as string[]",
-      "fingerprint": "1f6938e765755836"
+      "fingerprint": "36bef6187ed18a90"
     },
     {
       "kind": "as-cast",
-      "file": "packages/app/src/main/browse.ts",
-      "name": "listDir",
-      "startLine": 84,
-      "detail": "Type assertion: e as Error",
-      "content": "e as Error",
-      "fingerprint": "ecbb9611dfef63d1"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/chrome-debug.ts",
-      "name": "fetchJson",
-      "startLine": 256,
-      "detail": "Type assertion: JSON.parse(body) as T",
-      "content": "JSON.parse(body) as T",
-      "fingerprint": "d677a50b30521330"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/chrome-debug.ts",
-      "name": "msg",
-      "startLine": 304,
-      "detail": "Type assertion: JSON.parse(data.toString()) as { method?: string; params?: Record<string, unknow",
-      "content": "JSON.parse(data.toString()) as { method?: string; params?: Record<string, unknow",
-      "fingerprint": "fe9387b5fe5c97a0"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/chrome-debug.ts",
-      "name": "p",
-      "startLine": 311,
-      "detail": "Type assertion: msg.params as { type: string; args: Array<{ type: string; value?: unknown; descr",
-      "content": "msg.params as { type: string; args: Array<{ type: string; value?: unknown; descr",
-      "fingerprint": "ea85f7e2e45489eb"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/chrome-debug.ts",
-      "name": "p",
-      "startLine": 331,
-      "detail": "Type assertion: msg.params as { timestamp: number; exceptionDetails: { text: string; url?: strin",
-      "content": "msg.params as { timestamp: number; exceptionDetails: { text: string; url?: strin",
-      "fingerprint": "7a06ed32a194f602"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/chrome-debug.ts",
-      "name": "p",
-      "startLine": 354,
-      "detail": "Type assertion: msg.params as { entry: { level: string; text: string; timestamp: number; url?: s",
-      "content": "msg.params as { entry: { level: string; text: string; timestamp: number; url?: s",
-      "fingerprint": "09f195bb9b0c9b83"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/chrome-debug.ts",
-      "name": "level",
-      "startLine": 364,
-      "detail": "Type assertion: e.level as DebugLogMessage['level']",
-      "content": "e.level as DebugLogMessage['level']",
-      "fingerprint": "3b6b0d4722279e1e"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/claude-mcp.ts",
-      "name": "createNotifyMcpConfig",
-      "startLine": 198,
-      "detail": "Type assertion: mcpServers[CODE_MCP_KEY] as Record<string, unknown>",
-      "content": "mcpServers[CODE_MCP_KEY] as Record<string, unknown>",
-      "fingerprint": "29c2e4aff8fbb616"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/claude-mcp.ts",
-      "name": "deleteNotifyMcpConfig",
-      "startLine": 249,
-      "detail": "Type assertion: err as NodeJS.ErrnoException",
-      "content": "err as NodeJS.ErrnoException",
-      "fingerprint": "b8f73bbfa39e2ab4"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/claude-mcp.ts",
-      "name": "deleteNotifyMcpConfig",
-      "startLine": 253,
-      "detail": "Type assertion: err as NodeJS.ErrnoException",
-      "content": "err as NodeJS.ErrnoException",
-      "fingerprint": "b8f73bbfa39e2ab4"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/claude-mcp.ts",
-      "name": "msg",
-      "startLine": 335,
-      "detail": "Type assertion: JSON.parse(line) as Record<string, unknown>",
-      "content": "JSON.parse(line) as Record<string, unknown>",
-      "fingerprint": "96c43bc31a014c46"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/main/claude-mcp.ts",
-      "name": "srv",
-      "startLine": 345,
-      "detail": "Non-null assertion: win!",
-      "content": "win!",
-      "fingerprint": "480f1f9b70e11123"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/claude-mcp.ts",
-      "name": "note",
-      "startLine": 355,
-      "detail": "Type assertion: msg.kind as WorkbenchNotification['kind']",
-      "content": "msg.kind as WorkbenchNotification['kind']",
-      "fingerprint": "d21a7c749218dbce"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/main/claude-mcp.ts",
-      "name": "srv",
-      "startLine": 360,
-      "detail": "Non-null assertion: win!",
-      "content": "win!",
-      "fingerprint": "480f1f9b70e11123"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/codeSearch.ts",
-      "name": "roots",
-      "startLine": 20,
-      "detail": "Type assertion: opts.roots as string[]",
-      "content": "opts.roots as string[]",
-      "fingerprint": "cdd68bfae32ef180"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/costs.ts",
-      "name": "load",
-      "startLine": 28,
-      "detail": "Type assertion: JSON.parse(raw) as AiUsageEntry[]",
-      "content": "JSON.parse(raw) as AiUsageEntry[]",
-      "fingerprint": "8955db02c01b7d41"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/deadCode.ts",
-      "name": "items",
-      "startLine": 27,
-      "detail": "Type assertion: categories as string[]",
-      "content": "categories as string[]",
-      "fingerprint": "a549043b52933a91"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/debug.ts",
-      "name": "orig",
-      "startLine": 21,
-      "detail": "Type assertion: console as unknown as Record<string, (...a: unknown[]) => void>",
-      "content": "console as unknown as Record<string, (...a: unknown[]) => void>",
-      "fingerprint": "e6c6d9f0b448e87c"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/debug.ts",
-      "name": "orig",
-      "startLine": 21,
-      "detail": "Type assertion: console as unknown",
-      "content": "console as unknown",
-      "fingerprint": "344ee6c11a4c6fd4"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/debug.ts",
-      "name": "patchMainConsole",
-      "startLine": 22,
-      "detail": "Type assertion: console as unknown as Record<string, (...a: unknown[]) => void>",
-      "content": "console as unknown as Record<string, (...a: unknown[]) => void>",
-      "fingerprint": "82626971129f2bf2"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/debug.ts",
-      "name": "patchMainConsole",
-      "startLine": 22,
-      "detail": "Type assertion: console as unknown",
-      "content": "console as unknown",
-      "fingerprint": "a5aa9c2cf8687dab"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/exec-git.ts",
-      "name": "raw",
-      "startLine": 109,
-      "detail": "Type assertion: err as Error",
-      "content": "err as Error",
-      "fingerprint": "9547c459b2a7fc87"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/exec-git.ts",
-      "name": "raw",
-      "startLine": 149,
-      "detail": "Type assertion: err as Error",
-      "content": "err as Error",
-      "fingerprint": "9547c459b2a7fc87"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/main/exec-git.ts",
-      "name": "annotated",
-      "startLine": 284,
-      "detail": "Non-null assertion: mergedSet!",
-      "content": "mergedSet!",
-      "fingerprint": "88d34e480591bd9f"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/main/exec-git.ts",
-      "name": "parseStatusPorcelain",
-      "startLine": 726,
-      "detail": "Non-null assertion: p.split(' -> ').pop()!",
-      "content": "p.split(' -> ').pop()!",
-      "fingerprint": "f82992fd265322af"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/files.ts",
-      "name": "registerFileHandlers",
-      "startLine": 475,
-      "detail": "Type assertion: e as NodeJS.ErrnoException",
-      "content": "e as NodeJS.ErrnoException",
-      "fingerprint": "12b7add2eaca68ff"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/main/gitState.ts",
-      "name": "getLog",
-      "startLine": 75,
-      "detail": "Non-null assertion: e!",
-      "content": "e!",
-      "fingerprint": "1271b25c89eee729"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/main/gitState.ts",
-      "name": "getLog",
-      "startLine": 79,
-      "detail": "Non-null assertion: e!",
-      "content": "e!",
-      "fingerprint": "1271b25c89eee729"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/main/gitState.ts",
-      "name": "getWorktreeList",
-      "startLine": 94,
-      "detail": "Non-null assertion: e!",
-      "content": "e!",
-      "fingerprint": "89f535640f55873b"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/main/gitState.ts",
-      "name": "getWorktreeList",
-      "startLine": 98,
-      "detail": "Non-null assertion: e!",
-      "content": "e!",
-      "fingerprint": "89f535640f55873b"
-    },
-    {
-      "kind": "any-type",
-      "file": "packages/app/src/main/ipc.ts",
-      "name": "IpcHandler",
-      "startLine": 23,
-      "detail": "Explicit 'any' type annotation",
-      "content": "any",
-      "fingerprint": "dc99a7a1bc26cecc"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/ipc.ts",
-      "name": "normalizeError",
-      "startLine": 44,
-      "detail": "Type assertion: e as { message: unknown }",
-      "content": "e as { message: unknown }",
-      "fingerprint": "1ab4b4601123044e"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/ipc.ts",
-      "name": "normalizeError",
-      "startLine": 46,
-      "detail": "Type assertion: e as { message: string }",
-      "content": "e as { message: string }",
-      "fingerprint": "e3abb64bde5fa4d9"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/ipc.ts",
-      "name": "asObject",
-      "startLine": 111,
-      "detail": "Type assertion: v as Record<string, unknown>",
-      "content": "v as Record<string, unknown>",
-      "fingerprint": "67e6a4feeb4efe31"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/ipc.ts",
-      "name": "asStringArray",
-      "startLine": 122,
-      "detail": "Type assertion: arr as string[]",
-      "content": "arr as string[]",
-      "fingerprint": "937beffeaac42484"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/ipc.ts",
-      "name": "asEnum",
-      "startLine": 127,
-      "detail": "Type assertion: v as T",
-      "content": "v as T",
-      "fingerprint": "c00c66e97f86431c"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/ipc.ts",
-      "name": "asEnum",
-      "startLine": 130,
-      "detail": "Type assertion: v as T",
-      "content": "v as T",
-      "fingerprint": "c00c66e97f86431c"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/ipcHelpers.ts",
-      "name": "requireWorktreePath",
-      "startLine": 15,
-      "detail": "Type assertion: obj.worktreePath as string",
-      "content": "obj.worktreePath as string",
-      "fingerprint": "a9fbe23bf425423b"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/layout.ts",
-      "name": "registerLayoutHandlers",
-      "startLine": 15,
-      "detail": "Type assertion: JSON.parse(raw) as ProjectLayout",
-      "content": "JSON.parse(raw) as ProjectLayout",
-      "fingerprint": "29bb3474b94e5386"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/layout.ts",
-      "name": "registerLayoutHandlers",
-      "startLine": 17,
-      "detail": "Type assertion: e as NodeJS.ErrnoException",
-      "content": "e as NodeJS.ErrnoException",
-      "fingerprint": "9edcab677fa384a9"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/preferences.ts",
-      "name": "defaults",
+      "file": "packages/extension/src/archHost.ts",
+      "name": "normalizeCard",
       "startLine": 49,
-      "detail": "Type assertion: DEFAULT_PREFERENCES as unknown as Record<string, unknown>",
-      "content": "DEFAULT_PREFERENCES as unknown as Record<string, unknown>",
-      "fingerprint": "95036116734740c6"
+      "detail": "Type assertion: c.tags as string[]",
+      "content": "c.tags as string[]",
+      "fingerprint": "28cf78b744090f8a"
     },
     {
       "kind": "as-cast",
-      "file": "packages/app/src/main/preferences.ts",
-      "name": "defaults",
-      "startLine": 49,
-      "detail": "Type assertion: DEFAULT_PREFERENCES as unknown",
-      "content": "DEFAULT_PREFERENCES as unknown",
-      "fingerprint": "cdfba3ff7fbd5f2d"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/preferences.ts",
-      "name": "readJsonIfExists",
-      "startLine": 50,
-      "detail": "Type assertion: parsed as Record<string, unknown>",
-      "content": "parsed as Record<string, unknown>",
-      "fingerprint": "eb1372082344c2a3"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/preferences.ts",
-      "name": "readJsonIfExists",
-      "startLine": 52,
-      "detail": "Type assertion: valid as Record<string, unknown>",
-      "content": "valid as Record<string, unknown>",
-      "fingerprint": "7d783c0662187dd9"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/preferences.ts",
-      "name": "readJsonIfExists",
-      "startLine": 57,
-      "detail": "Type assertion: e as NodeJS.ErrnoException",
-      "content": "e as NodeJS.ErrnoException",
-      "fingerprint": "7123671f164c9138"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/preferences.ts",
-      "name": "deleteIfExists",
-      "startLine": 72,
-      "detail": "Type assertion: e as NodeJS.ErrnoException",
-      "content": "e as NodeJS.ErrnoException",
-      "fingerprint": "34b6a8f709bea3c3"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/preferences.ts",
-      "name": "stripDefaults",
-      "startLine": 93,
-      "detail": "Type assertion: DEFAULT_PREFERENCES as unknown as Record<string, unknown>",
-      "content": "DEFAULT_PREFERENCES as unknown as Record<string, unknown>",
-      "fingerprint": "a53b0d5cec709107"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/preferences.ts",
-      "name": "stripDefaults",
-      "startLine": 93,
-      "detail": "Type assertion: DEFAULT_PREFERENCES as unknown",
-      "content": "DEFAULT_PREFERENCES as unknown",
-      "fingerprint": "43b5f76bbb499a2f"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/preferences.ts",
-      "name": "stripDefaults",
-      "startLine": 94,
-      "detail": "Type assertion: out as Record<string, unknown>",
-      "content": "out as Record<string, unknown>",
-      "fingerprint": "eabd7d53f3e51c89"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/preferences.ts",
-      "name": "migrateLeakedSecrets",
-      "startLine": 113,
-      "detail": "Type assertion: leaked as Record<string, unknown>",
-      "content": "leaked as Record<string, unknown>",
-      "fingerprint": "d3393e2e6f241f63"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/preferences.ts",
-      "name": "migrateLeakedSecrets",
-      "startLine": 114,
-      "detail": "Type assertion: clean as Record<string, unknown>",
-      "content": "clean as Record<string, unknown>",
-      "fingerprint": "2faa9fbd0216c556"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/preferences.ts",
-      "name": "effRecord",
-      "startLine": 159,
-      "detail": "Type assertion: effective as unknown as Record<string, unknown>",
-      "content": "effective as unknown as Record<string, unknown>",
-      "fingerprint": "44093740715d72c8"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/preferences.ts",
-      "name": "effRecord",
-      "startLine": 159,
-      "detail": "Type assertion: effective as unknown",
-      "content": "effective as unknown",
-      "fingerprint": "e68077db84293f12"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/main/preferences.ts",
-      "name": "prefsFile",
-      "startLine": 205,
-      "detail": "Non-null assertion: repoPath!",
-      "content": "repoPath!",
-      "fingerprint": "8ac77c4b0f08c23a"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/preferences.ts",
-      "name": "registerPreferenceHandlers",
-      "startLine": 220,
-      "detail": "Type assertion: baseClean as Record<string, unknown>",
-      "content": "baseClean as Record<string, unknown>",
-      "fingerprint": "c09c4dc8bff2be22"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/project.ts",
-      "name": "readJson",
-      "startLine": 172,
-      "detail": "Type assertion: JSON.parse(await fs.readFile(p, 'utf8')) as T",
-      "content": "JSON.parse(await fs.readFile(p, 'utf8')) as T",
-      "fingerprint": "5825de4cafdfcbd8"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/secrets.ts",
-      "name": "decode",
-      "startLine": 61,
-      "detail": "Type assertion: parsed as Preferences",
-      "content": "parsed as Preferences",
-      "fingerprint": "f179ac17b0f9d285"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/secrets.ts",
-      "name": "blob",
-      "startLine": 67,
-      "detail": "Type assertion: JSON.parse(raw) as SecretsBlob",
-      "content": "JSON.parse(raw) as SecretsBlob",
-      "fingerprint": "8aee7a658cc7a971"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/secrets.ts",
-      "name": "code",
-      "startLine": 71,
-      "detail": "Type assertion: e as NodeJS.ErrnoException",
-      "content": "e as NodeJS.ErrnoException",
-      "fingerprint": "36ac380949dd5ff6"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/secrets.ts",
-      "name": "deleteUserSecrets",
-      "startLine": 87,
-      "detail": "Type assertion: e as NodeJS.ErrnoException",
-      "content": "e as NodeJS.ErrnoException",
-      "fingerprint": "9a4a249a685aefd7"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/security.test.ts",
-      "name": "<module>",
-      "startLine": 20,
-      "detail": "Type assertion: undefined as unknown as string",
-      "content": "undefined as unknown as string",
-      "fingerprint": "fbfd39e66d483b93"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/security.test.ts",
-      "name": "<module>",
-      "startLine": 20,
-      "detail": "Type assertion: undefined as unknown",
-      "content": "undefined as unknown",
-      "fingerprint": "bf728e5409ec3f3e"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/security.test.ts",
-      "name": "<module>",
-      "startLine": 21,
-      "detail": "Type assertion: 123 as unknown as string",
-      "content": "123 as unknown as string",
-      "fingerprint": "6a8afc206512fb70"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/security.test.ts",
-      "name": "<module>",
-      "startLine": 21,
-      "detail": "Type assertion: 123 as unknown",
-      "content": "123 as unknown",
-      "fingerprint": "bdf2a2a535bd49b7"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/security.test.ts",
-      "name": "<module>",
-      "startLine": 56,
-      "detail": "Type assertion: null as unknown as string",
-      "content": "null as unknown as string",
-      "fingerprint": "b9ad7f30c30ec870"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/security.test.ts",
-      "name": "<module>",
-      "startLine": 56,
-      "detail": "Type assertion: null as unknown",
-      "content": "null as unknown",
-      "fingerprint": "705c240309e7030a"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/shell.ts",
-      "name": "registerShellHandlers",
-      "startLine": 38,
-      "detail": "Type assertion: payload as { cwd: string; cmd: string; args: string[] }",
-      "content": "payload as { cwd: string; cmd: string; args: string[] }",
-      "fingerprint": "dcf5e7727cccc1f1"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/skills-bundle.ts",
-      "name": "checkSkillsSyncIn",
-      "startLine": 50,
-      "detail": "Type assertion: e as NodeJS.ErrnoException",
-      "content": "e as NodeJS.ErrnoException",
-      "fingerprint": "b7aab60976f7e4ce"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/tasks.ts",
-      "name": "registerTaskHandlers",
-      "startLine": 96,
-      "detail": "Type assertion: (await taskStore.listTasks(key)) as unknown as WorkspaceTask[]",
-      "content": "(await taskStore.listTasks(key)) as unknown as WorkspaceTask[]",
-      "fingerprint": "584f2fc10da58f5a"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/tasks.ts",
-      "name": "registerTaskHandlers",
-      "startLine": 96,
-      "detail": "Type assertion: (await taskStore.listTasks(key)) as unknown",
-      "content": "(await taskStore.listTasks(key)) as unknown",
-      "fingerprint": "9f0d05edff03b419"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/tasks.ts",
-      "name": "registerTaskHandlers",
-      "startLine": 119,
-      "detail": "Type assertion: created as unknown as WorkspaceTask",
-      "content": "created as unknown as WorkspaceTask",
-      "fingerprint": "e7691b9072bd61bc"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/tasks.ts",
-      "name": "registerTaskHandlers",
-      "startLine": 119,
-      "detail": "Type assertion: created as unknown",
-      "content": "created as unknown",
-      "fingerprint": "f08fd98a9a378f0e"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/tasks.ts",
-      "name": "registerTaskHandlers",
-      "startLine": 139,
-      "detail": "Type assertion: updated as unknown as WorkspaceTask | null",
-      "content": "updated as unknown as WorkspaceTask | null",
-      "fingerprint": "9e14fcd4f9e34cfd"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/tasks.ts",
-      "name": "registerTaskHandlers",
-      "startLine": 139,
-      "detail": "Type assertion: updated as unknown",
-      "content": "updated as unknown",
-      "fingerprint": "2c43822c73550c00"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/main/terminals.ts",
+      "file": "packages/extension/src/archHost.ts",
       "name": "next",
-      "startLine": 72,
-      "detail": "Non-null assertion: state!",
-      "content": "state!",
-      "fingerprint": "968143570db979ca"
+      "startLine": 83,
+      "detail": "Type assertion: prev .catch(() => {}) .then(() => fn()) .finally(() => { if (archWriteLocks.get(",
+      "content": "prev .catch(() => {}) .then(() => fn()) .finally(() => { if (archWriteLocks.get(",
+      "fingerprint": "f875aecc7343c3c1"
     },
     {
-      "kind": "non-null",
-      "file": "packages/app/src/main/terminals.ts",
-      "name": "pump",
-      "startLine": 74,
-      "detail": "Non-null assertion: state!",
-      "content": "state!",
-      "fingerprint": "2a604bcfa3b63e25"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/main/terminals.ts",
-      "name": "cur",
-      "startLine": 94,
-      "detail": "Non-null assertion: stack.pop()!",
-      "content": "stack.pop()!",
-      "fingerprint": "1f1658b94241553f"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/terminals.ts",
-      "name": "env",
-      "startLine": 332,
-      "detail": "Type assertion: process.env as Record<string, string>",
-      "content": "process.env as Record<string, string>",
-      "fingerprint": "cc65a72cfc98f0b8"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/typeEscapes.ts",
-      "name": "items",
-      "startLine": 27,
-      "detail": "Type assertion: categories as string[]",
-      "content": "categories as string[]",
-      "fingerprint": "31334a16b2d4aa51"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/workspaceInit.ts",
-      "name": "ensureDir",
-      "startLine": 36,
-      "detail": "Type assertion: e as NodeJS.ErrnoException",
-      "content": "e as NodeJS.ErrnoException",
-      "fingerprint": "36229c6d525b1061"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/main/workspaceInit.ts",
-      "name": "ensureNestedGitignore",
-      "startLine": 56,
-      "detail": "Type assertion: e as NodeJS.ErrnoException",
-      "content": "e as NodeJS.ErrnoException",
-      "fingerprint": "edf3187143acf464"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/App.tsx",
-      "name": "apply",
-      "startLine": 530,
-      "detail": "Type assertion: layout?.editorDockLayout as Record<string, Record<string, unknown>> | undefined",
-      "content": "layout?.editorDockLayout as Record<string, Record<string, unknown>> | undefined",
-      "fingerprint": "ba9f1928372b1402"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/App.tsx",
-      "name": "apply",
-      "startLine": 532,
-      "detail": "Type assertion: layout?.mainDockLayout as Record<string, unknown> | undefined",
-      "content": "layout?.mainDockLayout as Record<string, unknown> | undefined",
-      "fingerprint": "f6f3fb4b01cbab31"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/App.tsx",
-      "name": "apply",
-      "startLine": 534,
-      "detail": "Type assertion: layout?.focusDockLayout as Record<string, Record<string, unknown>> | undefined",
-      "content": "layout?.focusDockLayout as Record<string, Record<string, unknown>> | undefined",
-      "fingerprint": "97bd277a71e7a802"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/AddRepoModal.tsx",
-      "name": "browse",
-      "startLine": 31,
-      "detail": "Type assertion: e as Error",
-      "content": "e as Error",
-      "fingerprint": "c4ade847d7f82ada"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/ArchGraph.tsx",
-      "name": "ArchGraph",
-      "startLine": 371,
-      "detail": "Type assertion: e.currentTarget as SVGSVGElement",
-      "content": "e.currentTarget as SVGSVGElement",
-      "fingerprint": "16808b80e5740cfb"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/ArchGraph.tsx",
-      "name": "ArchGraph",
-      "startLine": 383,
-      "detail": "Type assertion: e.currentTarget as SVGSVGElement",
-      "content": "e.currentTarget as SVGSVGElement",
-      "fingerprint": "16808b80e5740cfb"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/ClaudeConfigSection.tsx",
-      "name": "reload",
-      "startLine": 40,
-      "detail": "Type assertion: e as Error",
-      "content": "e as Error",
-      "fingerprint": "6156d1bc0a5602bd"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/ClaudeConfigSection.tsx",
-      "name": "commitCreate",
-      "startLine": 72,
-      "detail": "Type assertion: e as Error",
-      "content": "e as Error",
-      "fingerprint": "8346e685224f034a"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/ConflictResolver.tsx",
-      "name": "ConflictResolver",
-      "startLine": 57,
-      "detail": "Type assertion: e as Error",
-      "content": "e as Error",
-      "fingerprint": "a39e25cfb4687331"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/ConflictResolver.tsx",
-      "name": "aiResolveAll",
-      "startLine": 91,
-      "detail": "Type assertion: e as Error",
-      "content": "e as Error",
-      "fingerprint": "d996b073e40ce048"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/ConflictResolver.tsx",
-      "name": "merged",
-      "startLine": 102,
-      "detail": "Type assertion: choices as Choice[]",
-      "content": "choices as Choice[]",
-      "fingerprint": "4fe08bcb7b696a43"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/ConflictResolver.tsx",
-      "name": "markResolved",
-      "startLine": 107,
-      "detail": "Type assertion: e as Error",
-      "content": "e as Error",
-      "fingerprint": "6bd12aa02f4bc740"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/CostBadge.tsx",
-      "name": "handleClick",
-      "startLine": 56,
-      "detail": "Type assertion: e.target as Node",
-      "content": "e.target as Node",
-      "fingerprint": "5d124efe5ed1ca94"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/DeadCodePane.tsx",
-      "name": "results",
-      "startLine": 42,
-      "detail": "Type assertion: (scanResultsByKey[resultsKey] ?? []) as DeadCodeItem[]",
-      "content": "(scanResultsByKey[resultsKey] ?? []) as DeadCodeItem[]",
-      "fingerprint": "c0a0e9e0c5cb0426"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/DebugPane.tsx",
-      "name": "refreshTabs",
-      "startLine": 67,
-      "detail": "Type assertion: err as Error",
-      "content": "err as Error",
-      "fingerprint": "4b4cf7feb468b93e"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/DebugPane.tsx",
-      "name": "msg",
-      "startLine": 92,
-      "detail": "Type assertion: err as Error",
-      "content": "err as Error",
-      "fingerprint": "ca9dec4d986024f9"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/DebugPane.tsx",
-      "name": "handleConnectTab",
-      "startLine": 132,
-      "detail": "Type assertion: err as Error",
-      "content": "err as Error",
-      "fingerprint": "e54bc5f03047d1ce"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/DebugPane.tsx",
-      "name": "header",
-      "startLine": 155,
-      "detail": "Type assertion: chromeStatus as { tabUrl: string }",
-      "content": "chromeStatus as { tabUrl: string }",
-      "fingerprint": "f35a15ac7c1d2316"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/DebugPane.tsx",
-      "name": "header",
-      "startLine": 157,
-      "detail": "Type assertion: chromeStatus as { tabTitle: string }",
-      "content": "chromeStatus as { tabTitle: string }",
-      "fingerprint": "80b8c877e51539c8"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/DebugPane.tsx",
-      "name": "DebugPane",
-      "startLine": 276,
-      "detail": "Type assertion: chromeStatus as { message: string }",
-      "content": "chromeStatus as { message: string }",
-      "fingerprint": "573212695808eb73"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/DiffPane.tsx",
-      "name": "raw",
-      "startLine": 66,
-      "detail": "Type assertion: e as Error",
-      "content": "e as Error",
-      "fingerprint": "d332fb06ce8072a7"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/DiffPane.tsx",
-      "name": "DiffPaneImpl",
-      "startLine": 243,
-      "detail": "Type assertion: e as Error",
-      "content": "e as Error",
-      "fingerprint": "46521012bc41d219"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/renderer/components/DiffPane.tsx",
-      "name": "NoticeView",
-      "startLine": 902,
-      "detail": "Non-null assertion: info.action!",
-      "content": "info.action!",
-      "fingerprint": "e109ffcfbe3b40dd"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/DiffPane.tsx",
-      "name": "CommitDetailView",
-      "startLine": 1055,
-      "detail": "Type assertion: e as Error",
-      "content": "e as Error",
-      "fingerprint": "5105e4a6fb931509"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/DuplicatesPane.tsx",
-      "name": "results",
-      "startLine": 41,
-      "detail": "Type assertion: (scanResultsByKey[resultsKey] ?? []) as DuplicateGroup[]",
-      "content": "(scanResultsByKey[resultsKey] ?? []) as DuplicateGroup[]",
-      "fingerprint": "28f9b633cd5df612"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/EditorDockGrid.tsx",
-      "name": "onReady",
-      "startLine": 292,
-      "detail": "Type assertion: storedDockLayout as unknown as SerializedDockview",
-      "content": "storedDockLayout as unknown as SerializedDockview",
-      "fingerprint": "d30de58fed41549b"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/EditorDockGrid.tsx",
-      "name": "onReady",
-      "startLine": 292,
-      "detail": "Type assertion: storedDockLayout as unknown",
-      "content": "storedDockLayout as unknown",
-      "fingerprint": "6f2dd7feab3b3f19"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/EditorDockGrid.tsx",
-      "name": "disposable",
-      "startLine": 322,
-      "detail": "Type assertion: api.toJSON() as unknown as Record<string, unknown>",
-      "content": "api.toJSON() as unknown as Record<string, unknown>",
-      "fingerprint": "b9005b9c92a83a45"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/EditorDockGrid.tsx",
-      "name": "disposable",
-      "startLine": 322,
-      "detail": "Type assertion: api.toJSON() as unknown",
-      "content": "api.toJSON() as unknown",
-      "fingerprint": "1256814434b7d729"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/FileBrowser.tsx",
-      "name": "FileBrowserImpl",
-      "startLine": 555,
-      "detail": "Type assertion: e.target as HTMLInputElement",
-      "content": "e.target as HTMLInputElement",
-      "fingerprint": "6733e69ef311554e"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/FileBrowser.tsx",
-      "name": "FileBrowserImpl",
-      "startLine": 583,
-      "detail": "Type assertion: ev.target as HTMLElement",
-      "content": "ev.target as HTMLElement",
-      "fingerprint": "d0b54f74677bc13e"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/FileEditor.tsx",
-      "name": "fakeEvent",
-      "startLine": 113,
-      "detail": "Type assertion: { key: e.browserEvent.key, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.s",
-      "content": "{ key: e.browserEvent.key, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.s",
-      "fingerprint": "df50fd93dfd0f1c5"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/FocusDockColumn.tsx",
-      "name": "views",
-      "startLine": 62,
-      "detail": "Type assertion: layout as { views?: unknown } | undefined",
-      "content": "layout as { views?: unknown } | undefined",
-      "fingerprint": "0dba7d06fdd62de8"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/FocusDockColumn.tsx",
-      "name": "isUsableLayout",
-      "startLine": 65,
-      "detail": "Type assertion: views as Array<{ data?: { id?: unknown } }>",
-      "content": "views as Array<{ data?: { id?: unknown } }>",
-      "fingerprint": "fd432ab6a212eb1f"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/FocusDockColumn.tsx",
-      "name": "onReady",
-      "startLine": 122,
-      "detail": "Type assertion: storedLayout as unknown as SerializedSplitview",
-      "content": "storedLayout as unknown as SerializedSplitview",
-      "fingerprint": "cf2b699bad4c1434"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/FocusDockColumn.tsx",
-      "name": "onReady",
-      "startLine": 122,
-      "detail": "Type assertion: storedLayout as unknown",
-      "content": "storedLayout as unknown",
-      "fingerprint": "768676e83a1c60dd"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/FocusDockColumn.tsx",
-      "name": "disposable",
-      "startLine": 130,
-      "detail": "Type assertion: api.toJSON() as unknown as Record<string, unknown>",
-      "content": "api.toJSON() as unknown as Record<string, unknown>",
-      "fingerprint": "4202bafc4a5e4a73"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/FocusDockColumn.tsx",
-      "name": "disposable",
-      "startLine": 130,
-      "detail": "Type assertion: api.toJSON() as unknown",
-      "content": "api.toJSON() as unknown",
-      "fingerprint": "5decbbc4b72c5ade"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/MainDockColumn.tsx",
-      "name": "views",
-      "startLine": 72,
-      "detail": "Type assertion: layout as { views?: unknown } | undefined",
-      "content": "layout as { views?: unknown } | undefined",
-      "fingerprint": "82f9447298c3e149"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/MainDockColumn.tsx",
-      "name": "isUsableLayout",
-      "startLine": 74,
-      "detail": "Type assertion: views as Array<{ size?: unknown; data?: { minimumSize?: unknown } }>",
-      "content": "views as Array<{ size?: unknown; data?: { minimumSize?: unknown } }>",
-      "fingerprint": "d69ef6aaccbfb6bf"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/MainDockColumn.tsx",
-      "name": "onReady",
-      "startLine": 180,
-      "detail": "Type assertion: storedLayout as unknown as SerializedSplitview",
-      "content": "storedLayout as unknown as SerializedSplitview",
-      "fingerprint": "26678fe8961143e5"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/MainDockColumn.tsx",
-      "name": "onReady",
-      "startLine": 180,
-      "detail": "Type assertion: storedLayout as unknown",
-      "content": "storedLayout as unknown",
-      "fingerprint": "586b06edabf9f7b4"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/MainDockColumn.tsx",
-      "name": "host",
-      "startLine": 195,
-      "detail": "Type assertion: api as unknown as { element?: HTMLElement }",
-      "content": "api as unknown as { element?: HTMLElement }",
-      "fingerprint": "de35a59e3d51b392"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/MainDockColumn.tsx",
-      "name": "host",
-      "startLine": 195,
-      "detail": "Type assertion: api as unknown",
-      "content": "api as unknown",
-      "fingerprint": "97a9078145ee16f3"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/MainDockColumn.tsx",
-      "name": "disposable",
-      "startLine": 207,
-      "detail": "Type assertion: api.toJSON() as unknown as Record<string, unknown>",
-      "content": "api.toJSON() as unknown as Record<string, unknown>",
-      "fingerprint": "e45a95893bb63fcb"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/MainDockColumn.tsx",
-      "name": "disposable",
-      "startLine": 207,
-      "detail": "Type assertion: api.toJSON() as unknown",
-      "content": "api.toJSON() as unknown",
-      "fingerprint": "0541f6771187b196"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/NotificationCenter.tsx",
-      "name": "target",
-      "startLine": 280,
-      "detail": "Type assertion: e.target as HTMLElement | null",
-      "content": "e.target as HTMLElement | null",
-      "fingerprint": "f8688a4485ad6dfb"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/NotificationCenter.tsx",
-      "name": "handler",
-      "startLine": 282,
-      "detail": "Type assertion: e.target as Node",
-      "content": "e.target as Node",
-      "fingerprint": "764d81dab9ad73c7"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/PreferencesModal.tsx",
-      "name": "valueOf",
-      "startLine": 78,
-      "detail": "Type assertion: v as EffectivePreferences[K]",
-      "content": "v as EffectivePreferences[K]",
-      "fingerprint": "5f89640256aa9939"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/renderer/components/PreferencesModal.tsx",
-      "name": "isInheritedFromGlobal",
-      "startLine": 92,
-      "detail": "Non-null assertion: bundle!",
-      "content": "bundle!",
-      "fingerprint": "f335b299fc02ccb4"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/renderer/components/PreferencesModal.tsx",
-      "name": "isOverriddenByProject",
-      "startLine": 96,
-      "detail": "Non-null assertion: bundle!",
-      "content": "bundle!",
-      "fingerprint": "f2b98a6bf52dc51d"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/PreferencesModal.tsx",
-      "name": "handleSave",
-      "startLine": 115,
-      "detail": "Type assertion: Object.entries(draft) as [DraftField, unknown][]",
-      "content": "Object.entries(draft) as [DraftField, unknown][]",
-      "fingerprint": "597a0ef804038128"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/PreferencesModal.tsx",
-      "name": "handleSave",
-      "startLine": 117,
-      "detail": "Type assertion: v as never",
-      "content": "v as never",
-      "fingerprint": "d78bc3ee5f4d2862"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/QuickBar.tsx",
-      "name": "onDown",
-      "startLine": 171,
-      "detail": "Type assertion: e.target as Node",
-      "content": "e.target as Node",
-      "fingerprint": "a76782f514baf127"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/QuickBar.tsx",
-      "name": "QuickBar",
-      "startLine": 201,
-      "detail": "Type assertion: e as Error",
-      "content": "e as Error",
-      "fingerprint": "7f735ab088ca2240"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/renderer/components/QuickBar.tsx",
-      "name": "topItems",
-      "startLine": 241,
-      "detail": "Non-null assertion: base.find((b) => b.id === id)!",
-      "content": "base.find((b) => b.id === id)!",
-      "fingerprint": "c24631807cf4ae71"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/renderer/components/QuickBar.tsx",
-      "name": "prevKey",
-      "startLine": 338,
-      "detail": "Non-null assertion: command!",
-      "content": "command!",
-      "fingerprint": "b49f40bee2cc4971"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/QuickBar.tsx",
-      "name": "runCommand",
-      "startLine": 461,
-      "detail": "Type assertion: e as Error",
-      "content": "e as Error",
-      "fingerprint": "69c87a8e4eb16bb1"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/QuickBar.tsx",
-      "name": "pickRow",
-      "startLine": 505,
-      "detail": "Type assertion: e as Error",
-      "content": "e as Error",
-      "fingerprint": "f552b9ff5778c9be"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/QuickBar.tsx",
-      "name": "file",
-      "startLine": 524,
-      "detail": "Type assertion: row.value as FlatFile | undefined",
-      "content": "row.value as FlatFile | undefined",
-      "fingerprint": "ac3d25452dede31d"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/QuickBar.tsx",
-      "name": "match",
-      "startLine": 533,
-      "detail": "Type assertion: row.value as { file: string; name: string; startLine: number } | undefined",
-      "content": "row.value as { file: string; name: string; startLine: number } | undefined",
-      "fingerprint": "96f59c46630d3995"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/renderer/components/QuickBar.tsx",
-      "name": "isLast",
-      "startLine": 610,
-      "detail": "Non-null assertion: command!",
-      "content": "command!",
-      "fingerprint": "0dddfa721f3619c9"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/renderer/components/QuickBar.tsx",
-      "name": "onKeyDown",
-      "startLine": 612,
-      "detail": "Non-null assertion: command!",
-      "content": "command!",
-      "fingerprint": "ae315f8f9e727d96"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/QuickBar.tsx",
-      "name": "onKeyDown",
-      "startLine": 617,
-      "detail": "Type assertion: phase as { commandId: string }",
-      "content": "phase as { commandId: string }",
-      "fingerprint": "17e4c29ad28a0086"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/QuickBar.tsx",
-      "name": "onKeyDown",
-      "startLine": 618,
-      "detail": "Type assertion: phase as { stepIdx: number }",
-      "content": "phase as { stepIdx: number }",
-      "fingerprint": "19aad8ee4ae6b347"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/QuickBar.tsx",
-      "name": "fileRow",
-      "startLine": 695,
-      "detail": "Type assertion: row.value as FlatFile | undefined",
-      "content": "row.value as FlatFile | undefined",
-      "fingerprint": "cc818adc676daec4"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/QuickBar.tsx",
-      "name": "codeSnippet",
-      "startLine": 699,
-      "detail": "Type assertion: row.value as { snippet?: string } | undefined",
-      "content": "row.value as { snippet?: string } | undefined",
-      "fingerprint": "762a33279571be1d"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TabSettingsControl.tsx",
-      "name": "onDoc",
-      "startLine": 26,
-      "detail": "Type assertion: e.target as Node",
-      "content": "e.target as Node",
-      "fingerprint": "1b0a9d2fc6ed58d8"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/renderer/components/TasksPane.tsx",
-      "name": "buildChildMap",
-      "startLine": 40,
-      "detail": "Non-null assertion: map.get(t.parentId)!",
-      "content": "map.get(t.parentId)!",
-      "fingerprint": "19807c3d50126e9f"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/renderer/components/TasksPane.tsx",
-      "name": "groupByEpic",
-      "startLine": 62,
-      "detail": "Non-null assertion: buckets.get(key)!",
-      "content": "buckets.get(key)!",
-      "fingerprint": "e8ee5ec1110b282e"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/renderer/components/TasksPane.tsx",
-      "name": "groupByEpic",
-      "startLine": 65,
-      "detail": "Non-null assertion: buckets.get(epic)!",
-      "content": "buckets.get(epic)!",
-      "fingerprint": "c1e31fd41dc7f010"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TasksPane.tsx",
-      "name": "NewTaskForm",
-      "startLine": 351,
-      "detail": "Type assertion: e.target.value as WorkspaceTask['priority']",
-      "content": "e.target.value as WorkspaceTask['priority']",
-      "fingerprint": "a4a87f6834af829b"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TasksPane.tsx",
-      "name": "TaskDetailPanel",
-      "startLine": 747,
-      "detail": "Type assertion: e.target.value as WorkspaceTask['priority']",
-      "content": "e.target.value as WorkspaceTask['priority']",
-      "fingerprint": "698c05eb028a09fa"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TasksPane.tsx",
-      "name": "TaskDetailPanel",
-      "startLine": 756,
-      "detail": "Type assertion: e.target.value as WorkspaceTask['status']",
-      "content": "e.target.value as WorkspaceTask['status']",
-      "fingerprint": "85fd4da1d262f06f"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/renderer/components/TasksPane.tsx",
-      "name": "grouped",
-      "startLine": 921,
-      "detail": "Non-null assertion: map.get(key)!",
-      "content": "map.get(key)!",
-      "fingerprint": "83ee947be03fd5b9"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/renderer/components/TasksPane.tsx",
-      "name": "selectedWorktree",
-      "startLine": 940,
-      "detail": "Non-null assertion: byId.get(cur.parentId)!",
-      "content": "byId.get(cur.parentId)!",
-      "fingerprint": "82ae7c7da77d969a"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TerminalDockGrid.tsx",
-      "name": "ae",
-      "startLine": 144,
-      "detail": "Type assertion: document.activeElement as HTMLElement | null",
-      "content": "document.activeElement as HTMLElement | null",
-      "fingerprint": "f04228e68d5c2949"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TerminalDockGrid.tsx",
-      "name": "model",
-      "startLine": 215,
-      "detail": "Type assertion: (spec.model ?? 'default') as ClaudeModel",
-      "content": "(spec.model ?? 'default') as ClaudeModel",
-      "fingerprint": "04e95358a632a440"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TerminalDockGrid.tsx",
-      "name": "tabStyle",
-      "startLine": 244,
-      "detail": "Type assertion: { '--tab-accent': meta.color } as React.CSSProperties",
-      "content": "{ '--tab-accent': meta.color } as React.CSSProperties",
-      "fingerprint": "861899cabc7ac4b3"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TerminalDockGrid.tsx",
-      "name": "SessionTab",
-      "startLine": 265,
-      "detail": "Type assertion: window as unknown as Record<string, unknown>",
-      "content": "window as unknown as Record<string, unknown>",
-      "fingerprint": "f4de7d8f52330093"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TerminalDockGrid.tsx",
-      "name": "SessionTab",
-      "startLine": 265,
-      "detail": "Type assertion: window as unknown",
-      "content": "window as unknown",
-      "fingerprint": "f45760d06c9c74f9"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TerminalDockGrid.tsx",
-      "name": "SessionTab",
-      "startLine": 268,
-      "detail": "Type assertion: window as unknown as Record<string, unknown>",
-      "content": "window as unknown as Record<string, unknown>",
-      "fingerprint": "f4de7d8f52330093"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TerminalDockGrid.tsx",
-      "name": "SessionTab",
-      "startLine": 268,
-      "detail": "Type assertion: window as unknown",
-      "content": "window as unknown",
-      "fingerprint": "f45760d06c9c74f9"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TerminalDockGrid.tsx",
-      "name": "onReady",
-      "startLine": 437,
-      "detail": "Type assertion: storedDockLayout as unknown as SerializedDockview",
-      "content": "storedDockLayout as unknown as SerializedDockview",
-      "fingerprint": "56703f1a12ae2122"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TerminalDockGrid.tsx",
-      "name": "onReady",
-      "startLine": 437,
-      "detail": "Type assertion: storedDockLayout as unknown",
-      "content": "storedDockLayout as unknown",
-      "fingerprint": "0a1828be0bc94893"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TerminalDockGrid.tsx",
-      "name": "disposable",
-      "startLine": 474,
-      "detail": "Type assertion: api.toJSON() as unknown as Record<string, unknown>",
-      "content": "api.toJSON() as unknown as Record<string, unknown>",
-      "fingerprint": "9c51cc50bce6675f"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TerminalDockGrid.tsx",
-      "name": "disposable",
-      "startLine": 474,
-      "detail": "Type assertion: api.toJSON() as unknown",
-      "content": "api.toJSON() as unknown",
-      "fingerprint": "2d1eb18f668abd50"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TerminalPane.tsx",
-      "name": "ae",
-      "startLine": 169,
-      "detail": "Type assertion: document.activeElement as HTMLElement | null",
-      "content": "document.activeElement as HTMLElement | null",
-      "fingerprint": "e7535919f964d4cf"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TerminalPane.tsx",
-      "name": "editorDropProps",
-      "startLine": 196,
-      "detail": "Type assertion: e.relatedTarget as Node | null",
-      "content": "e.relatedTarget as Node | null",
-      "fingerprint": "624c2433257aff7b"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/renderer/components/TerminalPane.tsx",
-      "name": "editorDropProps",
-      "startLine": 203,
-      "detail": "Non-null assertion: props.onDropTab!",
-      "content": "props.onDropTab!",
-      "fingerprint": "eddd96f17e42acb4"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TerminalPane.tsx",
-      "name": "paneStyle",
-      "startLine": 212,
-      "detail": "Type assertion: { '--session-color': activeColor } as React.CSSProperties",
-      "content": "{ '--session-color': activeColor } as React.CSSProperties",
-      "fingerprint": "a89214d28ded0bd1"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TerminalPane.tsx",
-      "name": "TerminalPaneImpl",
-      "startLine": 248,
-      "detail": "Type assertion: e.target.value as WorktreePrefs['model']",
-      "content": "e.target.value as WorktreePrefs['model']",
-      "fingerprint": "a70866d0ee27616a"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TerminalPane.tsx",
-      "name": "TerminalPaneImpl",
-      "startLine": 266,
-      "detail": "Type assertion: Number(e.target.value) as ClaudeEffort",
-      "content": "Number(e.target.value) as ClaudeEffort",
-      "fingerprint": "0ac57fb1e62b4138"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TerminalPane.tsx",
-      "name": "fn",
-      "startLine": 374,
-      "detail": "Type assertion: window as unknown as Record<string, unknown>",
-      "content": "window as unknown as Record<string, unknown>",
-      "fingerprint": "adb9a781be195355"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TerminalPane.tsx",
-      "name": "fn",
-      "startLine": 374,
-      "detail": "Type assertion: window as unknown",
-      "content": "window as unknown",
-      "fingerprint": "af00e3284e4446c4"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TerminalSessionsProvider.tsx",
-      "name": "sendInput",
-      "startLine": 235,
-      "detail": "Type assertion: queue.shift() as string",
-      "content": "queue.shift() as string",
-      "fingerprint": "560e92c05afe0b0e"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TerminalSessionsProvider.tsx",
-      "name": "offData",
-      "startLine": 306,
-      "detail": "Type assertion: buf.shift() as string",
-      "content": "buf.shift() as string",
-      "fingerprint": "46c488e262e291e7"
-    },
-    {
       "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TerminalSessionsProvider.tsx",
-      "name": "filesToPaths",
-      "startLine": 412,
-      "detail": "Type assertion: f as File & { path?: string }",
-      "content": "f as File & { path?: string }",
-      "fingerprint": "575d9117bd2dc70f"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TerminalSessionsProvider.tsx",
-      "name": "cd",
-      "startLine": 425,
-      "detail": "Type assertion: ev as ClipboardEvent",
-      "content": "ev as ClipboardEvent",
-      "fingerprint": "bc83ada1828d1186"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/renderer/components/TerminalTab.tsx",
-      "name": "createBusyStore",
+      "file": "packages/extension/src/archView.ts",
+      "name": "buildArchRpcHandlers",
       "startLine": 32,
-      "detail": "Non-null assertion: ls!",
-      "content": "ls!",
-      "fingerprint": "0a0cafedd3c535df"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/renderer/components/TerminalTab.tsx",
-      "name": "createBusyStore",
-      "startLine": 33,
-      "detail": "Non-null assertion: ls!",
-      "content": "ls!",
-      "fingerprint": "0a0cafedd3c535df"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TscStatusIcon.tsx",
-      "name": "runTsc",
-      "startLine": 34,
-      "detail": "Type assertion: e as Error",
-      "content": "e as Error",
-      "fingerprint": "8f66a82594f049a5"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TscStatusIcon.tsx",
-      "name": "handler",
-      "startLine": 56,
-      "detail": "Type assertion: e.target as Node",
-      "content": "e.target as Node",
-      "fingerprint": "1050ead1c14fcec0"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/TypeEscapePane.tsx",
-      "name": "results",
-      "startLine": 42,
-      "detail": "Type assertion: (scanResultsByKey[resultsKey] ?? []) as TypeEscapeItem[]",
-      "content": "(scanResultsByKey[resultsKey] ?? []) as TypeEscapeItem[]",
-      "fingerprint": "94a13dda17c327d8"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "COMMANDS",
-      "startLine": 259,
-      "detail": "Type assertion: ctx.args.worktreePath as string",
-      "content": "ctx.args.worktreePath as string",
-      "fingerprint": "79a9b94c2005a6ec"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "message",
-      "startLine": 353,
-      "detail": "Type assertion: ctx.args.message as string",
-      "content": "ctx.args.message as string",
-      "fingerprint": "0f435e069cd2963f"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "branch",
-      "startLine": 371,
-      "detail": "Type assertion: ctx.args.branch as string",
-      "content": "ctx.args.branch as string",
-      "fingerprint": "d15c65899374868d"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "branch",
-      "startLine": 436,
-      "detail": "Type assertion: ctx.args.branch as string",
-      "content": "ctx.args.branch as string",
-      "fingerprint": "d15c65899374868d"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "branch",
-      "startLine": 464,
-      "detail": "Type assertion: ctx.args.branch as string",
-      "content": "ctx.args.branch as string",
-      "fingerprint": "d15c65899374868d"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "base",
-      "startLine": 467,
-      "detail": "Type assertion: ctx.args.base as string | undefined",
-      "content": "ctx.args.base as string | undefined",
-      "fingerprint": "ad518cfdd6c8cbb1"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "COMMANDS",
-      "startLine": 510,
-      "detail": "Non-null assertion: byEpic.get(key)!",
-      "content": "byEpic.get(key)!",
-      "fingerprint": "37262e76a13a2847"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "COMMANDS",
-      "startLine": 518,
-      "detail": "Non-null assertion: byEpic.get(epic)!",
-      "content": "byEpic.get(epic)!",
-      "fingerprint": "6db71b26e7e54f04"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "tasks",
-      "startLine": 545,
-      "detail": "Type assertion: ctx.args.tasks as Array<{ title?: string }> | undefined",
-      "content": "ctx.args.tasks as Array<{ title?: string }> | undefined",
-      "fingerprint": "aba4b8ada2bd3050"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "branch",
-      "startLine": 552,
-      "detail": "Type assertion: ctx.args.branch as string",
-      "content": "ctx.args.branch as string",
-      "fingerprint": "d15c65899374868d"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "base",
-      "startLine": 555,
-      "detail": "Type assertion: ctx.args.base as string | undefined",
-      "content": "ctx.args.base as string | undefined",
-      "fingerprint": "ad518cfdd6c8cbb1"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "selectedTasks",
-      "startLine": 564,
-      "detail": "Type assertion: ctx.args.tasks as Array<{ id: string }> | undefined",
-      "content": "ctx.args.tasks as Array<{ id: string }> | undefined",
-      "fingerprint": "f3dd2ca0936c2152"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "COMMANDS",
-      "startLine": 628,
-      "detail": "Type assertion: ctx.args.task as string",
-      "content": "ctx.args.task as string",
-      "fingerprint": "f9cd4646365f9828"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "COMMANDS",
-      "startLine": 635,
-      "detail": "Type assertion: ctx.args.branch as string",
-      "content": "ctx.args.branch as string",
-      "fingerprint": "6aca1fa497b917be"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "COMMANDS",
-      "startLine": 668,
-      "detail": "Type assertion: ctx.args.branch as string",
-      "content": "ctx.args.branch as string",
-      "fingerprint": "6aca1fa497b917be"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "COMMANDS",
-      "startLine": 693,
-      "detail": "Type assertion: ctx.args.branch as string",
-      "content": "ctx.args.branch as string",
-      "fingerprint": "6aca1fa497b917be"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "COMMANDS",
-      "startLine": 702,
-      "detail": "Type assertion: ctx.args.branch as string",
-      "content": "ctx.args.branch as string",
-      "fingerprint": "6aca1fa497b917be"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "info",
-      "startLine": 719,
-      "detail": "Type assertion: ctx.args.branchInfo as { name: string; remote?: string } | undefined",
-      "content": "ctx.args.branchInfo as { name: string; remote?: string } | undefined",
-      "fingerprint": "9ae1dd47a3649523"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "info",
-      "startLine": 727,
-      "detail": "Type assertion: ctx.args.branchInfo as { name: string; remote?: string }",
-      "content": "ctx.args.branchInfo as { name: string; remote?: string }",
-      "fingerprint": "9c42eca5f5e363a8"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "theme",
-      "startLine": 790,
-      "detail": "Type assertion: ctx.args.theme as ThemeMode",
-      "content": "ctx.args.theme as ThemeMode",
-      "fingerprint": "562e2ecef3356bcd"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "query",
-      "startLine": 845,
-      "detail": "Type assertion: ctx.args.query as string",
-      "content": "ctx.args.query as string",
-      "fingerprint": "59e9c0a06edd9159"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "COMMANDS",
-      "startLine": 848,
-      "detail": "Type assertion: window.api.searchCode(query, { roots: [ctx.worktreePath] }) as Promise< Array<{ ",
-      "content": "window.api.searchCode(query, { roots: [ctx.worktreePath] }) as Promise< Array<{ ",
-      "fingerprint": "40268c55bfbd9913"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "COMMANDS",
-      "startLine": 954,
-      "detail": "Type assertion: ctx.args.slug as string",
-      "content": "ctx.args.slug as string",
-      "fingerprint": "e994d81efefa6944"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "COMMANDS",
-      "startLine": 981,
-      "detail": "Type assertion: ctx.args.slug as string",
-      "content": "ctx.args.slug as string",
-      "fingerprint": "e994d81efefa6944"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "COMMANDS",
-      "startLine": 998,
-      "detail": "Type assertion: ctx.args.targetBranch as string",
-      "content": "ctx.args.targetBranch as string",
-      "fingerprint": "9b7df366fe38a4ed"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/quickOpenCommands.ts",
-      "name": "targetBranch",
-      "startLine": 1008,
-      "detail": "Type assertion: ctx.args.targetBranch as string",
-      "content": "ctx.args.targetBranch as string",
-      "fingerprint": "376944b715b64f66"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/terminalScroll.test.ts",
-      "name": "makeMarker",
-      "startLine": 23,
-      "detail": "Type assertion: m as unknown as IMarker & { disposed: boolean }",
-      "content": "m as unknown as IMarker & { disposed: boolean }",
-      "fingerprint": "7bffbf86c300d650"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/terminalScroll.test.ts",
-      "name": "makeMarker",
-      "startLine": 23,
-      "detail": "Type assertion: m as unknown",
-      "content": "m as unknown",
-      "fingerprint": "a8a7f349a9da593a"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/terminalScroll.test.ts",
-      "name": "term",
-      "startLine": 30,
-      "detail": "Type assertion: { buffer: { active: buffer }, registerMarker, scrollToBottom, scrollToLine, } as",
-      "content": "{ buffer: { active: buffer }, registerMarker, scrollToBottom, scrollToLine, } as",
-      "fingerprint": "aff2e4f511efc651"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/terminalScroll.test.ts",
-      "name": "term",
-      "startLine": 30,
-      "detail": "Type assertion: { buffer: { active: buffer }, registerMarker, scrollToBottom, scrollToLine, } as",
-      "content": "{ buffer: { active: buffer }, registerMarker, scrollToBottom, scrollToLine, } as",
-      "fingerprint": "aff2e4f511efc651"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/terminalScroll.test.ts",
-      "name": "marker",
-      "startLine": 142,
-      "detail": "Type assertion: makeMarker(10) as IMarker & { disposed: boolean }",
-      "content": "makeMarker(10) as IMarker & { disposed: boolean }",
-      "fingerprint": "c5c846117099842d"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/terminalScroll.test.ts",
-      "name": "<module>",
-      "startLine": 167,
-      "detail": "Type assertion: marker as unknown as { line: number }",
-      "content": "marker as unknown as { line: number }",
-      "fingerprint": "f151f40a7913568f"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/components/terminalScroll.test.ts",
-      "name": "<module>",
-      "startLine": 167,
-      "detail": "Type assertion: marker as unknown",
-      "content": "marker as unknown",
-      "fingerprint": "b7f024f87e51a917"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/hooks/useRepos.ts",
-      "name": "handleRemoveWorktree",
-      "startLine": 286,
-      "detail": "Type assertion: e as Error",
-      "content": "e as Error",
-      "fingerprint": "78b716f858796d21"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/hooks/useRepos.ts",
-      "name": "handleOpenWorkspace",
-      "startLine": 429,
-      "detail": "Type assertion: e as Error",
-      "content": "e as Error",
-      "fingerprint": "e3a88d3dfaba8e72"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/hooks/useWorktreePrefs.ts",
-      "name": "map",
-      "startLine": 33,
-      "detail": "Type assertion: JSON.parse(raw) as Record<string, WorktreePrefs>",
-      "content": "JSON.parse(raw) as Record<string, WorktreePrefs>",
-      "fingerprint": "2f509a0fba7aa850"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/hooks/useWorktreePrefs.ts",
-      "name": "loadPrefsMap",
-      "startLine": 39,
-      "detail": "Type assertion: v.model as string",
-      "content": "v.model as string",
-      "fingerprint": "3cc6ea270d45576b"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/hooks/useWorktreePrefs.ts",
-      "name": "setCurrentPrefs",
-      "startLine": 105,
-      "detail": "Type assertion: next.effort as ClaudeEffort",
-      "content": "next.effort as ClaudeEffort",
-      "fingerprint": "8c5022ba467bea16"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/hooks/useWorktreePrefs.ts",
-      "name": "setCurrentPrefs",
-      "startLine": 117,
-      "detail": "Type assertion: 'inherit' as WorktreeModel",
-      "content": "'inherit' as WorktreeModel",
-      "fingerprint": "d02f3fb844a76ad6"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/keybindings.ts",
-      "name": "parsed",
-      "startLine": 22,
-      "detail": "Type assertion: JSON.parse(raw) as Partial<Persisted>",
-      "content": "JSON.parse(raw) as Partial<Persisted>",
-      "fingerprint": "a556dc033d5509d8"
-    },
-    {
-      "kind": "non-null",
-      "file": "packages/app/src/renderer/main.tsx",
-      "name": "root",
-      "startLine": 14,
-      "detail": "Non-null assertion: document.getElementById('root')!",
-      "content": "document.getElementById('root')!",
-      "fingerprint": "ada769b484238ca8"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/monaco/projectModel.ts",
-      "name": "merged",
-      "startLine": 47,
-      "detail": "Type assertion: v as { content: string }",
-      "content": "v as { content: string }",
-      "fingerprint": "157cc2436fac8d1f"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/monaco/projectModel.ts",
-      "name": "applyTsConfig",
-      "startLine": 107,
-      "detail": "Type assertion: JSON.parse(stripJsonComments(raw)) as { compilerOptions?: Record<string, unknown",
-      "content": "JSON.parse(stripJsonComments(raw)) as { compilerOptions?: Record<string, unknown",
-      "fingerprint": "58c16125127e31e8"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/monaco/projectModel.ts",
-      "name": "rawPaths",
-      "startLine": 126,
-      "detail": "Type assertion: co.paths as Record<string, string[]>",
-      "content": "co.paths as Record<string, string[]>",
-      "fingerprint": "0a372b73d97d5489"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/monaco/projectModel.ts",
-      "name": "applyTsConfig",
-      "startLine": 141,
-      "detail": "Type assertion: co.lib as string[]",
-      "content": "co.lib as string[]",
-      "fingerprint": "d91aab36bcfaad1e"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/monaco/setup.ts",
-      "name": "<module>",
-      "startLine": 18,
-      "detail": "Type assertion: self as unknown as { MonacoEnvironment: { getWorker(workerId: string, label: str",
-      "content": "self as unknown as { MonacoEnvironment: { getWorker(workerId: string, label: str",
-      "fingerprint": "8349cf7f43967abe"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/monaco/setup.ts",
-      "name": "<module>",
-      "startLine": 18,
-      "detail": "Type assertion: self as unknown",
-      "content": "self as unknown",
-      "fingerprint": "9d7f12b84d86280c"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/monaco/svelte.ts",
-      "name": "registerSvelte",
-      "startLine": 152,
-      "detail": "Type assertion: tokenizer as unknown as Monaco.languages.IMonarchLanguage",
-      "content": "tokenizer as unknown as Monaco.languages.IMonarchLanguage",
-      "fingerprint": "5a65edcd974754e0"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/monaco/svelte.ts",
-      "name": "registerSvelte",
-      "startLine": 152,
-      "detail": "Type assertion: tokenizer as unknown",
-      "content": "tokenizer as unknown",
-      "fingerprint": "ac2a86a79ef7a8a5"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/store/appStore.ts",
-      "name": "field",
-      "startLine": 124,
-      "detail": "Type assertion: ({ [key]: typeof value === 'function' ? (value as (prev: AppStore[K]) => AppStor",
-      "content": "({ [key]: typeof value === 'function' ? (value as (prev: AppStore[K]) => AppStor",
-      "fingerprint": "61a46cd2d03e7d3a"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/store/appStore.ts",
-      "name": "field",
-      "startLine": 127,
-      "detail": "Type assertion: value as (prev: AppStore[K]) => AppStore[K]",
-      "content": "value as (prev: AppStore[K]) => AppStore[K]",
-      "fingerprint": "8cc85001cace8d84"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/renderer/theme.ts",
-      "name": "next",
-      "startLine": 79,
-      "detail": "Type assertion: e as CustomEvent<ResolvedTheme>",
-      "content": "e as CustomEvent<ResolvedTheme>",
-      "fingerprint": "882619ad6887009c"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/shared/gitError.ts",
-      "name": "decodeGitError",
-      "startLine": 50,
-      "detail": "Type assertion: JSON.parse(raw.slice(i + SENTINEL.length)) as GitErrorInfo",
-      "content": "JSON.parse(raw.slice(i + SENTINEL.length)) as GitErrorInfo",
-      "fingerprint": "a74d7ae7715e7fb9"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/shared/preferences.ts",
-      "name": "isSensitiveKey",
-      "startLine": 121,
-      "detail": "Type assertion: PREFERENCE_FIELDS as Record<string, FieldFlags>",
-      "content": "PREFERENCE_FIELDS as Record<string, FieldFlags>",
-      "fingerprint": "e748a22f21bf14ee"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/shared/preferences.ts",
-      "name": "SENSITIVE_PREFERENCE_KEYS",
-      "startLine": 126,
-      "detail": "Type assertion: Object.keys(PREFERENCE_FIELDS) as (keyof EffectivePreferences)[]",
-      "content": "Object.keys(PREFERENCE_FIELDS) as (keyof EffectivePreferences)[]",
-      "fingerprint": "af51769636b19c00"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/shared/preferences.ts",
-      "name": "flags",
-      "startLine": 144,
-      "detail": "Type assertion: PREFERENCE_FIELDS as Record<string, FieldFlags>",
-      "content": "PREFERENCE_FIELDS as Record<string, FieldFlags>",
-      "fingerprint": "b7a95bb1b3907495"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/shared/preferences.ts",
-      "name": "splitPreferences",
-      "startLine": 146,
-      "detail": "Type assertion: rejected as Record<string, unknown>",
-      "content": "rejected as Record<string, unknown>",
-      "fingerprint": "3f0f3e3392e1a9ba"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/shared/preferences.ts",
-      "name": "splitPreferences",
-      "startLine": 149,
-      "detail": "Type assertion: secret as Record<string, unknown>",
-      "content": "secret as Record<string, unknown>",
-      "fingerprint": "6a716cde6db2aa23"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/app/src/shared/preferences.ts",
-      "name": "splitPreferences",
-      "startLine": 150,
-      "detail": "Type assertion: committable as Record<string, unknown>",
-      "content": "committable as Record<string, unknown>",
-      "fingerprint": "f6a8cda85b9cccba"
+      "detail": "Type assertion: card as Partial<ArchCard> & { name: string }",
+      "content": "card as Partial<ArchCard> & { name: string }",
+      "fingerprint": "337354004d9fb9e9"
     },
     {
       "kind": "as-cast",
       "file": "packages/extension/src/commands/layoutCommands.ts",
       "name": "registerLayoutCommands",
-      "startLine": 27,
+      "startLine": 24,
       "detail": "Type assertion: e as Error",
       "content": "e as Error",
       "fingerprint": "6123c8e30d13e77f"
@@ -2320,7 +97,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/commands/layoutCommands.ts",
       "name": "registerLayoutCommands",
-      "startLine": 68,
+      "startLine": 59,
       "detail": "Type assertion: e as Error",
       "content": "e as Error",
       "fingerprint": "6123c8e30d13e77f"
@@ -2329,16 +106,16 @@
       "kind": "as-cast",
       "file": "packages/extension/src/commands/layoutCommands.ts",
       "name": "cur",
-      "startLine": 78,
-      "detail": "Type assertion: current[\"workbench.views.customizations\"] as | Record<string, unknown> | undefin",
-      "content": "current[\"workbench.views.customizations\"] as | Record<string, unknown> | undefin",
-      "fingerprint": "aeb6df24c5e1c048"
+      "startLine": 69,
+      "detail": "Type assertion: current['workbench.views.customizations'] as Record<string, unknown> | undefined",
+      "content": "current['workbench.views.customizations'] as Record<string, unknown> | undefined",
+      "fingerprint": "fc505638a67f66e5"
     },
     {
       "kind": "as-cast",
       "file": "packages/extension/src/commands/layoutCommands.ts",
       "name": "viewContainerLocations",
-      "startLine": 82,
+      "startLine": 72,
       "detail": "Type assertion: cur.viewContainerLocations as Record<string, number>",
       "content": "cur.viewContainerLocations as Record<string, number>",
       "fingerprint": "195e09662e9f6acd"
@@ -2347,25 +124,16 @@
       "kind": "as-cast",
       "file": "packages/extension/src/commands/layoutCommands.ts",
       "name": "registerLayoutCommands",
-      "startLine": 94,
+      "startLine": 83,
       "detail": "Type assertion: e as Error",
       "content": "e as Error",
       "fingerprint": "6123c8e30d13e77f"
     },
     {
       "kind": "as-cast",
-      "file": "packages/extension/src/commands/taskCommands.ts",
-      "name": "registerTaskCommands",
-      "startLine": 271,
-      "detail": "Type assertion: err as Error",
-      "content": "err as Error",
-      "fingerprint": "862bb7d199047293"
-    },
-    {
-      "kind": "as-cast",
       "file": "packages/extension/src/commands/worktreeCommands.ts",
       "name": "registerWorktreeCommands",
-      "startLine": 146,
+      "startLine": 110,
       "detail": "Type assertion: err as Error",
       "content": "err as Error",
       "fingerprint": "95b8c17f581245e9"
@@ -2374,7 +142,7 @@
       "kind": "non-null",
       "file": "packages/extension/src/commands/worktreeCommands.ts",
       "name": "registerWorktreeCommands",
-      "startLine": 178,
+      "startLine": 137,
       "detail": "Non-null assertion: childMap.get(t.parentId)!",
       "content": "childMap.get(t.parentId)!",
       "fingerprint": "dd1840f54192dba2"
@@ -2383,7 +151,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/commands/worktreeCommands.ts",
       "name": "registerWorktreeCommands",
-      "startLine": 259,
+      "startLine": 189,
       "detail": "Type assertion: err as Error",
       "content": "err as Error",
       "fingerprint": "95b8c17f581245e9"
@@ -2392,7 +160,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/commands/worktreeCommands.ts",
       "name": "registerWorktreeCommands",
-      "startLine": 300,
+      "startLine": 229,
       "detail": "Type assertion: err as Error",
       "content": "err as Error",
       "fingerprint": "95b8c17f581245e9"
@@ -2401,7 +169,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/commands/worktreeCommands.ts",
       "name": "registerWorktreeCommands",
-      "startLine": 337,
+      "startLine": 277,
       "detail": "Type assertion: err as Error",
       "content": "err as Error",
       "fingerprint": "95b8c17f581245e9"
@@ -2410,7 +178,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/commands/worktreeCommands.ts",
       "name": "registerWorktreeCommands",
-      "startLine": 359,
+      "startLine": 295,
       "detail": "Type assertion: err as Error",
       "content": "err as Error",
       "fingerprint": "95b8c17f581245e9"
@@ -2419,52 +187,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/commands/worktreeCommands.ts",
       "name": "registerWorktreeCommands",
-      "startLine": 417,
-      "detail": "Type assertion: err as Error",
-      "content": "err as Error",
-      "fingerprint": "95b8c17f581245e9"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/extension/src/commands/worktreeCommands.ts",
-      "name": "choice",
-      "startLine": 508,
-      "detail": "Type assertion: \"default\" as ClaudeModel",
-      "content": "\"default\" as ClaudeModel",
-      "fingerprint": "3eba42b259e78460"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/extension/src/commands/worktreeCommands.ts",
-      "name": "choice",
-      "startLine": 509,
-      "detail": "Type assertion: \"opus\" as ClaudeModel",
-      "content": "\"opus\" as ClaudeModel",
-      "fingerprint": "fe7cfdce06c30cf4"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/extension/src/commands/worktreeCommands.ts",
-      "name": "choice",
-      "startLine": 510,
-      "detail": "Type assertion: \"sonnet\" as ClaudeModel",
-      "content": "\"sonnet\" as ClaudeModel",
-      "fingerprint": "c24e358b7b43aef2"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/extension/src/commands/worktreeCommands.ts",
-      "name": "choice",
-      "startLine": 511,
-      "detail": "Type assertion: \"haiku\" as ClaudeModel",
-      "content": "\"haiku\" as ClaudeModel",
-      "fingerprint": "e52eeeebee4dfaf8"
-    },
-    {
-      "kind": "as-cast",
-      "file": "packages/extension/src/commands/worktreeCommands.ts",
-      "name": "registerWorktreeCommands",
-      "startLine": 579,
+      "startLine": 343,
       "detail": "Type assertion: err as Error",
       "content": "err as Error",
       "fingerprint": "95b8c17f581245e9"
@@ -2473,7 +196,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/commands/worktreeCommands.ts",
       "name": "registerWorktreeCommands",
-      "startLine": 632,
+      "startLine": 439,
       "detail": "Type assertion: err as Error",
       "content": "err as Error",
       "fingerprint": "95b8c17f581245e9"
@@ -2482,7 +205,16 @@
       "kind": "as-cast",
       "file": "packages/extension/src/commands/worktreeCommands.ts",
       "name": "registerWorktreeCommands",
-      "startLine": 684,
+      "startLine": 479,
+      "detail": "Type assertion: err as Error",
+      "content": "err as Error",
+      "fingerprint": "95b8c17f581245e9"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/extension/src/commands/worktreeCommands.ts",
+      "name": "registerWorktreeCommands",
+      "startLine": 506,
       "detail": "Type assertion: err as Error",
       "content": "err as Error",
       "fingerprint": "95b8c17f581245e9"
@@ -2491,7 +223,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/extension.ts",
       "name": "activate",
-      "startLine": 227,
+      "startLine": 189,
       "detail": "Type assertion: err as Error",
       "content": "err as Error",
       "fingerprint": "ad11dd5960a49da0"
@@ -2500,7 +232,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/extension.ts",
       "name": "activate",
-      "startLine": 489,
+      "startLine": 483,
       "detail": "Type assertion: e as Error",
       "content": "e as Error",
       "fingerprint": "70a0dcdd84071f7b"
@@ -2509,16 +241,25 @@
       "kind": "as-cast",
       "file": "packages/extension/src/extension.ts",
       "name": "activate",
-      "startLine": 525,
+      "startLine": 549,
       "detail": "Type assertion: e as Error",
       "content": "e as Error",
       "fingerprint": "70a0dcdd84071f7b"
     },
     {
+      "kind": "non-null",
+      "file": "packages/extension/src/extension.ts",
+      "name": "activate",
+      "startLine": 579,
+      "detail": "Non-null assertion: model!",
+      "content": "model!",
+      "fingerprint": "dfe0d95c8d6c07e0"
+    },
+    {
       "kind": "as-cast",
       "file": "packages/extension/src/git.ts",
       "name": "gitRaw",
-      "startLine": 61,
+      "startLine": 54,
       "detail": "Type assertion: err as { killed?: boolean }",
       "content": "err as { killed?: boolean }",
       "fingerprint": "84784a2aed18c10e"
@@ -2545,7 +286,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/globalPrefs.ts",
       "name": "model",
-      "startLine": 55,
+      "startLine": 54,
       "detail": "Type assertion: d.model as ClaudeModel",
       "content": "d.model as ClaudeModel",
       "fingerprint": "20aa6ef245fe6941"
@@ -2554,7 +295,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/globalPrefs.ts",
       "name": "model",
-      "startLine": 56,
+      "startLine": 55,
       "detail": "Type assertion: d.model as ClaudeModel",
       "content": "d.model as ClaudeModel",
       "fingerprint": "20aa6ef245fe6941"
@@ -2563,7 +304,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/globalPrefs.ts",
       "name": "effort",
-      "startLine": 58,
+      "startLine": 57,
       "detail": "Type assertion: ( Number.isFinite(effortNum) ? Math.max(0, Math.min(4, Math.floor(effortNum))) :",
       "content": "( Number.isFinite(effortNum) ? Math.max(0, Math.min(4, Math.floor(effortNum))) :",
       "fingerprint": "81f1cb728ad6f3d6"
@@ -2572,7 +313,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/globalPrefsPanel.ts",
       "name": "patch",
-      "startLine": 63,
+      "startLine": 55,
       "detail": "Type assertion: e as Error",
       "content": "e as Error",
       "fingerprint": "42a9c63172b27583"
@@ -2581,7 +322,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/globalPrefsPanel.ts",
       "name": "onMessage",
-      "startLine": 80,
+      "startLine": 68,
       "detail": "Type assertion: msg.value as ClaudeModel",
       "content": "msg.value as ClaudeModel",
       "fingerprint": "253155b1de7738ac"
@@ -2590,7 +331,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/globalPrefsPanel.ts",
       "name": "e",
-      "startLine": 83,
+      "startLine": 71,
       "detail": "Type assertion: Math.max(0, Math.min(4, Math.floor(msg.value))) as ClaudeEffort",
       "content": "Math.max(0, Math.min(4, Math.floor(msg.value))) as ClaudeEffort",
       "fingerprint": "997e338c67980338"
@@ -2599,7 +340,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/globalPrefsPanel.ts",
       "name": "v",
-      "startLine": 115,
+      "startLine": 93,
       "detail": "Type assertion: msg.value as Partial<GlobalPrompt> & { id: string }",
       "content": "msg.value as Partial<GlobalPrompt> & { id: string }",
       "fingerprint": "9d905c8bd675bcff"
@@ -2608,7 +349,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/notifications.ts",
       "name": "msg",
-      "startLine": 70,
+      "startLine": 76,
       "detail": "Type assertion: JSON.parse(line) as IncomingMessage",
       "content": "JSON.parse(line) as IncomingMessage",
       "fingerprint": "c6957aa3172e4a6c"
@@ -2617,7 +358,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/prefsPanel.ts",
       "name": "onMessage",
-      "startLine": 71,
+      "startLine": 57,
       "detail": "Type assertion: msg.value as ClaudeModel",
       "content": "msg.value as ClaudeModel",
       "fingerprint": "f4c977f3064ada43"
@@ -2626,7 +367,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/prefsPanel.ts",
       "name": "e",
-      "startLine": 74,
+      "startLine": 60,
       "detail": "Type assertion: Math.max(0, Math.min(4, Math.floor(msg.value))) as ClaudeEffort",
       "content": "Math.max(0, Math.min(4, Math.floor(msg.value))) as ClaudeEffort",
       "fingerprint": "5409bb74449e6aa1"
@@ -2635,7 +376,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/prefsPanel.ts",
       "name": "onMessage",
-      "startLine": 79,
+      "startLine": 65,
       "detail": "Type assertion: WORKTREE_COLORS as readonly string[]",
       "content": "WORKTREE_COLORS as readonly string[]",
       "fingerprint": "171426a6bbe8e70e"
@@ -2644,7 +385,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/prefsPanel.ts",
       "name": "onMessage",
-      "startLine": 81,
+      "startLine": 67,
       "detail": "Type assertion: msg.value as WorktreeColor",
       "content": "msg.value as WorktreeColor",
       "fingerprint": "2afd7c83c9b922b2"
@@ -2653,7 +394,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/prefsPanel.ts",
       "name": "text",
-      "startLine": 109,
+      "startLine": 93,
       "detail": "Type assertion: e as Error",
       "content": "e as Error",
       "fingerprint": "a27b81dcd4673961"
@@ -2662,25 +403,43 @@
       "kind": "as-cast",
       "file": "packages/extension/src/prefsPanel.ts",
       "name": "text",
-      "startLine": 138,
+      "startLine": 119,
       "detail": "Type assertion: e as Error",
       "content": "e as Error",
       "fingerprint": "a27b81dcd4673961"
     },
     {
       "kind": "as-cast",
-      "file": "packages/extension/src/scanViewProvider.ts",
-      "name": "resolveWebviewView",
-      "startLine": 72,
+      "file": "packages/extension/src/scanPages.ts",
+      "name": "active",
+      "startLine": 150,
+      "detail": "Type assertion: items as Array<{ fingerprint: string }>",
+      "content": "items as Array<{ fingerprint: string }>",
+      "fingerprint": "95671732884f6397"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/extension/src/scanPages.ts",
+      "name": "openScanPage",
+      "startLine": 163,
       "detail": "Type assertion: e as Error",
       "content": "e as Error",
-      "fingerprint": "cb9ce39f92f704c4"
+      "fingerprint": "308b636e4208dd4c"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/extension/src/scanTrends.ts",
+      "name": "readFile",
+      "startLine": 32,
+      "detail": "Type assertion: JSON.parse(await fs.readFile(trendPath(repoRoot), 'utf8')) as TrendFile",
+      "content": "JSON.parse(await fs.readFile(trendPath(repoRoot), 'utf8')) as TrendFile",
+      "fingerprint": "aaea82c4484ba89c"
     },
     {
       "kind": "as-cast",
       "file": "packages/extension/src/sessions.ts",
       "name": "w",
-      "startLine": 138,
+      "startLine": 165,
       "detail": "Type assertion: vscode.window as unknown as { onDidWriteTerminalData?: ( cb: (e: { terminal: vsc",
       "content": "vscode.window as unknown as { onDidWriteTerminalData?: ( cb: (e: { terminal: vsc",
       "fingerprint": "026cbbb0e83714a4"
@@ -2689,7 +448,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/sessions.ts",
       "name": "w",
-      "startLine": 138,
+      "startLine": 165,
       "detail": "Type assertion: vscode.window as unknown",
       "content": "vscode.window as unknown",
       "fingerprint": "06932ce6ae6bab75"
@@ -2698,7 +457,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/sessions.ts",
       "name": "cmd",
-      "startLine": 360,
+      "startLine": 425,
       "detail": "Type assertion: col as number",
       "content": "col as number",
       "fingerprint": "d0377ad628d4d738"
@@ -2707,7 +466,7 @@
       "kind": "non-null",
       "file": "packages/extension/src/sessionsView.ts",
       "name": "groupArr",
-      "startLine": 186,
+      "startLine": 205,
       "detail": "Non-null assertion: groups .get(k)!",
       "content": "groups .get(k)!",
       "fingerprint": "0936fb7b0ba97a88"
@@ -2716,28 +475,37 @@
       "kind": "as-cast",
       "file": "packages/extension/src/sessionsView.ts",
       "name": "cmd",
-      "startLine": 227,
-      "detail": "Type assertion: { open: \"codeWorkbench.sessions.open\", rename: \"codeWorkbench.sessions.rename\", ",
-      "content": "{ open: \"codeWorkbench.sessions.open\", rename: \"codeWorkbench.sessions.rename\", ",
-      "fingerprint": "19f28f6fc7fedd2e"
+      "startLine": 249,
+      "detail": "Type assertion: { open: 'codeWorkbench.sessions.open', rename: 'codeWorkbench.sessions.rename', ",
+      "content": "{ open: 'codeWorkbench.sessions.open', rename: 'codeWorkbench.sessions.rename', ",
+      "fingerprint": "d9cfd2a5d9444a36"
     },
     {
       "kind": "as-cast",
       "file": "packages/extension/src/tasksView.ts",
-      "name": "resolveWebviewView",
-      "startLine": 99,
+      "name": "created",
+      "startLine": 37,
       "detail": "Type assertion: task as Parameters<typeof createTask>[1]",
       "content": "task as Parameters<typeof createTask>[1]",
-      "fingerprint": "cd560339d247fbbf"
+      "fingerprint": "b286e58348d5a602"
     },
     {
       "kind": "as-cast",
       "file": "packages/extension/src/tasksView.ts",
-      "name": "resolveWebviewView",
-      "startLine": 107,
+      "name": "buildTaskRpcHandlers",
+      "startLine": 44,
       "detail": "Type assertion: patch as Parameters<typeof updateTask>[2]",
       "content": "patch as Parameters<typeof updateTask>[2]",
-      "fingerprint": "1e27b88fafa8e6d9"
+      "fingerprint": "b63cb2732d2eafe9"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/extension/src/update.ts",
+      "name": "fetchJson",
+      "startLine": 59,
+      "detail": "Type assertion: (await res.json()) as T",
+      "content": "(await res.json()) as T",
+      "fingerprint": "3fdb5c4fbedb51cd"
     },
     {
       "kind": "as-cast",
@@ -2752,7 +520,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/workspaceFolder.ts",
       "name": "o",
-      "startLine": 159,
+      "startLine": 135,
       "detail": "Type assertion: r as Record<string, unknown>",
       "content": "r as Record<string, unknown>",
       "fingerprint": "28993c48743ebf6e"
@@ -2761,7 +529,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/workspaceFolder.ts",
       "name": "getSessionProfiles",
-      "startLine": 169,
+      "startLine": 145,
       "detail": "Type assertion: o.env as Record<string, unknown>",
       "content": "o.env as Record<string, unknown>",
       "fingerprint": "436fe53b6be01b01"
@@ -2780,15 +548,15 @@
       "file": "packages/extension/src/workspaceInit.ts",
       "name": "customizations",
       "startLine": 101,
-      "detail": "Type assertion: settings[\"workbench.colorCustomizations\"] as Record<string, unknown>",
-      "content": "settings[\"workbench.colorCustomizations\"] as Record<string, unknown>",
-      "fingerprint": "f9af114f956d9314"
+      "detail": "Type assertion: settings['workbench.colorCustomizations'] as Record<string, unknown>",
+      "content": "settings['workbench.colorCustomizations'] as Record<string, unknown>",
+      "fingerprint": "d98105ae8ab783a8"
     },
     {
       "kind": "as-cast",
       "file": "packages/extension/src/workspaceInit.ts",
       "name": "ensureDir",
-      "startLine": 159,
+      "startLine": 154,
       "detail": "Type assertion: e as NodeJS.ErrnoException",
       "content": "e as NodeJS.ErrnoException",
       "fingerprint": "b4943393fed8aa45"
@@ -2797,7 +565,7 @@
       "kind": "as-cast",
       "file": "packages/extension/src/workspaceInit.ts",
       "name": "ensureRepoGitignore",
-      "startLine": 173,
+      "startLine": 168,
       "detail": "Type assertion: e as NodeJS.ErrnoException",
       "content": "e as NodeJS.ErrnoException",
       "fingerprint": "94e0a932f029a151"
@@ -2806,19 +574,91 @@
       "kind": "as-cast",
       "file": "packages/extension/src/worktreesView.ts",
       "name": "cmd",
-      "startLine": 194,
-      "detail": "Type assertion: { open: \"codeWorkbench.worktrees.open\", spawn: \"codeWorkbench.worktrees.spawnHer",
-      "content": "{ open: \"codeWorkbench.worktrees.open\", spawn: \"codeWorkbench.worktrees.spawnHer",
-      "fingerprint": "5c6c363cb7957887"
+      "startLine": 204,
+      "detail": "Type assertion: { open: 'codeWorkbench.worktrees.open', spawn: 'codeWorkbench.worktrees.spawnHer",
+      "content": "{ open: 'codeWorkbench.worktrees.open', spawn: 'codeWorkbench.worktrees.spawnHer",
+      "fingerprint": "3bb43735d16d0e3c"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/extension/webview/arch.tsx",
+      "name": "api",
+      "startLine": 13,
+      "detail": "Type assertion: bridge.call('remove', slug) as Promise<void>",
+      "content": "bridge.call('remove', slug) as Promise<void>",
+      "fingerprint": "8e8b9740ff1f5c2a"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/extension/webview/arch.tsx",
+      "name": "api",
+      "startLine": 14,
+      "detail": "Type assertion: bridge.call('openCard', slug) as Promise<void>",
+      "content": "bridge.call('openCard', slug) as Promise<void>",
+      "fingerprint": "827b5fe1dcfeb991"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/extension/webview/arch.tsx",
+      "name": "api",
+      "startLine": 15,
+      "detail": "Type assertion: bridge.call('openInPage', slug) as Promise<void>",
+      "content": "bridge.call('openInPage', slug) as Promise<void>",
+      "fingerprint": "1856aa25f32cdd41"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/extension/webview/arch.tsx",
+      "name": "api",
+      "startLine": 17,
+      "detail": "Type assertion: bridge.call('search', query) as Promise<Array<{ slug: string; score: number }>>",
+      "content": "bridge.call('search', query) as Promise<Array<{ slug: string; score: number }>>",
+      "fingerprint": "2a74b81bacedc77a"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/extension/webview/arch.tsx",
+      "name": "App",
+      "startLine": 30,
+      "detail": "Type assertion: payload as string | null",
+      "content": "payload as string | null",
+      "fingerprint": "d3f5462eb840d6a5"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/extension/webview/arch.tsx",
+      "name": "App",
+      "startLine": 32,
+      "detail": "Type assertion: payload as string | null",
+      "content": "payload as string | null",
+      "fingerprint": "d3f5462eb840d6a5"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/extension/webview/arch.tsx",
+      "name": "App",
+      "startLine": 34,
+      "detail": "Type assertion: payload as { surface?: string } | null",
+      "content": "payload as { surface?: string } | null",
+      "fingerprint": "199bb35064c00db7"
+    },
+    {
+      "kind": "non-null",
+      "file": "packages/extension/webview/arch.tsx",
+      "name": "<module>",
+      "startLine": 52,
+      "detail": "Non-null assertion: document.getElementById('root')!",
+      "content": "document.getElementById('root')!",
+      "fingerprint": "4d12fb8dceae27b3"
     },
     {
       "kind": "as-cast",
       "file": "packages/extension/webview/bridge.ts",
       "name": "msg",
       "startLine": 32,
-      "detail": "Type assertion: e.data as | { kind: \"rpc-result\"; id: number; ok: boolean; value?: unknown; erro",
-      "content": "e.data as | { kind: \"rpc-result\"; id: number; ok: boolean; value?: unknown; erro",
-      "fingerprint": "c5ae7c5bcbb483fe"
+      "detail": "Type assertion: e.data as | { kind: 'rpc-result'; id: number; ok: boolean; value?: unknown; erro",
+      "content": "e.data as | { kind: 'rpc-result'; id: number; ok: boolean; value?: unknown; erro",
+      "fingerprint": "a8924ad7ce25c89a"
     },
     {
       "kind": "as-cast",
@@ -2843,9 +683,9 @@
       "file": "packages/extension/webview/deadcode.tsx",
       "name": "<module>",
       "startLine": 43,
-      "detail": "Non-null assertion: document.getElementById(\"root\")!",
-      "content": "document.getElementById(\"root\")!",
-      "fingerprint": "c55177bc5dc8d160"
+      "detail": "Non-null assertion: document.getElementById('root')!",
+      "content": "document.getElementById('root')!",
+      "fingerprint": "edf17181f221a174"
     },
     {
       "kind": "as-cast",
@@ -2861,33 +701,78 @@
       "file": "packages/extension/webview/duplicates.tsx",
       "name": "<module>",
       "startLine": 43,
-      "detail": "Non-null assertion: document.getElementById(\"root\")!",
-      "content": "document.getElementById(\"root\")!",
-      "fingerprint": "887d6ff4fa33ccd3"
+      "detail": "Non-null assertion: document.getElementById('root')!",
+      "content": "document.getElementById('root')!",
+      "fingerprint": "166533b0ab327beb"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/extension/webview/search.tsx",
+      "name": "api",
+      "startLine": 12,
+      "detail": "Type assertion: bridge.call('openFile', file, line) as Promise<void>",
+      "content": "bridge.call('openFile', file, line) as Promise<void>",
+      "fingerprint": "d52b38417efe3839"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/extension/webview/search.tsx",
+      "name": "App",
+      "startLine": 22,
+      "detail": "Type assertion: payload as string | null",
+      "content": "payload as string | null",
+      "fingerprint": "a357361e88536d1a"
+    },
+    {
+      "kind": "non-null",
+      "file": "packages/extension/webview/search.tsx",
+      "name": "<module>",
+      "startLine": 36,
+      "detail": "Non-null assertion: document.getElementById('root')!",
+      "content": "document.getElementById('root')!",
+      "fingerprint": "8beef18aa4250572"
     },
     {
       "kind": "as-cast",
       "file": "packages/extension/webview/tasks.tsx",
       "name": "api",
       "startLine": 13,
-      "detail": "Type assertion: bridge.call(\"update\", id, patch) as Promise<void>",
-      "content": "bridge.call(\"update\", id, patch) as Promise<void>",
-      "fingerprint": "651f98af4b517c4e"
+      "detail": "Type assertion: bridge.call('update', id, patch) as Promise<void>",
+      "content": "bridge.call('update', id, patch) as Promise<void>",
+      "fingerprint": "33dc6b1a67a99897"
     },
     {
       "kind": "as-cast",
       "file": "packages/extension/webview/tasks.tsx",
       "name": "api",
       "startLine": 14,
-      "detail": "Type assertion: bridge.call(\"remove\", id) as Promise<void>",
-      "content": "bridge.call(\"remove\", id) as Promise<void>",
-      "fingerprint": "799684d6966600bc"
+      "detail": "Type assertion: bridge.call('remove', id) as Promise<void>",
+      "content": "bridge.call('remove', id) as Promise<void>",
+      "fingerprint": "2caaf5fb55407a16"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/extension/webview/tasks.tsx",
+      "name": "api",
+      "startLine": 15,
+      "detail": "Type assertion: bridge.call('openInEditor', id) as Promise<void>",
+      "content": "bridge.call('openInEditor', id) as Promise<void>",
+      "fingerprint": "57281ea6dc78a49d"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/extension/webview/tasks.tsx",
+      "name": "api",
+      "startLine": 16,
+      "detail": "Type assertion: bridge.call('startPhase', id, phase) as Promise<void>",
+      "content": "bridge.call('startPhase', id, phase) as Promise<void>",
+      "fingerprint": "9fea6524dad09411"
     },
     {
       "kind": "as-cast",
       "file": "packages/extension/webview/tasks.tsx",
       "name": "App",
-      "startLine": 32,
+      "startLine": 40,
       "detail": "Type assertion: payload as Context",
       "content": "payload as Context",
       "fingerprint": "b913ae786760b6a0"
@@ -2896,10 +781,10 @@
       "kind": "non-null",
       "file": "packages/extension/webview/tasks.tsx",
       "name": "<module>",
-      "startLine": 48,
-      "detail": "Non-null assertion: document.getElementById(\"root\")!",
-      "content": "document.getElementById(\"root\")!",
-      "fingerprint": "666aa3eb259d2461"
+      "startLine": 69,
+      "detail": "Non-null assertion: document.getElementById('root')!",
+      "content": "document.getElementById('root')!",
+      "fingerprint": "2090c0b206183991"
     },
     {
       "kind": "as-cast",
@@ -2915,33 +800,69 @@
       "file": "packages/extension/webview/typeescapes.tsx",
       "name": "<module>",
       "startLine": 43,
-      "detail": "Non-null assertion: document.getElementById(\"root\")!",
-      "content": "document.getElementById(\"root\")!",
-      "fingerprint": "a37a7ff5a5caa514"
+      "detail": "Non-null assertion: document.getElementById('root')!",
+      "content": "document.getElementById('root')!",
+      "fingerprint": "272aeb0bc4b0c84b"
     },
     {
       "kind": "non-null",
-      "file": "packages/ui/src/components/DeadCodePanel.tsx",
-      "name": "ItemRow",
-      "startLine": 75,
+      "file": "packages/ui/src/components/DuplicatesPanel.tsx",
+      "name": "open",
+      "startLine": 45,
       "detail": "Non-null assertion: onOpenFile!",
       "content": "onOpenFile!",
-      "fingerprint": "d55e7a5f1093220c"
+      "fingerprint": "6ff5d548de8a3912"
+    },
+    {
+      "kind": "non-null",
+      "file": "packages/ui/src/components/DuplicatesPanel.tsx",
+      "name": "GroupRow",
+      "startLine": 125,
+      "detail": "Non-null assertion: onOpenFile!",
+      "content": "onOpenFile!",
+      "fingerprint": "76eb9ae9ac39d8e9"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/ui/src/components/ScanPanel.tsx",
+      "name": "ScanPanel",
+      "startLine": 135,
+      "detail": "Type assertion: [] as T[]",
+      "content": "[] as T[]",
+      "fingerprint": "c1c0d496c8a5b48b"
     },
     {
       "kind": "non-null",
       "file": "packages/ui/src/components/ScanRowParts.tsx",
       "name": "FileLink",
-      "startLine": 33,
+      "startLine": 28,
       "detail": "Non-null assertion: onOpenFile!",
       "content": "onOpenFile!",
       "fingerprint": "7f0cd7a5f3d218e8"
     },
     {
       "kind": "non-null",
+      "file": "packages/ui/src/components/ScanRowParts.tsx",
+      "name": "ScanItemRow",
+      "startLine": 99,
+      "detail": "Non-null assertion: onOpenFile!",
+      "content": "onOpenFile!",
+      "fingerprint": "542f0d0420d709ff"
+    },
+    {
+      "kind": "non-null",
+      "file": "packages/ui/src/components/SnippetCard.tsx",
+      "name": "open",
+      "startLine": 74,
+      "detail": "Non-null assertion: onOpenFile!",
+      "content": "onOpenFile!",
+      "fingerprint": "80c46b41b6173842"
+    },
+    {
+      "kind": "non-null",
       "file": "packages/ui/src/components/TasksPanel.tsx",
       "name": "buildChildMap",
-      "startLine": 40,
+      "startLine": 41,
       "detail": "Non-null assertion: map.get(t.parentId)!",
       "content": "map.get(t.parentId)!",
       "fingerprint": "904eef79b91cb6b8"
@@ -2950,7 +871,7 @@
       "kind": "non-null",
       "file": "packages/ui/src/components/TasksPanel.tsx",
       "name": "groupByEpic",
-      "startLine": 57,
+      "startLine": 58,
       "detail": "Non-null assertion: buckets.get(key)!",
       "content": "buckets.get(key)!",
       "fingerprint": "d287089d749a8fa2"
@@ -2959,7 +880,7 @@
       "kind": "non-null",
       "file": "packages/ui/src/components/TasksPanel.tsx",
       "name": "groupByEpic",
-      "startLine": 60,
+      "startLine": 61,
       "detail": "Non-null assertion: buckets.get(epic)!",
       "content": "buckets.get(epic)!",
       "fingerprint": "51270bca16316727"
@@ -2968,7 +889,7 @@
       "kind": "non-null",
       "file": "packages/ui/src/components/TasksPanel.tsx",
       "name": "groupByWorktree",
-      "startLine": 70,
+      "startLine": 71,
       "detail": "Non-null assertion: map.get(key)!",
       "content": "map.get(key)!",
       "fingerprint": "60f3375d3085b066"
@@ -2977,37 +898,154 @@
       "kind": "as-cast",
       "file": "packages/ui/src/components/TasksPanel.tsx",
       "name": "TaskEditForm",
-      "startLine": 326,
-      "detail": "Type assertion: e.target.value as WorkspaceTask[\"priority\"]",
-      "content": "e.target.value as WorkspaceTask[\"priority\"]",
-      "fingerprint": "60bbb753606a4531"
+      "startLine": 392,
+      "detail": "Type assertion: e.target.value as WorkspaceTask['priority']",
+      "content": "e.target.value as WorkspaceTask['priority']",
+      "fingerprint": "d96768c46c973933"
     },
     {
       "kind": "as-cast",
       "file": "packages/ui/src/components/TasksPanel.tsx",
       "name": "TaskEditForm",
-      "startLine": 336,
-      "detail": "Type assertion: e.target.value as WorkspaceTask[\"status\"]",
-      "content": "e.target.value as WorkspaceTask[\"status\"]",
-      "fingerprint": "1b3347f4c5936c58"
+      "startLine": 404,
+      "detail": "Type assertion: e.target.value as WorkspaceTask['status']",
+      "content": "e.target.value as WorkspaceTask['status']",
+      "fingerprint": "33679bd8b60f7c18"
+    },
+    {
+      "kind": "non-null",
+      "file": "packages/ui/src/components/TasksPanel.tsx",
+      "name": "TaskDetailPane",
+      "startLine": 805,
+      "detail": "Non-null assertion: task.parentId!",
+      "content": "task.parentId!",
+      "fingerprint": "8bd48cdf60dd123d"
     },
     {
       "kind": "as-cast",
       "file": "packages/ui/src/components/TasksPanel.tsx",
       "name": "NewTaskForm",
-      "startLine": 625,
-      "detail": "Type assertion: e.target.value as WorkspaceTask[\"priority\"]",
-      "content": "e.target.value as WorkspaceTask[\"priority\"]",
-      "fingerprint": "b026e45d1995b694"
+      "startLine": 1007,
+      "detail": "Type assertion: e.target.value as WorkspaceTask['priority']",
+      "content": "e.target.value as WorkspaceTask['priority']",
+      "fingerprint": "855f20803039b56f"
     },
     {
       "kind": "non-null",
-      "file": "packages/ui/src/components/TypeEscapePanel.tsx",
-      "name": "ItemRow",
-      "startLine": 77,
-      "detail": "Non-null assertion: onOpenFile!",
-      "content": "onOpenFile!",
-      "fingerprint": "42cd513ed5fc9935"
+      "file": "packages/ui/src/components/TasksPanel.tsx",
+      "name": "openInEditor",
+      "startLine": 1196,
+      "detail": "Non-null assertion: api.openInEditor!",
+      "content": "api.openInEditor!",
+      "fingerprint": "f351906fe3015264"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/ui/src/components/TasksPanel.tsx",
+      "name": "TasksPanel",
+      "startLine": 1418,
+      "detail": "Type assertion: e.target.value as GroupBy",
+      "content": "e.target.value as GroupBy",
+      "fingerprint": "237f623ea129743d"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/ui/src/components/TasksPanel.tsx",
+      "name": "TasksPanel",
+      "startLine": 1428,
+      "detail": "Type assertion: e.target.value as StatusFilter",
+      "content": "e.target.value as StatusFilter",
+      "fingerprint": "1fd152680ff7db7c"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/ui/test/TasksPanel.test.tsx",
+      "name": "<module>",
+      "startLine": 96,
+      "detail": "Type assertion: pane as HTMLElement",
+      "content": "pane as HTMLElement",
+      "fingerprint": "364008a430fc7d8f"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/ui/test/TasksPanel.test.tsx",
+      "name": "title",
+      "startLine": 101,
+      "detail": "Type assertion: pane as HTMLElement",
+      "content": "pane as HTMLElement",
+      "fingerprint": "22291a7dfcdece9a"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/ui/test/TasksPanel.test.tsx",
+      "name": "<module>",
+      "startLine": 104,
+      "detail": "Type assertion: pane as HTMLElement",
+      "content": "pane as HTMLElement",
+      "fingerprint": "364008a430fc7d8f"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/ui/test/TasksPanel.test.tsx",
+      "name": "<module>",
+      "startLine": 119,
+      "detail": "Type assertion: pane as HTMLElement",
+      "content": "pane as HTMLElement",
+      "fingerprint": "364008a430fc7d8f"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/ui/test/TasksPanel.test.tsx",
+      "name": "backlink",
+      "startLine": 123,
+      "detail": "Type assertion: pane as HTMLElement",
+      "content": "pane as HTMLElement",
+      "fingerprint": "cb7ed8584cec8284"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/ui/test/TasksPanel.test.tsx",
+      "name": "<module>",
+      "startLine": 127,
+      "detail": "Type assertion: pane as HTMLElement",
+      "content": "pane as HTMLElement",
+      "fingerprint": "364008a430fc7d8f"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/ui/test/TasksPanel.test.tsx",
+      "name": "<module>",
+      "startLine": 147,
+      "detail": "Type assertion: pane as HTMLElement",
+      "content": "pane as HTMLElement",
+      "fingerprint": "364008a430fc7d8f"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/ui/test/TasksPanel.test.tsx",
+      "name": "<module>",
+      "startLine": 150,
+      "detail": "Type assertion: pane as HTMLElement",
+      "content": "pane as HTMLElement",
+      "fingerprint": "364008a430fc7d8f"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/ui/test/TasksPanel.test.tsx",
+      "name": "<module>",
+      "startLine": 153,
+      "detail": "Type assertion: pane as HTMLElement",
+      "content": "pane as HTMLElement",
+      "fingerprint": "364008a430fc7d8f"
+    },
+    {
+      "kind": "as-cast",
+      "file": "packages/ui/test/TasksPanel.test.tsx",
+      "name": "<module>",
+      "startLine": 207,
+      "detail": "Type assertion: subRow as HTMLElement",
+      "content": "subRow as HTMLElement",
+      "fingerprint": "2a3d577feb50f736"
     }
   ]
 }
