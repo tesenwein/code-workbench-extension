@@ -1,4 +1,4 @@
-/* "Code Health" sidebar action bar.
+/* "Tools" sidebar action bar (view id: codeWorkbench.codeHealth).
  *
  * Replaces the three narrow scan WebviewViews (Dead Code, Duplicates, Type
  * Safety): the sidebar no longer tries to render scan results in ~300px —
@@ -24,6 +24,13 @@ const ACTIONS: ActionEntry[] = [
     icon: 'checklist',
     command: 'codeWorkbench.codeReview.start',
     tooltip: 'Start a Claude session that reviews the current changes and files findings as tasks',
+  },
+  {
+    label: 'Plan Session',
+    description: 'start a chat in plan mode',
+    icon: 'compass',
+    command: 'codeWorkbench.sessions.newPlan',
+    tooltip: 'Start a new Claude session directly in plan mode (no edits until a plan is approved)',
   },
   {
     label: 'Search Code',

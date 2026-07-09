@@ -13,22 +13,70 @@ export function cryptoRandom(): string {
  *  we scan project dirs for the UUID-named file. Resuming a missing id errors out, so we fall
  *  back to --session-id when no transcript is found. */
 export function claudeConversationExists(_worktreePath: string, sessionId: string): boolean {
+  return findClaudeTranscriptPath(sessionId) !== undefined;
+}
+
+/** Locate a Claude transcript file by scanning ~/.claude/projects/*, mirroring
+ *  claudeConversationExists's dir-encoding-agnostic search. */
+function findClaudeTranscriptPath(sessionId: string): string | undefined {
   const root = path.join(os.homedir(), '.claude', 'projects');
   const target = `${sessionId}.jsonl`;
   let dirs: string[];
   try {
     dirs = fs.readdirSync(root);
   } catch {
-    return false;
+    return undefined;
   }
   for (const d of dirs) {
+    const candidate = path.join(root, d, target);
     try {
-      if (fs.statSync(path.join(root, d, target)).isFile()) return true;
+      if (fs.statSync(candidate).isFile()) return candidate;
     } catch {
       // missing or not a dir — keep looking
     }
   }
-  return false;
+  return undefined;
+}
+
+/** Best-effort extraction of the first human-typed message in a transcript,
+ *  for use as a fallback session title when the agent never calls
+ *  notify_chat_title. Returns undefined if no transcript or user turn exists
+ *  yet, or the message text is unusable (e.g. empty/whitespace-only). */
+export function readFirstUserMessage(sessionId: string): string | undefined {
+  const file = findClaudeTranscriptPath(sessionId);
+  if (!file) return undefined;
+  let raw: string;
+  try {
+    raw = fs.readFileSync(file, 'utf8');
+  } catch {
+    return undefined;
+  }
+  for (const line of raw.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    let entry: unknown;
+    try {
+      entry = JSON.parse(trimmed);
+    } catch {
+      continue;
+    }
+    const e = entry as { type?: string; message?: { role?: string; content?: unknown } };
+    if (e.type !== 'user' || e.message?.role !== 'user') continue;
+    const content = e.message.content;
+    let text: string | undefined;
+    if (typeof content === 'string') {
+      text = content;
+    } else if (Array.isArray(content)) {
+      const block = content.find(
+        (b): b is { type: string; text: string } =>
+          !!b && typeof b === 'object' && b.type === 'text' && typeof b.text === 'string',
+      );
+      text = block?.text;
+    }
+    const clean = text?.split('\n')[0]?.trim();
+    return clean || undefined;
+  }
+  return undefined;
 }
 
 /** POSIX single-quote escape: wrap in '…', escaping embedded ' as '\''. */

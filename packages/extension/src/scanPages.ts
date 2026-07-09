@@ -2,7 +2,7 @@
  * duplicates, type safety.
  *
  * These replace the old narrow sidebar WebviewViews: the sidebar now only
- * carries the Code Health action bar (see codeHealthView.ts), whose entries
+ * carries the Tools action bar (see codeHealthView.ts), whose entries
  * run these commands. Each page hosts the same shared @code-workbench/ui
  * panel the sidebar used, answers the same scan/ack/exclude RPC set, and
  * auto-scans on open. The duplicates page additionally widens each clone

@@ -21,7 +21,13 @@ import {
   type WorktreeColor,
   type WorktreePrefs,
 } from './sessionTypes';
-import { buildBanner, claudeConversationExists, cryptoRandom, shellQuote } from './sessionLaunch';
+import {
+  buildBanner,
+  claudeConversationExists,
+  cryptoRandom,
+  readFirstUserMessage,
+  shellQuote,
+} from './sessionLaunch';
 
 export * from './sessionTypes';
 export { SessionItem, SessionsProvider } from './sessionsView';
@@ -108,6 +114,10 @@ export class SessionManager {
   /** Current phase of the blink toggle. Flipped on each interval tick. */
   private blinkPhase = false;
   private blinkTimer: NodeJS.Timeout | undefined;
+  /** Pending title-fallback timers, keyed by session id — see
+   *  scheduleTitleFallback. Cleared on dispose so a stale extension-host
+   *  shutdown never leaves a dangling setTimeout. */
+  private titleFallbackTimers = new Map<string, NodeJS.Timeout>();
   private globalPrefs: GlobalPrefs = loadGlobalPrefsSync();
   private globalPrefsWatcher: vscode.Disposable;
   /** Identity of the current repo (git common-dir). All per-repo state is
@@ -386,7 +396,37 @@ export class SessionManager {
     await this.save(sessions);
     await this.open(session);
     this._onDidChange.fire();
+    // Titling is normally driven by the agent calling notify_chat_title as
+    // its first tool call (see workbenchPrompt.ts). That's best-effort — the
+    // model may skip or delay it — so plain chat sessions (no explicit title
+    // from the caller, e.g. task-flow/code-review already set a meaningful
+    // one) get a code-side fallback derived from the transcript's first user
+    // turn if no remote title shows up in time.
+    if (!opts?.title && (kind === 'claude' || kind === 'claude-yolo')) {
+      this.scheduleTitleFallback(id, session.title);
+    }
     return session;
+  }
+
+  /** After a grace period, if `sessionId` still has its original default
+   *  title (i.e. notify_chat_title never fired and the user hasn't renamed
+   *  it), derive one from the first user message in its transcript. */
+  private scheduleTitleFallback(sessionId: string, defaultTitle: string): void {
+    const existing = this.titleFallbackTimers.get(sessionId);
+    if (existing) clearTimeout(existing);
+    const timer = setTimeout(() => {
+      this.titleFallbackTimers.delete(sessionId);
+      void this.applyTitleFallback(sessionId, defaultTitle);
+    }, 25_000);
+    this.titleFallbackTimers.set(sessionId, timer);
+  }
+
+  private async applyTitleFallback(sessionId: string, defaultTitle: string): Promise<void> {
+    const s = this.list().find((x) => x.id === sessionId);
+    if (!s || s.title !== defaultTitle || !s.claudeSessionId) return;
+    const firstMessage = readFirstUserMessage(s.claudeSessionId);
+    if (!firstMessage) return;
+    await this.applyRemoteTitle(sessionId, firstMessage);
   }
 
   /** Ensure a reserved bottom editor group exists for workbench sessions and
@@ -948,6 +988,8 @@ export class SessionManager {
       clearInterval(this.blinkTimer);
       this.blinkTimer = undefined;
     }
+    for (const timer of this.titleFallbackTimers.values()) clearTimeout(timer);
+    this.titleFallbackTimers.clear();
     this.notify.dispose();
     this.globalPrefsWatcher.dispose();
   }
