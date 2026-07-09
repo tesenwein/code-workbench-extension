@@ -246,6 +246,15 @@ const panelCss = () => `
   .add:hover { background:var(--clay-ghost); border-style:solid; border-color:var(--clay); }
   .add svg { width:13px; height:13px; }
 
+  /* model button group under the add button */
+  .addgrp { display:flex; gap:4px; margin:4px 2px 2px; }
+  .addgrp .add.sm {
+    flex:1; width:auto; margin:0; padding:4px 2px;
+    font-size:10px; font-weight:500; color:var(--fg-2);
+    border-color:var(--border);
+  }
+  .addgrp .add.sm:hover { color:var(--clay-bright); }
+
   .fade { animation:fade .24s ease both; }
   @keyframes fade {
     from { opacity:0; transform:translateY(3px); }

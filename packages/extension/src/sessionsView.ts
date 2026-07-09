@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { sessionIconId, type SavedSession } from './sessionTypes';
+import { CLAUDE_MODEL_VALUES, sessionIconId, type SavedSession } from './sessionTypes';
 import { claudeConversationExists } from './sessionLaunch';
 import type { SessionManager } from './sessions';
 import { makeNonce, panelHtml, WORKTREE_DOT } from './panelTheme';
@@ -99,11 +99,23 @@ function sessionRow(s,accent){
   row.appendChild(acts);
   root.appendChild(row);
 }
+var MODELS=[['sonnet','Sonnet'],['opus','Opus'],['fable','Fable']];
 function addButton(){
   var add=document.createElement('button'); add.className='add';
   add.innerHTML=svg('plus')+'<span>New terminal</span>';
+  add.title='New terminal (default model)';
   add.addEventListener('click',function(){ vscode.postMessage({type:'new'}); });
   root.appendChild(add);
+
+  var grp=document.createElement('div'); grp.className='addgrp';
+  MODELS.forEach(function(m){
+    var b=document.createElement('button'); b.className='add sm';
+    b.textContent=m[1];
+    b.title='New '+m[1]+' terminal';
+    b.addEventListener('click',function(){ vscode.postMessage({type:'new',model:m[0]}); });
+    grp.appendChild(b);
+  });
+  root.appendChild(grp);
 }
 function render(st){
   root.textContent='';
@@ -220,14 +232,15 @@ export class SessionsProvider implements vscode.WebviewViewProvider {
     void this.view.webview.postMessage({ type: 'state', ...state });
   }
 
-  private onMessage(m: { type?: string; id?: string }): void {
+  private onMessage(m: { type?: string; id?: string; model?: string }): void {
     if (m?.type === 'ready') {
       this.lastJson = '';
       this.post();
       return;
     }
     if (m?.type === 'new') {
-      void vscode.commands.executeCommand('codeWorkbench.sessions.new');
+      const model = CLAUDE_MODEL_VALUES.find((v) => v === m.model);
+      void vscode.commands.executeCommand('codeWorkbench.sessions.new', model);
       return;
     }
     const session = this.cache.find((s) => s.id === m?.id);
