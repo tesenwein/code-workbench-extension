@@ -13,8 +13,9 @@
 "use strict";
 
 const CODE_REVIEW = require("./workflows/code-review.cjs");
+const PLAN_FEATURE = require("./workflows/plan-feature.cjs");
 
 /** Every workflow the workbench bundles. */
-const BUNDLED_WORKFLOWS = [CODE_REVIEW];
+const BUNDLED_WORKFLOWS = [CODE_REVIEW, PLAN_FEATURE];
 
 module.exports = { BUNDLED_WORKFLOWS };

@@ -147,6 +147,9 @@ const checksPromiseFactory = () =>
   )
 
 const scope = await scopePromise
+if (!scope) {
+  throw new Error('Scope agent failed to resolve the review scope')
+}
 if (scope.empty) {
   return { baseBranch: scope.baseBranch, empty: true, findings: [], checks: null }
 }

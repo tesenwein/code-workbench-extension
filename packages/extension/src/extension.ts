@@ -30,6 +30,7 @@ import { registerWorktreeCommands } from './commands/worktreeCommands';
 import { registerScanPageCommands } from './scanPages';
 import { registerCodeHealthView } from './codeHealthView';
 import { registerCodeReviewCommand } from './commands/codeReview';
+import { registerPlanFeatureCommand } from './commands/planFeature';
 import { registerTaskFlowCommand } from './commands/taskFlow';
 import { registerUpdateCommand } from './update';
 import { showTasksPage, refreshTasksPage, isTasksPageOpen } from './tasksPage';
@@ -633,6 +634,8 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
   registerUpdateCommand(ctx);
 
   registerCodeReviewCommand(ctx, { sessionMgr, ensureActiveWorktree });
+
+  registerPlanFeatureCommand(ctx, { sessionMgr, ensureActiveWorktree });
 
   registerTaskFlowCommand(ctx, {
     sessionMgr,

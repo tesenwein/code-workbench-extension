@@ -244,7 +244,7 @@ export const TOOLS = [
           type: "string",
           enum: ["plan", "implement", "review", "fix"],
           description:
-            "Workflow phase to start this task in, if it's driven by the Code Workbench phase flow. Usually left unset.",
+            "Workflow phase to start this task in, if it's driven by the Code Workbench phase flow (Plan → Implement → Review → Fix). Root tasks created by a planning skill or workflow should set this — e.g. 'implement' once a plan is approved — so the Phase Board files it correctly.",
         },
       },
       required: ["title"],

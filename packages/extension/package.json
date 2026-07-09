@@ -153,7 +153,7 @@
         "command": "codeWorkbench.worktrees.addWithTask",
         "category": "Code Workbench",
         "title": "Add Worktree with Task…",
-        "icon": "$(diff-added)"
+        "icon": "$(add)"
       },
       {
         "command": "codeWorkbench.worktrees.addFromIssue",
@@ -238,6 +238,12 @@
         "category": "Code Workbench",
         "title": "Code Review: Review Current Changes",
         "icon": "$(checklist)"
+      },
+      {
+        "command": "codeWorkbench.plan.start",
+        "category": "Code Workbench",
+        "title": "Plan Feature",
+        "icon": "$(compass)"
       },
       {
         "command": "codeWorkbench.themeTokens",
@@ -357,17 +363,17 @@
           "group": "2_manage@3"
         },
         {
-          "command": "codeWorkbench.sessions.newFromEditor",
+          "command": "codeWorkbench.checkForUpdates",
           "when": "view == codeWorkbench.brand",
           "group": "navigation@0"
         },
         {
-          "command": "codeWorkbench.checkForUpdates",
+          "command": "codeWorkbench.openGlobalPrefs",
           "when": "view == codeWorkbench.brand",
           "group": "navigation@1"
         },
         {
-          "command": "codeWorkbench.openGlobalPrefs",
+          "command": "codeWorkbench.sessions.newFromEditor",
           "when": "view == codeWorkbench.brand",
           "group": "navigation@2"
         },
@@ -382,7 +388,7 @@
           "group": "2_manage@2"
         },
         {
-          "command": "codeWorkbench.worktrees.add",
+          "command": "codeWorkbench.worktrees.addWithTask",
           "when": "view == codeWorkbench.worktrees",
           "group": "navigation@1"
         },
@@ -397,7 +403,7 @@
           "group": "navigation@3"
         },
         {
-          "command": "codeWorkbench.worktrees.addWithTask",
+          "command": "codeWorkbench.worktrees.add",
           "when": "view == codeWorkbench.worktrees",
           "group": "1_add@1"
         },

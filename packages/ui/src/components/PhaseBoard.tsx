@@ -1,11 +1,13 @@
 /* Phase Board — the task-bound phase flow as a kanban board.
  *
- * One column per stage of Plan → Implement → Review → Fix, plus an Unstarted
- * column for root tasks not yet in the flow. A task's `phase` field names the
- * phase to run NEXT, so the column a card sits in is exactly the phase its
- * Start button launches: the board is the state machine, and the button is the
- * only way to advance it. Each Start spawns a Claude session bound to that one
- * task on the model the phase calls for (Plan runs on opus, the rest sonnet).
+ * One column per stage of Plan → Implement → Review → Fix. A task's `phase`
+ * field names the phase to run NEXT, so the column a card sits in is exactly
+ * the phase its Start button launches: the board is the state machine, and
+ * the button is the only way to advance it. A root task with no explicit
+ * `phase` is inferred: already having plan-step subtasks means it was
+ * planned already (Implement), otherwise it hasn't been planned yet (Plan).
+ * Each Start spawns a Claude session bound to that one task on the model the
+ * phase calls for (Plan runs on opus, the rest sonnet).
  *
  * Subtasks never appear as cards — the flow only applies to root tasks — but
  * their progress is summarized on the parent's card. */
@@ -32,14 +34,11 @@ const PRIORITY_COLORS: Record<WorkspaceTask['priority'], string> = {
   low: '#5c9de0',
 };
 
-/** Sentinel column for root tasks with no `phase` yet. Starting one runs Plan. */
-const UNSTARTED = 'unstarted';
-type ColumnKey = typeof UNSTARTED | TaskPhase;
+type ColumnKey = TaskPhase;
 
-const COLUMNS: ColumnKey[] = [UNSTARTED, 'plan', 'implement', 'review', 'fix'];
+const COLUMNS: ColumnKey[] = ['plan', 'implement', 'review', 'fix'];
 
 const COLUMN_LABELS: Record<ColumnKey, string> = {
-  unstarted: 'Unstarted',
   plan: 'Plan',
   implement: 'Implement',
   review: 'Review',
@@ -47,24 +46,22 @@ const COLUMN_LABELS: Record<ColumnKey, string> = {
 };
 
 const COLUMN_HINTS: Record<ColumnKey, string> = {
-  unstarted: 'Not in the flow yet. Starting one runs the Plan phase.',
   plan: 'Explores the code, writes a memo, files plan-step subtasks.',
   implement: 'Works the plan-step subtasks until lint, typecheck and tests pass.',
   review: 'Reviews the diff and files review-finding subtasks.',
   fix: 'Fixes the review-finding subtasks, then re-runs the checks.',
 };
 
-/** The phase a column's Start button launches. */
-function phaseFor(column: ColumnKey): TaskPhase {
-  return column === UNSTARTED ? 'plan' : column;
-}
-
 /** Which column a task belongs in — `null` for anything the board ignores
- *  (subtasks, and finished tasks that already left the flow). */
-function columnFor(task: WorkspaceTask): ColumnKey | null {
+ *  (subtasks, and finished tasks that already left the flow). A root task
+ *  with no explicit `phase` is inferred from its subtasks: already having
+ *  plan-step subtasks means planning happened, so it belongs in Implement;
+ *  otherwise it hasn't been planned yet. */
+function columnFor(task: WorkspaceTask, children: WorkspaceTask[]): ColumnKey | null {
   if (task.parentId) return null;
   if (task.phase) return task.phase;
-  return task.status === 'done' ? null : UNSTARTED;
+  if (task.status === 'done') return null;
+  return children.some((c) => c.tags?.includes('plan-step')) ? 'implement' : 'plan';
 }
 
 interface SubtaskProgress {
@@ -98,7 +95,7 @@ function TaskCard({
 }) {
   const planSteps = subtaskProgress(subtasks, 'plan-step');
   const findings = subtaskProgress(subtasks, 'review-finding');
-  const phase = phaseFor(column);
+  const phase = column;
 
   return (
     <div className="phase-card">
@@ -201,11 +198,11 @@ export function PhaseBoard({ api, reloadKey = 0, phaseModels, onOpenTask }: Phas
   const columns = useMemo(() => {
     const buckets = new Map<ColumnKey, WorkspaceTask[]>(COLUMNS.map((c) => [c, []]));
     for (const task of tasks) {
-      const column = columnFor(task);
+      const column = columnFor(task, childMap.get(task.id) ?? []);
       if (column) buckets.get(column)!.push(task);
     }
     return buckets;
-  }, [tasks]);
+  }, [tasks, childMap]);
 
   /** Model the phase will run on for the worktree this task is assigned to;
    *  unassigned tasks run in the active worktree, hence the fallback. */
@@ -214,7 +211,7 @@ export function PhaseBoard({ api, reloadKey = 0, phaseModels, onOpenTask }: Phas
       if (!phaseModels) return '';
       const key = worktreeKey(task.worktree);
       const resolved = phaseModels.byWorktreeKey[key] ?? phaseModels.fallback;
-      return resolved[phaseFor(column)] ?? '';
+      return resolved[column] ?? '';
     },
     [phaseModels],
   );
@@ -224,7 +221,7 @@ export function PhaseBoard({ api, reloadKey = 0, phaseModels, onOpenTask }: Phas
       if (!api.startPhase) return;
       setStarting(task.id);
       try {
-        await api.startPhase(task.id, phaseFor(column));
+        await api.startPhase(task.id, column);
         // The card stays in this column: `phase` names the phase to run next, and
         // only the spawned session may advance it once it has actually done the
         // work. startPhase marks the task in-progress, so re-list to pick that up
