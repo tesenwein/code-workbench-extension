@@ -1,35 +1,53 @@
 {
   "slug": "tasks-view",
   "name": "Tasks View",
-  "description": "VS Code WebviewView sidebar panel showing the Code Workbench task board, plus the full editor-tab Task Board page and the task-bound phase flow. Hosts the shared @code-workbench/ui TasksPanel React component in a webview and answers its list/create/update/remove/openInEditor/startPhase RPC calls via the shared task-store. The RPC handler set and context payload are exported (buildTaskRpcHandlers, taskPanelContext) and shared with the full editor-tab Task Board page (tasksPage.ts, command codeWorkbench.tasks.openAsPage). The page pushes surface:'page' in its context, switching TasksPanel into pageMode: clicking a task opens an inline TaskDetailPane editor (title/description/memo/priority/status/worktree/epic/tags + subtasks; the backing .md file open is a secondary button), and a toolbar adds group-by (worktree/epic/flat), status filter (active/all/open/in-progress/done) and tag filter. Sidebar keeps the compact accordion behavior. The tasks file watcher (watchTasks) refreshes both surfaces.\n\nTask-bound phase flow (commands/taskFlow.ts): a root task carries an optional `phase` field ('plan'|'implement'|'review'|'fix'|null). TaskDetailPane renders a PhaseStepper (only for root tasks, when the host provides TasksApi.startPhase) showing done/active/upcoming pills plus one \"Start <next phase> →\" button. Clicking it calls startPhase RPC → buildTaskRpcHandlers delegates to the registered command codeWorkbench.tasks.startPhase(taskId, phase), which resolves the task, sets its phase via updateTask, resolves its worktree (task.worktree is a worktreeKey — lowercased basename, NOT a path — resolved against listWorktrees(), falling back to the active worktree for unassigned tasks), and spawns a Claude session via SessionManager.create with a phase-specific model/prompt: Plan (opus, --permission-mode plan, explores + files 'plan-step' subtasks + writes memo), Implement (sonnet, works plan-step subtasks), Review (sonnet, reviews the diff + files 'review-finding' subtasks), Fix (sonnet, works review-finding subtasks). Each phase's prompt tells the spawned session to task_update the task's `phase` field when handing off — the board is the state machine, not the chat transcript. Subtasks can't nest, so the stepper and phase field only apply to root tasks. The MCP tasks-server.mjs exposes `phase` on task_create/task_update (validated enum) and renders it as `<phase>` in task_list output (root tasks only, alongside {epic}).\n\nSupporting session-manager changes: SavedSession/CreateSessionOptions gained permissionMode (→ `claude --permission-mode`, mutually exclusive with yolo args) and effortOverride (takes precedence over the worktree's effort pref) so a Plan-phase session can force read-only planning and its own effort level.",
+  "description": "VS Code WebviewView sidebar panel showing the Code Workbench task board, plus the full editor-tab Task Board page, the Phase Board page, and the task-bound phase flow. Hosts the shared @code-workbench/ui TasksPanel React component in a webview and answers its list/create/update/remove/openInEditor/startPhase RPC calls via the shared task-store. The RPC handler set and context payload are exported (buildTaskRpcHandlers, taskPanelContext) and shared with the full editor-tab Task Board page (tasksPage.ts, command codeWorkbench.tasks.openAsPage) and the Phase Board (phaseBoardPage.ts, command codeWorkbench.tasks.openPhaseBoard). The page pushes surface:'page' in its context, switching TasksPanel into pageMode: clicking a task opens an inline TaskDetailPane editor (title/description/memo/priority/status/worktree/epic/tags + subtasks; the backing .md file open is a secondary button), and a toolbar adds group-by (worktree/epic/flat), status filter (active/all/open/in-progress/done) and tag filter. Sidebar keeps the compact accordion behavior. The tasks file watcher (watchTasks) refreshes all three surfaces via refreshTaskSurfaces().\n\nTask-bound phase flow (commands/taskFlow.ts): a root task carries an optional `phase` field ('plan'|'implement'|'review'|'fix'|null). CRITICAL SEMANTIC: `phase` names the phase to run NEXT, not the one already running — a Plan session hands off with phase:'implement', and startPhase re-writes the same value when it launches that phase. Both surfaces read it that way: TaskDetailPane's PhaseStepper marks steps before `phase` done, `phase` itself pending, and its single button starts PHASE_FLOW[pendingIdx]; the Phase Board puts a card in the column its `phase` names, and that column's Start button launches that same phase. (An earlier off-by-one had the stepper offering PHASE_FLOW[currentIdx+1], skipping a phase — do not reintroduce it.)\n\nPhase prompts + models live in packages/mcp-core/phase-prompts.cjs — ONE source of truth for PHASE_ORDER, PHASE_META (label/icon/model/planOnly/effort), PHASE_DESCRIPTIONS, and the procedure text. Procedures carry a `{{TASK_ID}}` placeholder: phasePrompt(phase, task) swaps a real id for the session the board spawns; phaseSkillBody(phase) swaps `$ARGUMENTS` for the bundled skills. skills/cw-implement|cw-review|cw-fix.cjs are 3-line wrappers over phaseSkill(); cw-plan (the generic planning skill) covers the Plan phase, so no phase-generated cw-plan exists.\n\nPhase Board (phaseBoardPage.ts + ui PhaseBoard.tsx + webview/phaseboard.tsx): five columns — Unstarted | Plan | Implement | Review | Fix. Unstarted holds root tasks with no phase and status != done; its Start button runs Plan. Subtasks and done-and-out-of-flow tasks never render as cards, but plan-step / review-finding subtask progress is summarized as chips on the parent. Each card's Start calls the shared startPhase RPC → codeWorkbench.tasks.startPhase.\n\nPer-phase model overrides: GlobalPrefs.phaseModels + WorktreePrefs.phaseModels, resolved by SessionManager.resolvePhaseModel(worktree, phase) as worktree[phase] ?? global[phase] ?? PHASE_META[phase].model, where a 'default' value at either level means \"keep falling through\" (NOT \"pass no --model flag\", which is what 'default' means for the plain session model). normalizePhaseModels() in globalPrefs.ts drops unknown phases/models so a hand-edited settings.json can't smuggle a string into `claude --model`. Edited in the global settings panel (sec-phases) and the per-worktree Claude prefs panel (sec-phases, whose \"inherit\" option shows what it resolves to). phaseBoardPage pushes a resolved {fallback, byWorktreeKey} PhaseModelMap so each card shows the model its Start button will actually launch.\n\nSupporting session-manager changes: SavedSession/CreateSessionOptions gained permissionMode (→ `claude --permission-mode`, mutually exclusive with yolo args) and effortOverride (takes precedence over the worktree's effort pref) so a Plan-phase session can force read-only planning and its own effort level.",
   "files": [
     "packages/extension/src/tasksView.ts",
     "packages/extension/src/tasksPage.ts",
+    "packages/extension/src/phaseBoardPage.ts",
     "packages/extension/src/tasks.ts",
-    "packages/extension/src/reactWebview.ts",
-    "packages/extension/src/webviewRpc.ts",
+    "packages/extension/src/commands/taskFlow.ts",
+    "packages/extension/src/globalPrefs.ts",
+    "packages/extension/src/globalPrefsPanel.ts",
+    "packages/extension/src/globalPrefsPanelHtml.ts",
+    "packages/extension/src/prefsPanel.ts",
+    "packages/extension/src/prefsPanelHtml.ts",
     "packages/extension/webview/tasks.tsx",
+    "packages/extension/webview/phaseboard.tsx",
     "packages/ui/src/components/TasksPanel.tsx",
-    "packages/extension/src/commands/taskCommands.ts"
+    "packages/ui/src/components/PhaseBoard.tsx",
+    "packages/mcp-core/phase-prompts.cjs",
+    "packages/mcp-core/skills.cjs"
   ],
   "guidelines": [
     "All task file I/O goes through the shared task-store — never implement parallel task logic in the extension.",
-    "Watch task files with watchTasks() and call tasksProvider.refresh() on change; refresh() posts a tasks-changed event to the webview.",
-    "The panel UI is the shared ui TasksPanel — render it via a React webview, do not hand-write panel markup.",
+    "Watch task files with watchTasks() and call refreshTaskSurfaces() on change — it fans out to the sidebar, the Task Board page, and the Phase Board.",
+    "The panel UI is the shared ui TasksPanel / PhaseBoard — render it via a React webview, do not hand-write panel markup.",
     "Task formatting/parsing belongs in mcp-core task-store, not the extension — tasks.ts is a thin re-export.",
-    "Page-only UI (detail editor, filter toolbar) is gated on the pageMode prop, driven by surface:'page' in the context event — the same React bundle serves both surfaces; never fork the bundle."
+    "Page-only UI (detail editor, filter toolbar) is gated on the pageMode prop, driven by surface:'page' in the context event — the same React bundle serves both surfaces; never fork the bundle.",
+    "Phase prompt text and per-phase models live ONLY in mcp-core/phase-prompts.cjs. Adding a phase, changing a model default, or editing procedure wording happens there — the extension and the cw-* skills both read from it.",
+    "A task's `phase` is the phase to run NEXT. Any UI that renders or advances the flow must read it that way.",
+    "Phase model selects must exclude the 'default' ClaudeModel from their concrete options — they carry their own 'default' (= inherit) option."
   ],
   "anti_patterns": [
     "Do not implement task CRUD directly in the extension — delegate to the shared task-store.",
     "Do not rebuild the task panel as vanilla-JS webview HTML — use the shared ui React component.",
     "Do not reintroduce a local taskFormat module — formatting lives in the shared task-store.",
-    "Do not make opening the .md file the primary click action on the page — the inline TaskDetailPane is the editor; the file open is secondary."
+    "Do not make opening the .md file the primary click action on the page — the inline TaskDetailPane is the editor; the file open is secondary.",
+    "Do not copy phase procedure text into taskFlow.ts or a skill file — generate it from phase-prompts.cjs, or the board and the skills will drift.",
+    "Do not treat `phase` as the currently-running phase (the old PhaseStepper off-by-one) — it names the NEXT phase, and the stepper would skip a step.",
+    "Do not read a phase's model straight from PHASE_META when spawning a session — go through SessionManager.resolvePhaseModel so global / per-worktree overrides apply."
   ],
   "decisions": [
     "The tasks module is a thin re-export of the shared task-store.",
     "The panel was migrated from a vanilla-JS webview script to a React webview rendering the shared ui TasksPanel; VS Code-level filter/show-done commands are kept as compatibility stubs.",
     "Task formatting/parsing was consolidated into the shared task-store (mcp-core); the extension's taskFormat.ts was deleted to avoid divergence.",
-    "Page mode reuses the row-click onOpenTask hook internally for selection instead of adding a parallel selection API."
+    "Page mode reuses the row-click onOpenTask hook internally for selection instead of adding a parallel selection API.",
+    "Phase procedures were extracted from taskFlow.ts into mcp-core/phase-prompts.cjs so the Start button and the hand-run /cw-<phase> skills share one source of truth.",
+    "The Phase Board is a separate editor-tab page rather than a tab inside the Task Board page — five columns need full width, and it reuses buildTaskRpcHandlers rather than forking the tasks bundle.",
+    "Per-phase model overrides reuse the existing global-defaults + per-worktree-override merge pattern (getPrefs), rather than introducing a second settings mechanism.",
+    "PhaseBoard re-lists after startPhase resolves instead of waiting for the fs watcher, so the card moves columns immediately."
   ],
   "dependsOn": [
     "session-manager",
@@ -37,14 +55,16 @@
     "ui-shared-panels",
     "task-store"
   ],
-  "updatedAt": "2026-07-09T09:48:07.582Z",
+  "updatedAt": "2026-07-09T11:39:20.960Z",
   "createdAt": "2026-05-19T04:49:37.278Z",
   "tags": [
     "tasks",
     "phase-flow",
     "task-flow",
+    "phase-board",
     "code-review",
     "sessions",
-    "workflow"
+    "workflow",
+    "phase-models"
   ]
 }

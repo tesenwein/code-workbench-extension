@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import type { TaskPhase } from '@code-workbench/mcp-core/phase-prompts';
 
 export type SessionKind = 'claude' | 'claude-yolo' | 'shell';
 export type ClaudeModel = 'default' | 'opus' | 'opus-1m' | 'sonnet' | 'haiku' | 'fable';
@@ -94,11 +95,22 @@ export function worktreeIconColor(color: WorktreeColor | undefined): vscode.Them
   return key ? new vscode.ThemeColor(key) : undefined;
 }
 
+/**
+ * Model to run each task-flow phase on. A missing entry — or the 'default'
+ * value — falls through to the next level: worktree → global → the phase's
+ * built-in model (PHASE_META in mcp-core/phase-prompts, i.e. opus for Plan and
+ * sonnet for the rest). Note 'default' here means "inherit the phase default",
+ * not "pass no --model flag".
+ */
+export type PhaseModels = Partial<Record<TaskPhase, ClaudeModel>>;
+
 export interface WorktreePrefs {
   model: ClaudeModel;
   effort: ClaudeEffort;
   yolo: boolean;
   color: WorktreeColor;
+  /** Per-phase model overrides for this worktree; beats the global setting. */
+  phaseModels?: PhaseModels;
   /** Handoff note — "where I left off" for the next session in this worktree. */
   note?: string;
 }

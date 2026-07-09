@@ -7,7 +7,9 @@ import {
   EFFORT_LABELS,
   WorktreeColor,
   WORKTREE_COLORS,
+  type PhaseModels,
 } from './sessions';
+import { PHASE_META, PHASE_ORDER, type TaskPhase } from '@code-workbench/mcp-core/phase-prompts';
 import { themeTokenDecls, hcOverrideCss } from './webviewTheme';
 
 const COLOR_SWATCH: Record<WorktreeColor, string> = {
@@ -25,6 +27,12 @@ export interface PrefsPanelState {
   effort: ClaudeEffort;
   yolo: boolean;
   color: WorktreeColor;
+  /** This worktree's per-phase model overrides. Absent/'default' = inherit. */
+  phaseModels: PhaseModels;
+  /** What each phase resolves to when this worktree doesn't override it —
+   *  the global setting, else the phase's built-in model. Shown as the
+   *  "inherit" option's label so the effect of inheriting is visible. */
+  inheritedPhaseModels: Record<TaskPhase, ClaudeModel>;
 }
 
 function escapeHtml(s: string): string {
@@ -44,6 +52,10 @@ export function renderPrefsHtml(worktreePath: string, state: PrefsPanelState): s
   const models = CLAUDE_MODELS.map(
     (m) => `<option value="${m.value}">${m.label}</option>`,
   ).join('');
+  // 'default' is the phase selects' own "inherit" option — don't repeat it.
+  const phaseModelOptions = CLAUDE_MODELS.filter((m) => m.value !== 'default')
+    .map((m) => `<option value="${m.value}">${m.label}</option>`)
+    .join('');
   const effortLabels = safeJson(EFFORT_LABELS);
   const modelMeta = safeJson(CLAUDE_MODELS);
   const swatches = WORKTREE_COLORS.map((c) => {
@@ -449,6 +461,26 @@ export function renderPrefsHtml(worktreePath: string, state: PrefsPanelState): s
         </div>
       </section>
 
+      <section id="sec-phases">
+        <div class="secthead">
+          <span class="num">02b</span><h2>Task Flow</h2>
+          <span class="tag">model per phase</span>
+        </div>
+        <p class="sectlede">Model the Phase Board spawns for each phase of a task assigned to this worktree. Overrides the global setting.</p>
+        ${PHASE_ORDER.map(
+          (phase) => `
+        <div class="field">
+          <div class="field-head">
+            <label for="phase-${phase}">${PHASE_META[phase].label}</label>
+          </div>
+          <select id="phase-${phase}" class="phase-model" data-phase="${phase}">
+            <option value="default" data-inherit="${phase}">inherit</option>
+            ${phaseModelOptions}
+          </select>
+        </div>`,
+        ).join('')}
+      </section>
+
       <section id="sec-launch">
         <div class="secthead">
           <span class="num">03</span><h2>Launch Preview</h2>
@@ -516,7 +548,29 @@ export function renderPrefsHtml(worktreePath: string, state: PrefsPanelState): s
     cyan:    '#6aaab0',
   };
 
+  const phaseModelEls = Array.from(document.querySelectorAll('.phase-model'));
+
+  for (const el of phaseModelEls) {
+    el.addEventListener('change', () => {
+      vscode.postMessage({
+        type: 'setPhaseModel',
+        value: { phase: el.dataset.phase, model: el.value },
+      });
+    });
+  }
+
+  function renderPhaseModels() {
+    for (const el of phaseModelEls) {
+      const phase = el.dataset.phase;
+      el.value = (state.phaseModels || {})[phase] || 'default';
+      const inheritOpt = el.querySelector('option[value="default"]');
+      const inherited = (state.inheritedPhaseModels || {})[phase];
+      if (inheritOpt && inherited) inheritOpt.textContent = 'inherit (' + inherited + ')';
+    }
+  }
+
   function render() {
+    renderPhaseModels();
     modelEl.value = state.model;
     modelValueEl.textContent = state.model;
     for (const c of modelChipsEl.querySelectorAll('.chip')) {

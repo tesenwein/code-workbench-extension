@@ -5,6 +5,7 @@ import {
   GlobalPrompt,
   loadGlobalPrefs,
   newPromptId,
+  normalizePhaseModels,
   saveGlobalPrefs,
 } from './globalPrefs';
 import { renderGlobalPrefsHtml } from './globalPrefsPanelHtml';
@@ -75,6 +76,17 @@ export class GlobalPrefsPanel {
         ...cur,
         defaults: { ...cur.defaults, yolo: msg.value },
       });
+    } else if (msg.type === 'setPhaseModel' && msg.value && typeof msg.value === 'object') {
+      const { phase, model } = msg.value as { phase?: string; model?: string };
+      if (phase) {
+        // normalizePhaseModels drops unknown phases/models, and 'default' means
+        // "inherit the phase's built-in model" — store it and let the resolver
+        // fall through, rather than deleting the key.
+        await this.patch({
+          ...cur,
+          phaseModels: normalizePhaseModels({ ...cur.phaseModels, [phase]: model }),
+        });
+      }
     } else if (msg.type === 'setClaudeCommand' && typeof msg.value === 'string') {
       await this.patch({ ...cur, claudeCommand: msg.value });
     } else if (msg.type === 'setYoloArgs' && typeof msg.value === 'string') {

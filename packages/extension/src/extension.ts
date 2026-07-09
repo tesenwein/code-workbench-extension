@@ -27,6 +27,7 @@ import { registerCodeReviewCommand } from './commands/codeReview';
 import { registerTaskFlowCommand } from './commands/taskFlow';
 import { registerUpdateCommand } from './update';
 import { showTasksPage, refreshTasksPage, isTasksPageOpen } from './tasksPage';
+import { showPhaseBoardPage, refreshPhaseBoardPage, isPhaseBoardPageOpen } from './phaseBoardPage';
 import { ArchViewProvider } from './archView';
 import { showArchPage, refreshArchPage } from './archPage';
 import { showSearchPanel } from './searchPanel';
@@ -214,6 +215,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
   const refreshTaskSurfaces = () => {
     tasksProvider.refresh();
     refreshTasksPage();
+    refreshPhaseBoardPage();
   };
   const tasksProvider = new TasksProvider(
     () => repoKey,
@@ -253,7 +255,11 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     const note = sessionMgr.getPrefs(repoRoot).note;
     if (note) {
       void vscode.window
-        .showInformationMessage(`Handoff note (${path.basename(repoRoot)}): ${note}`, 'Edit', 'Clear')
+        .showInformationMessage(
+          `Handoff note (${path.basename(repoRoot)}): ${note}`,
+          'Edit',
+          'Clear',
+        )
         .then(async (choice) => {
           if (choice === 'Edit') {
             await vscode.commands.executeCommand('codeWorkbench.worktrees.editNote');
@@ -311,6 +317,17 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
         refreshTaskSurfaces,
       ),
     ),
+    // The phase-flow counterpart to the Task Board: columns are phases, and
+    // each card's Start button spawns that phase's bound Claude session.
+    vscode.commands.registerCommand('codeWorkbench.tasks.openPhaseBoard', () =>
+      showPhaseBoardPage(ctx, {
+        sessionMgr,
+        getRepoKey: () => repoKey,
+        getRepoRoot: () => repoRoot,
+        getActiveWorktree: () => sessionMgr.getActiveWorktree() ?? undefined,
+        afterMutation: refreshTaskSurfaces,
+      }),
+    ),
     vscode.commands.registerCommand('codeWorkbench.arch.refresh', () => archProvider.refresh()),
     // Open the full-width Architecture board in the main editor area, with
     // semantic card search — the sidebar view's "open as page" counterpart.
@@ -334,7 +351,8 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
         const current = sessionMgr.getPrefs(target).note ?? '';
         const next = await vscode.window.showInputBox({
           title: `Handoff note — ${path.basename(target)}`,
-          prompt: 'Where did you leave off? Shown when the next session opens this worktree. Empty clears the note.',
+          prompt:
+            'Where did you leave off? Shown when the next session opens this worktree. Empty clears the note.',
           value: current,
         });
         if (next === undefined) return;
@@ -369,11 +387,8 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     }),
     watchTasks(
       () => repoKey,
-      () => {
-        tasksProvider.refresh();
-        refreshTasksPage();
-      },
-      () => tasksProvider.isVisible() || isTasksPageOpen(),
+      refreshTaskSurfaces,
+      () => tasksProvider.isVisible() || isTasksPageOpen() || isPhaseBoardPageOpen(),
     ),
     // Keep worktree status badges fresh: window regaining focus may mean the
     // user committed/pulled in a terminal, and saving a file changes dirty state.

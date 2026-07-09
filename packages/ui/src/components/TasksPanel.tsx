@@ -637,10 +637,12 @@ const PHASE_LABELS: Record<TaskPhase, string> = {
 };
 
 /** Plan → Implement → Review → Fix stepper for a root task's detail pane.
- *  Always shows exactly where the task is (done / active / upcoming steps)
- *  and puts a single "Start <next phase>" action front and center, so the
- *  user never has to guess what state the flow is in or which button
- *  advances it. */
+ *
+ *  A task's `phase` names the phase to run NEXT — the Plan session hands off by
+ *  setting phase:'implement', and startPhase re-writes the same value when it
+ *  launches. So the pending phase IS `task.phase`, everything before it is
+ *  done, and an unset phase means the flow hasn't started. The board's columns
+ *  read the field the same way. */
 function PhaseStepper({
   task,
   onStartPhase,
@@ -649,9 +651,8 @@ function PhaseStepper({
   onStartPhase: (id: string, phase: TaskPhase) => Promise<void>;
 }) {
   const [starting, setStarting] = useState<TaskPhase | null>(null);
-  const currentIdx = task.phase ? PHASE_FLOW.indexOf(task.phase) : -1;
-  const nextPhase: TaskPhase | undefined =
-    currentIdx < 0 ? PHASE_FLOW[0] : PHASE_FLOW[currentIdx + 1];
+  const pendingIdx = task.phase ? PHASE_FLOW.indexOf(task.phase) : 0;
+  const pendingPhase = PHASE_FLOW[pendingIdx];
 
   const start = async (phase: TaskPhase) => {
     setStarting(phase);
@@ -666,7 +667,7 @@ function PhaseStepper({
     <div className="task-phase-stepper">
       <div className="task-phase-steps">
         {PHASE_FLOW.map((phase, i) => {
-          const state = i < currentIdx ? 'done' : i === currentIdx ? 'active' : 'upcoming';
+          const state = i < pendingIdx ? 'done' : i === pendingIdx ? 'active' : 'upcoming';
           return (
             <React.Fragment key={phase}>
               {i > 0 && <span className="task-phase-arrow">→</span>}
@@ -678,29 +679,14 @@ function PhaseStepper({
           );
         })}
       </div>
-      {nextPhase ? (
-        <button
-          className="task-action-btn task-phase-start"
-          disabled={starting !== null}
-          onClick={() => void start(nextPhase)}
-          title={`Spawn a Claude session to run the ${PHASE_LABELS[nextPhase]} phase for this task`}
-        >
-          {starting === nextPhase
-            ? 'Starting…'
-            : currentIdx < 0
-              ? `Start ${PHASE_LABELS[nextPhase]}`
-              : `Start ${PHASE_LABELS[nextPhase]} →`}
-        </button>
-      ) : (
-        <button
-          className="task-action-btn task-phase-start"
-          disabled={starting !== null}
-          onClick={() => void start('fix')}
-          title="Re-run the Fix phase for this task"
-        >
-          {starting === 'fix' ? 'Starting…' : 'Re-run Fix'}
-        </button>
-      )}
+      <button
+        className="task-action-btn task-phase-start"
+        disabled={starting !== null}
+        onClick={() => void start(pendingPhase)}
+        title={`Spawn a Claude session to run the ${PHASE_LABELS[pendingPhase]} phase for this task`}
+      >
+        {starting === pendingPhase ? 'Starting…' : `Start ${PHASE_LABELS[pendingPhase]}`}
+      </button>
     </div>
   );
 }

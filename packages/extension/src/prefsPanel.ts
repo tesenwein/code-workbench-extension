@@ -8,6 +8,8 @@ import {
   WORKTREE_COLORS,
 } from './sessions';
 import { renderPrefsHtml, type PrefsPanelState } from './prefsPanelHtml';
+import { normalizePhaseModels } from './globalPrefs';
+import { PHASE_META, PHASE_ORDER, type TaskPhase } from '@code-workbench/mcp-core/phase-prompts';
 import { installWorkbenchSkills } from './skillsBundle';
 import { registerWorkbenchMcpServers } from './mcpRegister';
 
@@ -48,7 +50,23 @@ export class PrefsPanel {
 
   private state(): PrefsPanelState {
     const p = this.mgr.getPrefs(this.worktreePath);
-    return { model: p.model, effort: p.effort, yolo: p.yolo, color: p.color };
+    const global = this.mgr.getGlobalPrefs().phaseModels ?? {};
+    // What each phase resolves to WITHOUT this worktree's override — global
+    // setting, else the phase's built-in model.
+    const inheritedPhaseModels = Object.fromEntries(
+      PHASE_ORDER.map((phase) => {
+        const g = global[phase];
+        return [phase, g && g !== 'default' ? g : PHASE_META[phase].model];
+      }),
+    ) as Record<TaskPhase, ClaudeModel>;
+    return {
+      model: p.model,
+      effort: p.effort,
+      yolo: p.yolo,
+      color: p.color,
+      phaseModels: p.phaseModels ?? {},
+      inheritedPhaseModels,
+    };
   }
 
   private async onMessage(msg: { type: string; value?: unknown }): Promise<void> {
@@ -61,6 +79,15 @@ export class PrefsPanel {
       await this.mgr.setPrefs(this.worktreePath, { effort: e });
     } else if (msg.type === 'setYolo' && typeof msg.value === 'boolean') {
       await this.mgr.setPrefs(this.worktreePath, { yolo: msg.value });
+    } else if (msg.type === 'setPhaseModel' && msg.value && typeof msg.value === 'object') {
+      const { phase, model } = msg.value as { phase?: string; model?: string };
+      if (phase) {
+        const cur = this.mgr.getPrefs(this.worktreePath).phaseModels ?? {};
+        await this.mgr.setPrefs(this.worktreePath, {
+          phaseModels: normalizePhaseModels({ ...cur, [phase]: model }),
+        });
+        this.panel.webview.postMessage({ type: 'state', state: this.state() });
+      }
     } else if (msg.type === 'setColor' && typeof msg.value === 'string') {
       if ((WORKTREE_COLORS as readonly string[]).includes(msg.value)) {
         await this.mgr.setPrefs(this.worktreePath, {
