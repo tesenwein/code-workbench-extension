@@ -243,6 +243,12 @@
         "icon": "$(search)"
       },
       {
+        "command": "codeWorkbench.codeReview.start",
+        "category": "Code Workbench",
+        "title": "Code Review: Review Current Changes",
+        "icon": "$(checklist)"
+      },
+      {
         "command": "codeWorkbench.themeTokens",
         "category": "Code Workbench",
         "title": "Theme Tokens",

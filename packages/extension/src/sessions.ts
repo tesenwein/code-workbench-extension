@@ -11,6 +11,7 @@ import {
   claudeModel,
   sessionIconId,
   worktreeTerminalColor,
+  type ClaudeModel,
   type SavedSession,
   type SessionKind,
   type SessionProfile,
@@ -21,6 +22,16 @@ import { buildBanner, claudeConversationExists, cryptoRandom, shellQuote } from 
 
 export * from './sessionTypes';
 export { SessionItem, SessionsProvider } from './sessionsView';
+
+/** Overrides for a single session, for callers that launch a purpose-built
+ *  agent (e.g. the Code Review tool) rather than a blank chat. */
+export interface CreateSessionOptions {
+  title?: string;
+  icon?: string;
+  model?: ClaudeModel;
+  /** Submitted as the session's first turn. */
+  prompt?: string;
+}
 
 // Legacy workspaceState keys — read only, for one-shot migration into the
 // global per-repo store. New code reads/writes via REPOS_KEY in globalState.
@@ -340,18 +351,24 @@ export class SessionManager {
     kind: SessionKind,
     worktreePath: string,
     profile?: SessionProfile,
+    opts?: CreateSessionOptions,
   ): Promise<SavedSession> {
     const id = cryptoRandom();
     const session: SavedSession = {
       id,
-      title: profile
-        ? this.profileTitle(profile, worktreePath)
-        : this.defaultTitle(kind, worktreePath),
+      title:
+        opts?.title ??
+        (profile
+          ? this.profileTitle(profile, worktreePath)
+          : this.defaultTitle(kind, worktreePath)),
       worktreePath,
       kind,
       initCommand: '',
       created: Date.now(),
       ...(profile ? { profile } : {}),
+      ...(opts?.icon ? { icon: opts.icon } : {}),
+      ...(opts?.model ? { modelOverride: opts.model } : {}),
+      ...(opts?.prompt ? { initialPrompt: opts.prompt } : {}),
     };
     const sessions = this.list();
     sessions.push(session);
@@ -837,16 +854,16 @@ export class SessionManager {
     const prefs = this.getPrefs(worktreePath);
     const args: string[] = [];
     const claudeSessionId = session.claudeSessionId ?? cryptoRandom();
-    if (
-      session.launched &&
-      session.claudeSessionId &&
-      claudeConversationExists(worktreePath, claudeSessionId)
-    ) {
+    const resuming =
+      !!session.launched &&
+      !!session.claudeSessionId &&
+      claudeConversationExists(worktreePath, claudeSessionId);
+    if (resuming) {
       args.push('--resume', claudeSessionId);
     } else {
       args.push('--session-id', claudeSessionId);
     }
-    const model = claudeModel(prefs.model);
+    const model = claudeModel(session.modelOverride ?? prefs.model);
     if (model.flag) args.push('--model', model.flag);
     // Some models (e.g. haiku) don't support extended thinking; skip effort flag.
     if (model.thinking) {
@@ -878,6 +895,10 @@ export class SessionManager {
       // No MCP prompt file — pass user prompts directly.
       for (const body of extraPrompts) args.push('--append-system-prompt', body);
     }
+
+    // Positional prompt: the CLI submits it as the first turn of the new
+    // conversation. A resumed session already has it in its transcript.
+    if (session.initialPrompt && !resuming) args.push(session.initialPrompt);
 
     const banner = buildBanner(worktreePath, prefs.color);
     if (banner && process.platform !== 'win32') {

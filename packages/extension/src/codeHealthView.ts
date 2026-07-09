@@ -13,9 +13,18 @@ interface ActionEntry {
   description: string;
   icon: string;
   command: string;
+  /** Overrides the default "Open the <label> page" hover. */
+  tooltip?: string;
 }
 
 const ACTIONS: ActionEntry[] = [
+  {
+    label: 'Code Review',
+    description: 'review branch & uncommitted changes',
+    icon: 'checklist',
+    command: 'codeWorkbench.codeReview.start',
+    tooltip: 'Start a Claude session that reviews the current changes and files findings as tasks',
+  },
   {
     label: 'Search Code',
     description: 'hybrid symbol search',
@@ -48,7 +57,7 @@ class CodeHealthProvider implements vscode.TreeDataProvider<ActionEntry> {
     item.description = entry.description;
     item.iconPath = new vscode.ThemeIcon(entry.icon);
     item.command = { command: entry.command, title: entry.label };
-    item.tooltip = `Open the ${entry.label} page`;
+    item.tooltip = entry.tooltip ?? `Open the ${entry.label} page`;
     return item;
   }
 

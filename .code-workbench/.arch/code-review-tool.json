@@ -1,0 +1,35 @@
+{
+  "slug": "code-review-tool",
+  "name": "Code Review Tool",
+  "description": "The \"Code Review\" entry in the Code Health action bar. Unlike the other entries it runs no static analyser and opens no page: commands/codeReview.ts registers codeWorkbench.codeReview.start, which spawns a normal Claude session (kind 'claude', so the full cw-* MCP wiring is present) in the active worktree, forced to sonnet, titled \"Code Review\", primed with buildCodeReviewPrompt() as the CLI's positional first turn. The prompt scopes the review to the uncommitted working tree plus the branch's commits vs the resolved base branch, requires running whatever lint/format/typecheck/test scripts the project actually has, files each finding via the cw-tasks task_create tool (tag \"code-review\"), and only afterwards asks the user whether to apply fixes.",
+  "files": [
+    "packages/extension/src/commands/codeReview.ts",
+    "packages/extension/src/codeHealthView.ts",
+    "packages/extension/src/sessions.ts",
+    "packages/extension/src/sessionTypes.ts"
+  ],
+  "guidelines": [
+    "Launch purpose-built agents through SessionManager.create(kind, wt, undefined, CreateSessionOptions) — never through SessionProfile, which bypasses buildLaunch and therefore the MCP config, so the agent would lose the cw-tasks tools it needs.",
+    "SavedSession.initialPrompt is applied only on the first launch; a resumed session already carries it in its transcript.",
+    "SavedSession.modelOverride wins over the worktree's model pref; the effort flag still keys off the resolved model's `thinking` capability."
+  ],
+  "anti_patterns": [
+    "Sending the prompt with terminal.sendText — it races the TUI's startup and gets swallowed.",
+    "Letting the review agent edit code before the user answers the fix prompt."
+  ],
+  "decisions": [],
+  "tags": [
+    "code review",
+    "review",
+    "sonnet",
+    "code health",
+    "session prompt",
+    "initial prompt"
+  ],
+  "dependsOn": [
+    "editor-tab-pages",
+    "mcp-config"
+  ],
+  "updatedAt": "2026-07-09T08:30:07.724Z",
+  "createdAt": "2026-07-09T08:30:07.724Z"
+}

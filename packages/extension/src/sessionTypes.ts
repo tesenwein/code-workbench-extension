@@ -132,6 +132,11 @@ export interface SavedSession {
    *  session restores the prior conversation. */
   claudeSessionId?: string;
   launched?: boolean;
+  /** Per-session model, overriding the worktree pref. */
+  modelOverride?: ClaudeModel;
+  /** Prompt handed to the CLI as its first turn. Only applied on the first
+   *  launch — a resumed session already has it in its transcript. */
+  initialPrompt?: string;
 }
 
 /** Default codicon for a session kind. Shell tabs get the terminal glyph;
