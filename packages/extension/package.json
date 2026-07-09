@@ -68,7 +68,7 @@
         },
         {
           "id": "codeWorkbench.codeHealth",
-          "name": "Code Health",
+          "name": "Tools",
           "initialSize": 1,
           "visibility": "visible"
         },
@@ -97,6 +97,11 @@
         "command": "codeWorkbench.installWorkbenchSkills",
         "category": "Code Workbench",
         "title": "Install Workbench Skills"
+      },
+      {
+        "command": "codeWorkbench.installWorkbenchPermissions",
+        "category": "Code Workbench",
+        "title": "Add Workbench MCP Permissions"
       },
       {
         "command": "codeWorkbench.applyMinimalLayout",
@@ -291,6 +296,12 @@
         "command": "codeWorkbench.sessions.newShell",
         "category": "Code Workbench",
         "title": "New Shell Session"
+      },
+      {
+        "command": "codeWorkbench.sessions.newPlan",
+        "category": "Code Workbench",
+        "title": "New Claude Session (Plan Mode)",
+        "icon": "$(checklist)"
       },
       {
         "command": "codeWorkbench.sessions.newFromEditor",

@@ -1,7 +1,7 @@
 {
   "slug": "type-escape-detection",
   "name": "Type-Escape Detection",
-  "description": "Workspace scanner for TypeScript type-safety escape hatches: `as` casts (excluding `as const`), explicit `any` annotations, non-null `!` assertions, and @ts-ignore/@ts-expect-error directives. Analysed purely syntactically via type-escape-detect.mjs (TypeScript compiler API, per-file source AST, no type checker). Host UIs run the scan and persist results to <repo>/.code-workbench/type-escapes-findings.json; the cw-type-safety MCP tool reads that file and applies acks at read time. The detect_type_escapes tool also has a branch-scoped, info-only diff_only mode (filters to files changed vs base_ref, default 'develop') and returns a byKind count breakdown. Surfaced as the MCP tool detect_type_escapes and the VS Code extension's full editor-tab Type Safety page (scanPages.ts, replacing the old sidebar TypeEscapeView) rendering the shared @code-workbench/ui TypeEscapePanel; opened from the Code Health action bar via codeWorkbench.typeEscapes.scan.",
+  "description": "Workspace scanner for TypeScript type-safety escape hatches: `as` casts (excluding `as const`), explicit `any` annotations, non-null `!` assertions, and @ts-ignore/@ts-expect-error directives. Analysed purely syntactically via type-escape-detect.mjs (TypeScript compiler API, per-file source AST, no type checker). Host UIs run the scan and persist results to <repo>/.code-workbench/type-escapes-findings.json; the cw-type-safety MCP tool reads that file and applies acks at read time. The detect_type_escapes tool also has a branch-scoped, info-only diff_only mode (filters to files changed vs base_ref, default 'develop') and returns a byKind count breakdown. Surfaced as the MCP tool detect_type_escapes and the VS Code extension's full editor-tab Type Safety page (scanPages.ts, replacing the old sidebar TypeEscapeView) rendering the shared @code-workbench/ui TypeEscapePanel; opened from the Tools action bar via codeWorkbench.typeEscapes.scan.",
   "files": [
     "packages/mcp-core/type-escape-detect.mjs",
     "packages/mcp-core/type-safety-server.mjs",
@@ -63,6 +63,6 @@
     "ui-shared-panels",
     "skills-bundle"
   ],
-  "updatedAt": "2026-07-03T04:36:47.854Z",
+  "updatedAt": "2026-07-09T13:12:32.864Z",
   "createdAt": "2026-05-28T04:33:25.068Z"
 }

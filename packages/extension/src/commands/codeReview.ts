@@ -1,6 +1,6 @@
 /* "Code Review" code-health tool.
  *
- * Unlike the other Code Health entries (which run a static analyser and render
+ * Unlike the other Tools action bar entries (which run a static analyser and render
  * a page), this one spawns a dedicated Claude session — Sonnet, since the work
  * is broad-but-shallow reading — primed with a review prompt. Findings land on
  * the shared cw-tasks board rather than in a throwaway chat log, and the agent

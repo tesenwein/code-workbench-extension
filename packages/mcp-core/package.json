@@ -59,6 +59,16 @@
         "default": "./phase-prompts.mjs"
       }
     },
+    "./workbench-permissions": {
+      "require": {
+        "types": "./workbench-permissions.d.cts",
+        "default": "./workbench-permissions.cjs"
+      },
+      "import": {
+        "types": "./workbench-permissions.d.ts",
+        "default": "./workbench-permissions.mjs"
+      }
+    },
     "./scan-state": {
       "require": {
         "types": "./scan-state.d.cts",

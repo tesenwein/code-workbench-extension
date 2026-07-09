@@ -1,5 +1,12 @@
 {
   "enableAllProjectMcpServers": true,
+  "permissions": {
+    "allow": [
+      "mcp__cw-code__task_list",
+      "mcp__cw-code__task_create",
+      "mcp__cw-code__task_update"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {

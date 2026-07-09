@@ -1,7 +1,7 @@
 {
   "slug": "editor-tab-pages",
   "name": "Editor-Tab Pages",
-  "description": "Full editor-tab webview pages + the \"Code Health\" sidebar action bar. pagePanel.ts is the generic singleton WebviewPanel host (showPage/getPage, one reusable tab per viewType; re-invoking reveals + fires onReveal). Pages: search results (searchPanel.ts), the three code-health scans (scanPages.ts — same scan/ack/exclude RPC set the old sidebar scan views had, auto-scan on open, re-scan on reveal; duplicates scan attaches per-member snippets via snippets.ts widenSnippet), and the tasks board (tasksPage.ts — reuses buildTaskRpcHandlers/taskPanelContext from tasksView.ts; refreshed by the same watchTasks watcher as the sidebar). The old Dead Code / Duplicates / Type Safety sidebar WebviewViews were REMOVED; codeHealthView.ts is a native TreeView action bar (Search Code, Duplicate Code, Dead Code, Type Safety) whose items run the unchanged command ids (codeWorkbench.deadCode.scan etc.), which now open pages. Tasks keeps its sidebar view AND gains codeWorkbench.tasks.openAsPage (view/title icon).",
+  "description": "Full editor-tab webview pages + the \"Tools\" sidebar action bar. pagePanel.ts is the generic singleton WebviewPanel host (showPage/getPage, one reusable tab per viewType; re-invoking reveals + fires onReveal). Pages: search results (searchPanel.ts), the three code-health scans (scanPages.ts — same scan/ack/exclude RPC set the old sidebar scan views had, auto-scan on open, re-scan on reveal; duplicates scan attaches per-member snippets via snippets.ts widenSnippet), and the tasks board (tasksPage.ts — reuses buildTaskRpcHandlers/taskPanelContext from tasksView.ts; refreshed by the same watchTasks watcher as the sidebar). The old Dead Code / Duplicates / Type Safety sidebar WebviewViews were REMOVED; codeHealthView.ts is a native TreeView action bar (Search Code, Duplicate Code, Dead Code, Type Safety) whose items run the unchanged command ids (codeWorkbench.deadCode.scan etc.), which now open pages. Tasks keeps its sidebar view AND gains codeWorkbench.tasks.openAsPage (view/title icon).",
   "files": [
     "packages/extension/src/pagePanel.ts",
     "packages/extension/src/scanPages.ts",
@@ -24,6 +24,7 @@
     "webview panel",
     "editor tab",
     "code health",
+    "tools action bar",
     "action bar",
     "sidebar",
     "task board",
@@ -35,6 +36,6 @@
     "tasks-view",
     "search-results-panel"
   ],
-  "updatedAt": "2026-07-03T04:36:31.727Z",
+  "updatedAt": "2026-07-09T13:11:58.813Z",
   "createdAt": "2026-07-03T04:36:31.727Z"
 }
