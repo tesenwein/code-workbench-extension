@@ -49,6 +49,16 @@
         "default": "./skills.mjs"
       }
     },
+    "./workflows": {
+      "require": {
+        "types": "./workflows.d.cts",
+        "default": "./workflows.cjs"
+      },
+      "import": {
+        "types": "./workflows.d.ts",
+        "default": "./workflows.mjs"
+      }
+    },
     "./phase-prompts": {
       "require": {
         "types": "./phase-prompts.d.cts",
