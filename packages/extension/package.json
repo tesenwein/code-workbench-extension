@@ -56,20 +56,20 @@
           "id": "codeWorkbench.tasks",
           "name": "Tasks",
           "type": "webview",
-          "initialSize": 4,
+          "initialSize": 10,
           "visibility": "visible"
         },
         {
           "id": "codeWorkbench.sessions",
           "name": "Chats & Terminals",
           "type": "webview",
-          "initialSize": 3,
+          "initialSize": 8,
           "visibility": "visible"
         },
         {
           "id": "codeWorkbench.codeHealth",
           "name": "Tools",
-          "initialSize": 1,
+          "initialSize": 3,
           "visibility": "visible"
         },
         {
