@@ -110,6 +110,12 @@
         "icon": "$(settings-gear)"
       },
       {
+        "command": "codeWorkbench.checkForUpdates",
+        "category": "Code Workbench",
+        "title": "Check for Updates…",
+        "icon": "$(cloud-download)"
+      },
+      {
         "command": "codeWorkbench.toggleOpenOnStartup",
         "category": "Code Workbench",
         "title": "Toggle Open on Startup"
@@ -169,16 +175,6 @@
         "icon": "$(link-external)"
       },
       {
-        "command": "codeWorkbench.worktrees.openHere",
-        "category": "Code Workbench",
-        "title": "Open Worktree in This Window"
-      },
-      {
-        "command": "codeWorkbench.worktrees.reveal",
-        "category": "Code Workbench",
-        "title": "Reveal in Finder"
-      },
-      {
         "command": "codeWorkbench.worktrees.switch",
         "category": "Code Workbench",
         "title": "Switch Worktree…",
@@ -189,16 +185,6 @@
         "category": "Code Workbench",
         "title": "New Session in This Worktree…",
         "icon": "$(terminal)"
-      },
-      {
-        "command": "codeWorkbench.worktrees.setModel",
-        "category": "Code Workbench",
-        "title": "Set Default Model…"
-      },
-      {
-        "command": "codeWorkbench.worktrees.toggleYolo",
-        "category": "Code Workbench",
-        "title": "Toggle Yolo Default"
       },
       {
         "command": "codeWorkbench.worktrees.configure",
@@ -279,48 +265,6 @@
         "icon": "$(add)"
       },
       {
-        "command": "codeWorkbench.tasks.createSubtask",
-        "category": "Code Workbench",
-        "title": "New Subtask…",
-        "icon": "$(type-hierarchy-sub)"
-      },
-      {
-        "command": "codeWorkbench.tasks.edit",
-        "category": "Code Workbench",
-        "title": "Edit Task",
-        "icon": "$(edit)"
-      },
-      {
-        "command": "codeWorkbench.tasks.delete",
-        "category": "Code Workbench",
-        "title": "Delete Task",
-        "icon": "$(trash)"
-      },
-      {
-        "command": "codeWorkbench.tasks.cyclePriority",
-        "category": "Code Workbench",
-        "title": "Cycle Priority",
-        "icon": "$(arrow-up)"
-      },
-      {
-        "command": "codeWorkbench.tasks.cycleStatus",
-        "category": "Code Workbench",
-        "title": "Cycle Status",
-        "icon": "$(sync)"
-      },
-      {
-        "command": "codeWorkbench.tasks.assignToActive",
-        "category": "Code Workbench",
-        "title": "Assign to Active Worktree",
-        "icon": "$(git-branch)"
-      },
-      {
-        "command": "codeWorkbench.tasks.unassignWorktree",
-        "category": "Code Workbench",
-        "title": "Unassign Worktree",
-        "icon": "$(circle-slash)"
-      },
-      {
         "command": "codeWorkbench.tasks.filter",
         "category": "Code Workbench",
         "title": "Filter Tasks…",
@@ -331,12 +275,6 @@
         "category": "Code Workbench",
         "title": "Clear Task Filter",
         "icon": "$(filter-filled)"
-      },
-      {
-        "command": "codeWorkbench.tasks.spawnWorktree",
-        "category": "Code Workbench",
-        "title": "Create Worktree for Task…",
-        "icon": "$(git-branch)"
       },
       {
         "command": "codeWorkbench.sessions.new",
@@ -407,9 +345,14 @@
           "group": "navigation@0"
         },
         {
+          "command": "codeWorkbench.checkForUpdates",
+          "when": "view == codeWorkbench.brand",
+          "group": "navigation@1"
+        },
+        {
           "command": "codeWorkbench.openGlobalPrefs",
           "when": "view == codeWorkbench.brand",
-          "group": "navigation"
+          "group": "navigation@2"
         },
         {
           "command": "codeWorkbench.pinSidebar",
@@ -597,6 +540,11 @@
           "type": "boolean",
           "default": false,
           "description": "Reopen the saved session terminals for the active worktree when the workspace opens."
+        },
+        "codeWorkbench.autoCheckForUpdates": {
+          "type": "boolean",
+          "default": true,
+          "description": "Check GitHub Releases once a day for a newer Code Workbench release and offer to install it."
         }
       }
     }

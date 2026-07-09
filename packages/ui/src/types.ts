@@ -5,6 +5,10 @@
 
 export type TaskPriority = 'high' | 'medium' | 'low';
 export type TaskStatus = 'open' | 'in-progress' | 'done';
+/** Workflow phase a (root) task is being driven through by a bound Claude
+ *  session — Plan → Implement → Review → Fix. Undefined/null means the task
+ *  isn't in the flow. */
+export type TaskPhase = 'plan' | 'implement' | 'review' | 'fix';
 
 export interface WorkspaceTask {
   id: string;
@@ -22,6 +26,7 @@ export interface WorkspaceTask {
   parallel?: boolean;
   dueDate?: string | null;
   epic?: string | null;
+  phase?: TaskPhase | null;
   tags?: string[];
 }
 
@@ -113,6 +118,11 @@ export interface TasksApi {
    *  that can't surface a file editor (e.g. the Electron app) omit it and the
    *  panel hides the "open in editor" affordance. */
   openInEditor?: (id: string) => Promise<void>;
+  /** Start a phase (Plan/Implement/Review/Fix) for a root task: spawns a
+   *  bound Claude session and sets the task's `phase`. Optional — hosts that
+   *  can't spawn sessions (e.g. the Electron app) omit it and the panel hides
+   *  the phase stepper. */
+  startPhase?: (id: string, phase: TaskPhase) => Promise<void>;
 }
 
 /** Open a file in the host editor. `loc` is an absolute-ish path. */

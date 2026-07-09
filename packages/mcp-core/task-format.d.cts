@@ -1,5 +1,6 @@
 export type TaskPriority = "high" | "medium" | "low";
 export type TaskStatus = "open" | "in-progress" | "done";
+export type TaskPhase = "plan" | "implement" | "review" | "fix";
 
 export interface Task {
   id: string;
@@ -11,6 +12,8 @@ export interface Task {
   parallel: boolean;
   dueDate: string | null;
   epic: string | null;
+  /** Workflow phase this (root) task is being driven through, or null. */
+  phase: TaskPhase | null;
   tags: string[];
   description: string;
   memo: string;
@@ -22,6 +25,7 @@ export const PRIORITY_ORDER: Record<TaskPriority, number>;
 export const STATUS_ORDER: Record<TaskStatus, number>;
 export const VALID_PRIORITIES: TaskPriority[];
 export const VALID_STATUSES: TaskStatus[];
+export const VALID_PHASES: TaskPhase[];
 
 /** Platform-independent worktree identifier (last path segment, lowercased). */
 export function worktreeKey(p: string | null | undefined): string;

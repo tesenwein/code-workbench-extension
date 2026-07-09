@@ -7,36 +7,6 @@ import type { Task } from '@code-workbench/mcp-core/task-format';
 import { reactWebviewHtml } from './reactWebview';
 import { attachRpc, type RpcContext } from './webviewRpc';
 
-const STATUS_ICON: Record<Task['status'], string> = {
-  open: 'circle-large-outline',
-  'in-progress': 'sync',
-  done: 'check',
-};
-
-const PRIORITY_GLYPH: Record<Task['priority'], string> = {
-  high: '▲',
-  medium: '·',
-  low: '▽',
-};
-
-/** Plain data carrier passed to task commands. The commands only read
- *  `.task`, so this stays compatible with the old TreeItem-based callers. */
-export class TaskItem extends vscode.TreeItem {
-  constructor(
-    public readonly task: Task,
-    hasChildren: boolean,
-    activeWorktree: string | undefined,
-  ) {
-    super(
-      task.title,
-      hasChildren ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None,
-    );
-    void activeWorktree;
-    this.iconPath = new vscode.ThemeIcon(STATUS_ICON[task.status]);
-    this.description = `${PRIORITY_GLYPH[task.priority]} ${task.priority}`;
-  }
-}
-
 export interface TaskFilter {
   text?: string;
   priority?: Task['priority'];
@@ -86,6 +56,12 @@ export function buildTaskRpcHandlers(
       const file = taskFilePath(key, String(id));
       const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(file));
       await vscode.window.showTextDocument(doc, { preview: false });
+    },
+    // Delegates to a registered command rather than depending on SessionManager
+    // directly — buildTaskRpcHandlers is shared by the sidebar and the full
+    // page and neither constructs a SessionManager itself.
+    startPhase: async (id: unknown, phase: unknown) => {
+      await vscode.commands.executeCommand('codeWorkbench.tasks.startPhase', String(id), phase);
     },
   };
 }

@@ -1,0 +1,39 @@
+{
+  "slug": "self-update",
+  "name": "Self-update from GitHub Releases",
+  "description": "Sideloaded VSIX updater. Compares the installed extension version against the latest GitHub release tag, downloads the .vsix asset into globalStorage, installs it via workbench.extensions.installExtension, and offers a window reload. Exposed as the codeWorkbench.checkForUpdates command (Workbench view title-bar button + palette) plus a once-per-day silent check on activation.",
+  "files": [
+    "packages/extension/src/update.ts",
+    "packages/extension/test/update.test.ts",
+    "packages/extension/test/stubs/vscode.ts",
+    "packages/extension/src/extension.ts",
+    "packages/extension/package.json",
+    ".github/workflows/release.yml"
+  ],
+  "guidelines": [
+    "Release tags are v<semver> and the asset is code-workbench-<semver>.vsix; release.yml bumps package.json on main so installed version == tag.",
+    "Keep the activation check throttled (globalState timestamp) — unauthenticated GitHub API allows 60 req/h per IP.",
+    "Silent mode must never surface errors or up-to-date toasts; only the manual command talks on failure.",
+    "Vitest imports src modules in a node env: 'vscode' is aliased to test/stubs/vscode.ts. Extend the stub rather than mocking per-test."
+  ],
+  "anti_patterns": [
+    "Do not check for updates on every activation — it burns the API rate limit and nags the user.",
+    "Do not hardcode the repo from packageJSON.repository; that URL still points at the old monorepo path."
+  ],
+  "decisions": [
+    "Ship via GitHub Releases + self-update rather than the VS Code Marketplace / Open VSX, which would give native updates but require publisher accounts.",
+    "'Skip This Version' is persisted in globalState and cleared whenever the user runs the manual check."
+  ],
+  "tags": [
+    "update",
+    "auto-update",
+    "vsix",
+    "github releases",
+    "install",
+    "self-update",
+    "version"
+  ],
+  "dependsOn": [],
+  "updatedAt": "2026-07-09T09:29:03.066Z",
+  "createdAt": "2026-07-09T09:29:03.066Z"
+}

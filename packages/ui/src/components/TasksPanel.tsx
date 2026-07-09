@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { PaneHeader } from './primitives';
-import type { WorkspaceTask, NewWorkspaceTask, TasksApi } from '../types';
+import type { WorkspaceTask, NewWorkspaceTask, TasksApi, TaskPhase } from '../types';
 
 /* Platform-independent worktree identifier — last path segment, lowercased.
  * Mirrors worktreeKey() in @code-workbench/mcp-core/task-format. */
@@ -626,6 +626,85 @@ const TaskRow = React.memo(function TaskRow({
 
 /** Full-width task editor for page mode — replaces "open the .md file" as the
  *  primary way to work on a task. Always editable; subtasks inline below. */
+/** Ordered phase flow — used both to render the stepper and to know which
+ *  phase a "start" click on an unset task should begin at. */
+const PHASE_FLOW: TaskPhase[] = ['plan', 'implement', 'review', 'fix'];
+const PHASE_LABELS: Record<TaskPhase, string> = {
+  plan: 'Plan',
+  implement: 'Implement',
+  review: 'Review',
+  fix: 'Fix',
+};
+
+/** Plan → Implement → Review → Fix stepper for a root task's detail pane.
+ *  Always shows exactly where the task is (done / active / upcoming steps)
+ *  and puts a single "Start <next phase>" action front and center, so the
+ *  user never has to guess what state the flow is in or which button
+ *  advances it. */
+function PhaseStepper({
+  task,
+  onStartPhase,
+}: {
+  task: WorkspaceTask;
+  onStartPhase: (id: string, phase: TaskPhase) => Promise<void>;
+}) {
+  const [starting, setStarting] = useState<TaskPhase | null>(null);
+  const currentIdx = task.phase ? PHASE_FLOW.indexOf(task.phase) : -1;
+  const nextPhase: TaskPhase | undefined =
+    currentIdx < 0 ? PHASE_FLOW[0] : PHASE_FLOW[currentIdx + 1];
+
+  const start = async (phase: TaskPhase) => {
+    setStarting(phase);
+    try {
+      await onStartPhase(task.id, phase);
+    } finally {
+      setStarting(null);
+    }
+  };
+
+  return (
+    <div className="task-phase-stepper">
+      <div className="task-phase-steps">
+        {PHASE_FLOW.map((phase, i) => {
+          const state = i < currentIdx ? 'done' : i === currentIdx ? 'active' : 'upcoming';
+          return (
+            <React.Fragment key={phase}>
+              {i > 0 && <span className="task-phase-arrow">→</span>}
+              <span className={`task-phase-step task-phase-${state}`}>
+                {state === 'done' ? '✓ ' : ''}
+                {PHASE_LABELS[phase]}
+              </span>
+            </React.Fragment>
+          );
+        })}
+      </div>
+      {nextPhase ? (
+        <button
+          className="task-action-btn task-phase-start"
+          disabled={starting !== null}
+          onClick={() => void start(nextPhase)}
+          title={`Spawn a Claude session to run the ${PHASE_LABELS[nextPhase]} phase for this task`}
+        >
+          {starting === nextPhase
+            ? 'Starting…'
+            : currentIdx < 0
+              ? `Start ${PHASE_LABELS[nextPhase]}`
+              : `Start ${PHASE_LABELS[nextPhase]} →`}
+        </button>
+      ) : (
+        <button
+          className="task-action-btn task-phase-start"
+          disabled={starting !== null}
+          onClick={() => void start('fix')}
+          title="Re-run the Fix phase for this task"
+        >
+          {starting === 'fix' ? 'Starting…' : 'Re-run Fix'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function TaskDetailPane({
   task,
   subtasks,
@@ -636,6 +715,7 @@ function TaskDetailPane({
   onCreateSubtask,
   onOpenInEditor,
   onOpenTask,
+  onStartPhase,
   onClose,
 }: {
   task: WorkspaceTask;
@@ -649,6 +729,9 @@ function TaskDetailPane({
   onOpenInEditor?: (id: string) => void;
   /** Switch this pane to another task (a clicked subtask / the parent). */
   onOpenTask?: (id: string) => void;
+  /** Start (or restart) a phase for this task — spawns a bound Claude session.
+   *  Omitted entirely when the host can't spawn sessions (the stepper hides). */
+  onStartPhase?: (id: string, phase: TaskPhase) => Promise<void>;
   onClose: () => void;
 }) {
   const [addingSubtask, setAddingSubtask] = useState(false);
@@ -695,6 +778,9 @@ function TaskDetailPane({
           ✕
         </button>
       </div>
+      {onStartPhase && !task.parentId && (
+        <PhaseStepper task={task} onStartPhase={onStartPhase} />
+      )}
       <TaskEditForm
         key={task.id}
         task={task}
@@ -1110,6 +1196,14 @@ export function TasksPanel({
     () => (api.openInEditor ? (id: string) => void api.openInEditor!(id) : undefined),
     [api],
   );
+  const startPhase = useCallback(
+    async (id: string, phase: TaskPhase) => {
+      if (!api.startPhase) return;
+      await api.startPhase(id, phase);
+      await reload();
+    },
+    [api, reload],
+  );
 
   const handleCreateSubtask = useCallback(
     async (parentId: string, title: string) => {
@@ -1470,6 +1564,7 @@ export function TasksPanel({
                   onCreateSubtask={handleCreateSubtask}
                   onOpenInEditor={openInEditor}
                   onOpenTask={setSelectedId}
+                  onStartPhase={api.startPhase ? startPhase : undefined}
                   onClose={() => setSelectedId(null)}
                 />
               ) : (

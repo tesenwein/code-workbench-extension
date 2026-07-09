@@ -5,6 +5,7 @@ import { findRepoKey, findRepoRoot, removeWorktree } from './git';
 import { WorktreeItem, WorktreesProvider } from './worktreesView';
 import { TasksProvider, watchTasks } from './tasksView';
 import { SessionItem, SessionManager, SessionsProvider, SessionKind } from './sessions';
+import { CLAUDE_MODEL_VALUES, type ClaudeModel } from './sessionTypes';
 import { clearTaskWorktree } from './tasks';
 import { initProjectWorkspace } from './workspaceInit';
 import {
@@ -23,6 +24,8 @@ import { registerWorktreeCommands } from './commands/worktreeCommands';
 import { registerScanPageCommands } from './scanPages';
 import { registerCodeHealthView } from './codeHealthView';
 import { registerCodeReviewCommand } from './commands/codeReview';
+import { registerTaskFlowCommand } from './commands/taskFlow';
+import { registerUpdateCommand } from './update';
 import { showTasksPage, refreshTasksPage, isTasksPageOpen } from './tasksPage';
 import { ArchViewProvider } from './archView';
 import { showArchPage, refreshArchPage } from './archPage';
@@ -551,24 +554,30 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
 
   registerLayoutCommands(ctx);
 
+  registerUpdateCommand(ctx);
+
   registerCodeReviewCommand(ctx, { sessionMgr, ensureActiveWorktree });
 
-  registerTaskCommands(ctx, {
-    tasksProvider,
+  registerTaskFlowCommand(ctx, {
+    sessionMgr,
     getRepoKey: () => repoKey,
     getRepoRoot: () => repoRoot,
-    sessionMgr,
+    ensureActiveWorktree,
   });
 
+  registerTaskCommands(ctx, { tasksProvider });
+
   // ── Session commands ──────────────────────────────────────────────────
-  const newSession = async (kind: SessionKind) => {
+  const newSession = async (kind: SessionKind, model?: ClaudeModel) => {
     const wt = await ensureActiveWorktree();
     if (!wt) return;
-    await sessionMgr.create(kind, wt);
+    await sessionMgr.create(kind, wt, undefined, model ? { model } : undefined);
   };
 
   ctx.subscriptions.push(
-    vscode.commands.registerCommand('codeWorkbench.sessions.new', () => newSession('claude')),
+    vscode.commands.registerCommand('codeWorkbench.sessions.new', (model?: ClaudeModel) =>
+      newSession('claude', CLAUDE_MODEL_VALUES.includes(model!) ? model : undefined),
+    ),
     vscode.commands.registerCommand('codeWorkbench.sessions.newYolo', () =>
       newSession('claude-yolo'),
     ),

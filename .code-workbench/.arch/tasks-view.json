@@ -1,7 +1,7 @@
 {
   "slug": "tasks-view",
   "name": "Tasks View",
-  "description": "VS Code WebviewView sidebar panel showing the Code Workbench task board. Hosts the shared @code-workbench/ui TasksPanel React component in a webview and answers its list/create/update/remove/openInEditor RPC calls via the shared task-store. The RPC handler set and context payload are exported (buildTaskRpcHandlers, taskPanelContext) and shared with the full editor-tab Task Board page (tasksPage.ts, command codeWorkbench.tasks.openAsPage). The page pushes surface:'page' in its context, switching TasksPanel into pageMode: clicking a task opens an inline TaskDetailPane editor (title/description/memo/priority/status/worktree/epic/tags + subtasks; the backing .md file open is a secondary button), and a toolbar adds group-by (worktree/epic/flat), status filter (active/all/open/in-progress/done) and tag filter. Sidebar keeps the compact accordion behavior. The tasks file watcher (watchTasks) refreshes both surfaces.",
+  "description": "VS Code WebviewView sidebar panel showing the Code Workbench task board, plus the full editor-tab Task Board page and the task-bound phase flow. Hosts the shared @code-workbench/ui TasksPanel React component in a webview and answers its list/create/update/remove/openInEditor/startPhase RPC calls via the shared task-store. The RPC handler set and context payload are exported (buildTaskRpcHandlers, taskPanelContext) and shared with the full editor-tab Task Board page (tasksPage.ts, command codeWorkbench.tasks.openAsPage). The page pushes surface:'page' in its context, switching TasksPanel into pageMode: clicking a task opens an inline TaskDetailPane editor (title/description/memo/priority/status/worktree/epic/tags + subtasks; the backing .md file open is a secondary button), and a toolbar adds group-by (worktree/epic/flat), status filter (active/all/open/in-progress/done) and tag filter. Sidebar keeps the compact accordion behavior. The tasks file watcher (watchTasks) refreshes both surfaces.\n\nTask-bound phase flow (commands/taskFlow.ts): a root task carries an optional `phase` field ('plan'|'implement'|'review'|'fix'|null). TaskDetailPane renders a PhaseStepper (only for root tasks, when the host provides TasksApi.startPhase) showing done/active/upcoming pills plus one \"Start <next phase> →\" button. Clicking it calls startPhase RPC → buildTaskRpcHandlers delegates to the registered command codeWorkbench.tasks.startPhase(taskId, phase), which resolves the task, sets its phase via updateTask, resolves its worktree (task.worktree is a worktreeKey — lowercased basename, NOT a path — resolved against listWorktrees(), falling back to the active worktree for unassigned tasks), and spawns a Claude session via SessionManager.create with a phase-specific model/prompt: Plan (opus, --permission-mode plan, explores + files 'plan-step' subtasks + writes memo), Implement (sonnet, works plan-step subtasks), Review (sonnet, reviews the diff + files 'review-finding' subtasks), Fix (sonnet, works review-finding subtasks). Each phase's prompt tells the spawned session to task_update the task's `phase` field when handing off — the board is the state machine, not the chat transcript. Subtasks can't nest, so the stepper and phase field only apply to root tasks. The MCP tasks-server.mjs exposes `phase` on task_create/task_update (validated enum) and renders it as `<phase>` in task_list output (root tasks only, alongside {epic}).\n\nSupporting session-manager changes: SavedSession/CreateSessionOptions gained permissionMode (→ `claude --permission-mode`, mutually exclusive with yolo args) and effortOverride (takes precedence over the worktree's effort pref) so a Plan-phase session can force read-only planning and its own effort level.",
   "files": [
     "packages/extension/src/tasksView.ts",
     "packages/extension/src/tasksPage.ts",
@@ -37,16 +37,14 @@
     "ui-shared-panels",
     "task-store"
   ],
-  "updatedAt": "2026-07-03T08:12:44.904Z",
+  "updatedAt": "2026-07-09T09:48:07.582Z",
   "createdAt": "2026-05-19T04:49:37.278Z",
   "tags": [
     "tasks",
-    "task board",
-    "webview",
-    "TasksPanel",
-    "task editor",
-    "filters",
-    "grouping",
-    "page mode"
+    "phase-flow",
+    "task-flow",
+    "code-review",
+    "sessions",
+    "workflow"
   ]
 }

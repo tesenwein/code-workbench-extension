@@ -11,7 +11,9 @@ import {
   claudeModel,
   sessionIconId,
   worktreeTerminalColor,
+  type ClaudeEffort,
   type ClaudeModel,
+  type ClaudePermissionMode,
   type SavedSession,
   type SessionKind,
   type SessionProfile,
@@ -31,6 +33,12 @@ export interface CreateSessionOptions {
   model?: ClaudeModel;
   /** Submitted as the session's first turn. */
   prompt?: string;
+  /** `claude --permission-mode` value, e.g. 'plan' to force read-only planning. */
+  permissionMode?: ClaudePermissionMode;
+  /** Per-session effort override, taking precedence over the worktree pref
+   *  (e.g. so a Plan-phase session can force 'max' regardless of the user's
+   *  usual setting). */
+  effort?: ClaudeEffort;
 }
 
 // Legacy workspaceState keys — read only, for one-shot migration into the
@@ -369,6 +377,8 @@ export class SessionManager {
       ...(opts?.icon ? { icon: opts.icon } : {}),
       ...(opts?.model ? { modelOverride: opts.model } : {}),
       ...(opts?.prompt ? { initialPrompt: opts.prompt } : {}),
+      ...(opts?.permissionMode ? { permissionMode: opts.permissionMode } : {}),
+      ...(opts?.effort != null ? { effortOverride: opts.effort } : {}),
     };
     const sessions = this.list();
     sessions.push(session);
@@ -867,10 +877,12 @@ export class SessionManager {
     if (model.flag) args.push('--model', model.flag);
     // Some models (e.g. haiku) don't support extended thinking; skip effort flag.
     if (model.thinking) {
-      const effortFlag = EFFORT_FLAGS[prefs.effort] ?? '';
+      const effortFlag = EFFORT_FLAGS[session.effortOverride ?? prefs.effort] ?? '';
       if (effortFlag) args.push('--effort', effortFlag);
     }
-    if (kind === 'claude-yolo' || prefs.yolo) {
+    if (session.permissionMode) {
+      args.push('--permission-mode', session.permissionMode);
+    } else if (kind === 'claude-yolo' || prefs.yolo) {
       for (const a of yoloArgs.split(/\s+/).filter(Boolean)) args.push(a);
     }
 
