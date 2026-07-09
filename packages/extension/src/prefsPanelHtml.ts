@@ -514,6 +514,15 @@ export function renderPrefsHtml(worktreePath: string, state: PrefsPanelState): s
           <p class="hint">Registers the unified <code>cw-code</code> server into this worktree's <code>.claude.json</code>, exposing every workbench tool (AST, dead-code, type-safety, tasks, arch) to Claude Code sessions opened here. Session-only tools like notifications stay inert outside the workbench. Don't commit <code>.claude.json</code> — it points at this machine's install.</p>
           <div class="result" id="mcpResult"></div>
         </div>
+
+        <div class="field">
+          <div class="field-head">
+            <label>MCP permissions</label>
+          </div>
+          <button type="button" class="btn" id="installPermissions">Add MCP permissions</button>
+          <p class="hint">Merges the workbench <code>cw-code</code> tool permissions into this worktree's <code>.claude/settings.json</code> so its tool calls stop prompting for approval. Only needed here if the repo pins its own permissions — <code>~/.claude/settings.json</code> already covers every project, and this file is usually committed.</p>
+          <div class="result" id="permissionsResult"></div>
+        </div>
       </section>
     </main>
   </div>
@@ -628,34 +637,37 @@ export function renderPrefsHtml(worktreePath: string, state: PrefsPanelState): s
     vscode.postMessage({ type: 'setYolo', value: state.yolo });
   });
 
-  const installSkillsEl = document.getElementById('installSkills');
-  const registerMcpEl = document.getElementById('registerMcp');
-  const skillsResultEl = document.getElementById('skillsResult');
-  const mcpResultEl = document.getElementById('mcpResult');
-
-  installSkillsEl.addEventListener('click', () => {
-    installSkillsEl.disabled = true;
-    skillsResultEl.textContent = 'Installing…';
-    skillsResultEl.classList.remove('err');
-    vscode.postMessage({ type: 'installSkills' });
-  });
-  registerMcpEl.addEventListener('click', () => {
-    registerMcpEl.disabled = true;
-    mcpResultEl.textContent = 'Registering…';
-    mcpResultEl.classList.remove('err');
-    vscode.postMessage({ type: 'registerMcp' });
-  });
+  const injectors = {
+    skills: { btn: 'installSkills', out: 'skillsResult', msg: 'installSkills', busy: 'Installing…' },
+    mcp: { btn: 'registerMcp', out: 'mcpResult', msg: 'registerMcp', busy: 'Registering…' },
+    permissions: {
+      btn: 'installPermissions',
+      out: 'permissionsResult',
+      msg: 'installPermissions',
+      busy: 'Adding…',
+    },
+  };
+  for (const cfg of Object.values(injectors)) {
+    cfg.btnEl = document.getElementById(cfg.btn);
+    cfg.outEl = document.getElementById(cfg.out);
+    cfg.btnEl.addEventListener('click', () => {
+      cfg.btnEl.disabled = true;
+      cfg.outEl.textContent = cfg.busy;
+      cfg.outEl.classList.remove('err');
+      vscode.postMessage({ type: cfg.msg });
+    });
+  }
 
   window.addEventListener('message', (e) => {
     if (e.data?.type === 'state') {
       state = e.data.state;
       render();
     } else if (e.data?.type === 'result') {
-      const btn = e.data.target === 'skills' ? installSkillsEl : registerMcpEl;
-      const out = e.data.target === 'skills' ? skillsResultEl : mcpResultEl;
-      btn.disabled = false;
-      out.textContent = e.data.text;
-      out.classList.toggle('err', !e.data.ok);
+      const cfg = injectors[e.data.target];
+      if (!cfg) return;
+      cfg.btnEl.disabled = false;
+      cfg.outEl.textContent = e.data.text;
+      cfg.outEl.classList.toggle('err', !e.data.ok);
     }
   });
 

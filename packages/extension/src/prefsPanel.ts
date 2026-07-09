@@ -12,6 +12,7 @@ import { normalizePhaseModels } from './globalPrefs';
 import { PHASE_META, PHASE_ORDER, type TaskPhase } from '@code-workbench/mcp-core/phase-prompts';
 import { installWorkbenchSkills } from './skillsBundle';
 import { registerWorkbenchMcpServers } from './mcpRegister';
+import { installWorkbenchPermissions } from './settingsPermissions';
 
 export class PrefsPanel {
   private static panels = new Map<string, PrefsPanel>();
@@ -98,6 +99,8 @@ export class PrefsPanel {
       await this.installSkills();
     } else if (msg.type === 'registerMcp') {
       await this.registerMcp();
+    } else if (msg.type === 'installPermissions') {
+      await this.installPermissions();
     } else if (msg.type === 'ready') {
       this.panel.webview.postMessage({ type: 'state', state: this.state() });
     }
@@ -125,6 +128,28 @@ export class PrefsPanel {
         text,
       });
       vscode.window.showErrorMessage(`Install skills failed: ${text}`);
+    }
+  }
+
+  private async installPermissions(): Promise<void> {
+    try {
+      const added = await installWorkbenchPermissions(this.worktreePath);
+      const text = `${added.length ? `added ${added.join(', ')}` : 'nothing to do'} — .claude/settings.json`;
+      this.panel.webview.postMessage({
+        type: 'result',
+        target: 'permissions',
+        ok: true,
+        text,
+      });
+    } catch (e) {
+      const text = (e as Error).message;
+      this.panel.webview.postMessage({
+        type: 'result',
+        target: 'permissions',
+        ok: false,
+        text,
+      });
+      vscode.window.showErrorMessage(`Add permissions failed: ${text}`);
     }
   }
 
