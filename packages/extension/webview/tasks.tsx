@@ -13,6 +13,7 @@ const api: TasksApi = {
   update: (id, patch) => bridge.call('update', id, patch) as Promise<void>,
   remove: (id) => bridge.call('remove', id) as Promise<void>,
   openInEditor: (id) => bridge.call('openInEditor', id) as Promise<void>,
+  startPhase: (id, phase) => bridge.call('startPhase', id, phase) as Promise<void>,
 };
 
 interface Context {

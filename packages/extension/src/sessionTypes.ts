@@ -4,6 +4,9 @@ export type SessionKind = 'claude' | 'claude-yolo' | 'shell';
 export type ClaudeModel = 'default' | 'opus' | 'opus-1m' | 'sonnet' | 'haiku' | 'fable';
 /** 0=auto, 1=think, 2=think hard, 3=think harder, 4=ultrathink */
 export type ClaudeEffort = 0 | 1 | 2 | 3 | 4;
+/** `claude --permission-mode` values. 'plan' forces read-only planning
+ *  (no edits/writes) regardless of the worktree's yolo pref. */
+export type ClaudePermissionMode = 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan';
 
 export interface ClaudeModelInfo {
   value: ClaudeModel;
@@ -137,6 +140,10 @@ export interface SavedSession {
   /** Prompt handed to the CLI as its first turn. Only applied on the first
    *  launch — a resumed session already has it in its transcript. */
   initialPrompt?: string;
+  /** `claude --permission-mode` override, applied on every (re)launch. */
+  permissionMode?: ClaudePermissionMode;
+  /** Per-session effort override, taking precedence over the worktree pref. */
+  effortOverride?: ClaudeEffort;
 }
 
 /** Default codicon for a session kind. Shell tabs get the terminal glyph;

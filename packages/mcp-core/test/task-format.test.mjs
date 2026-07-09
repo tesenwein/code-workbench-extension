@@ -21,6 +21,7 @@ function makeTask(overrides = {}) {
     parallel: false,
     dueDate: null,
     epic: 'auth-revamp',
+    phase: 'implement',
     tags: ['bug', 'frontend'],
     description: 'A longer description\nwith two lines.',
     memo: 'agent notes here',
@@ -57,6 +58,7 @@ describe('serializeTask / parseTask round-trip', () => {
       parallel: task.parallel,
       dueDate: task.dueDate,
       epic: task.epic,
+      phase: task.phase,
       tags: task.tags,
       description: task.description,
       memo: task.memo,
@@ -65,11 +67,19 @@ describe('serializeTask / parseTask round-trip', () => {
     });
   });
 
-  it('round-trips a task with no memo, epic, or tags', () => {
-    const task = makeTask({ memo: '', epic: null, tags: [], worktree: null, description: '' });
+  it('round-trips a task with no memo, epic, phase, or tags', () => {
+    const task = makeTask({
+      memo: '',
+      epic: null,
+      phase: null,
+      tags: [],
+      worktree: null,
+      description: '',
+    });
     const parsed = parseTask(serializeTask(task));
     expect(parsed.memo).toBe('');
     expect(parsed.epic).toBeNull();
+    expect(parsed.phase).toBeNull();
     expect(parsed.tags).toEqual([]);
     expect(parsed.worktree).toBeNull();
     expect(parsed.description).toBe('');

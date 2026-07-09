@@ -227,6 +227,7 @@ function makeTask(input) {
     parallel: input.parallel ?? false,
     dueDate: input.dueDate ?? null,
     epic: input.epic ?? null,
+    phase: input.phase ?? null,
     tags: input.tags ?? [],
     created: now,
     updated: now,

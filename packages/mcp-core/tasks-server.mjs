@@ -14,6 +14,7 @@ import {
   sortTasks,
   VALID_PRIORITIES as VALID_PRIORITY_LIST,
   VALID_STATUSES as VALID_STATUS_LIST,
+  VALID_PHASES as VALID_PHASE_LIST,
   worktreeKey,
 } from "./task-format.mjs";
 import { tokenize, bm25Rank } from "./text-rank.mjs";
@@ -29,6 +30,7 @@ import {
 
 const VALID_PRIORITIES = new Set(VALID_PRIORITY_LIST);
 const VALID_STATUSES = new Set(VALID_STATUS_LIST);
+const VALID_PHASES = new Set(VALID_PHASE_LIST);
 
 const DOT_DIR = ".code-workbench";
 
@@ -238,6 +240,12 @@ export const TOOLS = [
           description:
             'Free-form tags for categorisation (e.g. ["bug", "frontend"]).',
         },
+        phase: {
+          type: "string",
+          enum: ["plan", "implement", "review", "fix"],
+          description:
+            "Workflow phase to start this task in, if it's driven by the Code Workbench phase flow. Usually left unset.",
+        },
       },
       required: ["title"],
     },
@@ -273,6 +281,12 @@ export const TOOLS = [
           type: "string",
           enum: ["open", "in-progress", "done"],
           description: "New status.",
+        },
+        phase: {
+          type: "string",
+          enum: ["plan", "implement", "review", "fix"],
+          description:
+            'Workflow phase this task is in (set by the Code Workbench phase flow — Plan → Implement → Review → Fix). Advance it when your phase\'s work is handed off to the next one. Pass an empty string to clear it.',
         },
         worktree: {
           type: "string",
@@ -463,13 +477,14 @@ export async function handle(req) {
               : "";
           const par = t.parallel ? " [∥]" : "";
           const epicLabel = depth === 0 && t.epic ? ` {${t.epic}}` : "";
+          const phaseLabel = depth === 0 && t.phase ? ` <${t.phase}>` : "";
           const tagsLabel =
             t.tags && t.tags.length ? " #" + t.tags.join(" #") : "";
           const desc = t.description
             ? "\n  " + t.description.split("\n")[0]
             : "";
           const memo = t.memo ? "\n  memo: " + t.memo.split("\n")[0] : "";
-          const line = `${indent}[${t.id.slice(0, 8)}] [${t.priority}] [${t.status}]${par}${wt}${epicLabel}${tagsLabel} ${t.title}${desc}${memo}`;
+          const line = `${indent}[${t.id.slice(0, 8)}] [${t.priority}] [${t.status}]${par}${wt}${epicLabel}${phaseLabel}${tagsLabel} ${t.title}${desc}${memo}`;
           const childLines = (childMap.get(t.id) ?? []).map((c) =>
             renderTask(c, depth + 1),
           );
@@ -552,6 +567,7 @@ export async function handle(req) {
           parallel: args.parallel === true,
           epic: args.epic || null,
           tags: Array.isArray(args.tags) ? args.tags.map(String) : [],
+          phase: VALID_PHASES.has(args.phase) ? args.phase : null,
         });
         return {
           content: [
@@ -588,6 +604,20 @@ export async function handle(req) {
             ],
           };
         }
+        if (
+          args.phase != null &&
+          args.phase !== "" &&
+          !VALID_PHASES.has(args.phase)
+        ) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Error: invalid phase "${args.phase}". Use plan, implement, review, or fix.`,
+              },
+            ],
+          };
+        }
         const key = requireRepoKey();
         // Resolve before locking: the mutex must key on the FULL id, otherwise
         // a caller using an 8-char prefix and one using the full id for the
@@ -617,6 +647,7 @@ export async function handle(req) {
           if (args.memo != null) patch.memo = args.memo;
           if (args.priority != null) patch.priority = args.priority;
           if (args.status != null) patch.status = args.status;
+          if (args.phase != null) patch.phase = args.phase === "" ? null : args.phase;
           if (args.worktree != null)
             patch.worktree =
               args.worktree === "" ? null : worktreeKey(args.worktree);

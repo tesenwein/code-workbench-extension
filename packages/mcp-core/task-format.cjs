@@ -35,6 +35,10 @@ const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
 const STATUS_ORDER = { open: 0, "in-progress": 1, done: 2 };
 const VALID_PRIORITIES = ["high", "medium", "low"];
 const VALID_STATUSES = ["open", "in-progress", "done"];
+// Workflow phase a task is in. Each phase is worked by a Claude session with a
+// model and prompt suited to it; the session advances the field when it hands
+// off. `null` means the task is not being driven through the flow.
+const VALID_PHASES = ["plan", "implement", "review", "fix"];
 
 function serializeTask(task) {
   const safeTitle = decodeEntities(String(task.title))
@@ -63,6 +67,7 @@ function serializeTask(task) {
     `parallel: ${task.parallel ? "true" : "false"}`,
     `dueDate: ${task.dueDate ?? "null"}`,
     `epic: ${task.epic ?? "null"}`,
+    `phase: ${task.phase ?? "null"}`,
     `tags: ${tagsVal}`,
     `created: ${task.created}`,
     `updated: ${task.updated}`,
@@ -133,6 +138,7 @@ function parseTask(raw) {
   const rawParallel = get("parallel");
   const rawDueDate = get("dueDate");
   const rawEpic = get("epic");
+  const rawPhase = get("phase");
   const rawTags = get("tags");
   const MEMO_SENTINEL = "\n<!-- memo -->\n";
   // Prepend a newline so the sentinel also matches when the description is
@@ -169,6 +175,7 @@ function parseTask(raw) {
         ? null
         : rawDueDate,
     epic: rawEpic === "null" || !rawEpic ? null : rawEpic,
+    phase: VALID_PHASES.includes(rawPhase) ? rawPhase : null,
     tags,
     description: descriptionBody,
     memo,
@@ -217,6 +224,7 @@ module.exports = {
   STATUS_ORDER,
   VALID_PRIORITIES,
   VALID_STATUSES,
+  VALID_PHASES,
   serializeTask,
   parseTask,
   sortTasks,

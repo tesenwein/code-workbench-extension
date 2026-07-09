@@ -57,6 +57,12 @@ export function buildTaskRpcHandlers(
       const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(file));
       await vscode.window.showTextDocument(doc, { preview: false });
     },
+    // Delegates to a registered command rather than depending on SessionManager
+    // directly — buildTaskRpcHandlers is shared by the sidebar and the full
+    // page and neither constructs a SessionManager itself.
+    startPhase: async (id: unknown, phase: unknown) => {
+      await vscode.commands.executeCommand('codeWorkbench.tasks.startPhase', String(id), phase);
+    },
   };
 }
 

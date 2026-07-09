@@ -12,6 +12,7 @@ export interface TaskInput {
   parallel?: boolean;
   dueDate?: string | null;
   epic?: string | null;
+  phase?: Task["phase"];
   tags?: string[];
 }
 
