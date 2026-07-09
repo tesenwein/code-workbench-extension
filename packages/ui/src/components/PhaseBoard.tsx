@@ -225,8 +225,10 @@ export function PhaseBoard({ api, reloadKey = 0, phaseModels, onOpenTask }: Phas
       setStarting(task.id);
       try {
         await api.startPhase(task.id, phaseFor(column));
-        // startPhase writes the task's `phase`, so the card belongs in the next
-        // column now. Re-list rather than waiting for the host's file watcher.
+        // The card stays in this column: `phase` names the phase to run next, and
+        // only the spawned session may advance it once it has actually done the
+        // work. startPhase marks the task in-progress, so re-list to pick that up
+        // rather than waiting for the host's file watcher.
         setTasks(await api.list());
         setError(null);
       } catch (err) {

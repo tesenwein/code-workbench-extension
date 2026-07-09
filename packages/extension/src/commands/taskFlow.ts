@@ -67,7 +67,12 @@ export function registerTaskFlowCommand(
         if (!wt) return;
 
         const spec = PHASE_META[phase];
-        await updateTask(key, task.id, { phase });
+        // Never write `phase` here: it names the phase to run NEXT, and only a
+        // phase session that actually finished its work may advance it. Writing
+        // the phase we are launching would make `phase:'plan'` mean the same as
+        // `phase:null` ("no plan exists yet") and offer to re-plan a planned
+        // task. Status is the honest signal that a session is live.
+        if (task.status === 'open') await updateTask(key, task.id, { status: 'in-progress' });
         await deps.sessionMgr.create('claude', wt, undefined, {
           title: `${spec.label}: ${task.title}`.slice(0, 80),
           icon: spec.icon,

@@ -42,9 +42,18 @@ const PHASE_DESCRIPTIONS = {
 
 const REREAD = `Work ONLY on task ${TASK_ID} on the shared cw-tasks board. Start by finding it via task_list or task_find_similar and re-reading its current title, description, memo, and subtasks — anything quoted to you may have gone stale.`;
 
+/** Each phase does its own job and stops. A phase that runs the next one's work
+ *  destroys the board's meaning: the handoff `task_update` becomes a lie, the
+ *  card lands in a column whose work is already (half) done, and no separate
+ *  session ever gives that work a fresh pair of eyes. Never advance `phase`
+ *  past your own handoff, and never do the work of the phase you hand off to. */
+const STAY_IN_LANE =
+  "Do the work of THIS phase and nothing else. Hand off by setting `phase` exactly as instructed below — never skip a phase, never set it past the next one, and never start the next phase's work yourself, even if it looks trivial or you can already see the answer. If this phase's work turns out to be unnecessary, still hand off; do not absorb the next phase.";
+
 const PHASE_PROCEDURES = {
   plan: [
     REREAD,
+    STAY_IN_LANE,
     "",
     "Explore the codebase enough to design a concrete implementation approach — do not guess at unfamiliar code. Consult the architecture wiki (`arch_list`, `arch_search`, `arch_get`) so the plan respects existing guidelines. You are running in --permission-mode plan: file edits are blocked, so there is no risk in exploring freely.",
     "",
@@ -53,21 +62,27 @@ const PHASE_PROCEDURES = {
     `2. Break it into concrete implementation subtasks via task_create (parentId: "${TASK_ID}", tags: ["plan-step"]), ordered so the Implement phase can work them one by one.`,
     `3. Finally task_update the task itself: id: "${TASK_ID}", phase: "implement".`,
     "",
-    "Stop once the plan and subtasks are filed. Do not start implementing.",
+    "Stop once the plan and subtasks are filed. You may NOT implement: no code edits, no writing the change 'to prove the plan works'. Producing the plan IS the deliverable.",
   ].join("\n"),
 
   implement: [
     REREAD,
+    STAY_IN_LANE,
     "",
     'Work its subtasks tagged "plan-step" in order (if there are none, work the task\'s description directly). Mark each subtask in-progress before you start it and done when it passes. Run whatever lint, typecheck, and test scripts the project has; treat a failure as unfinished work, not a separate finding.',
+    "",
+    'You may NOT review: do not audit the diff for findings, do not file "review-finding" subtasks, and do not clear `phase` or mark the task done. A failing check is yours to fix; a code smell you notice in passing is the Review phase\'s to find.',
     "",
     `When every "plan-step" subtask (or the task itself, if it had none) is done, task_update the task: id: "${TASK_ID}", phase: "review".`,
   ].join("\n"),
 
   review: [
     REREAD,
+    STAY_IN_LANE,
     "",
     "Review the work done for this task: `git status --short`, `git diff`, `git diff --staged`, and this branch's commits vs its base (resolve origin/HEAD, else develop, else main/master). Read surrounding files for context. Look for correctness bugs, logic errors, missing error handling, type-safety escapes, security issues, and needless complexity.",
+    "",
+    "You may NOT fix: change no code, not even a one-line typo or an obviously-correct rename. Every finding leaves this phase as a subtask, and the Fix phase applies it. A review that edits its own findings is a review nobody checked.",
     "",
     `File each real finding as a subtask via task_create (parentId: "${TASK_ID}", tags: ["review-finding"], priority reflecting severity, description: "file:line, what is wrong, why it matters, suggested fix").`,
     "",
@@ -76,8 +91,11 @@ const PHASE_PROCEDURES = {
 
   fix: [
     REREAD,
+    STAY_IN_LANE,
     "",
     'List its open subtasks tagged "review-finding" and fix each one: mark it in-progress before you start, done once fixed. Re-run lint, typecheck, and tests at the end.',
+    "",
+    'You may NOT review: fix the findings already on the board and no more. If you spot a new problem, file it as another "review-finding" subtask and leave it for the next Review — do not silently widen the diff.',
     "",
     `When every "review-finding" subtask is done, task_update the task: id: "${TASK_ID}", phase: "" (clear it), status: "done".`,
   ].join("\n"),
