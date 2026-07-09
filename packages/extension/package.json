@@ -240,6 +240,12 @@
         "icon": "$(checklist)"
       },
       {
+        "command": "codeWorkbench.plan.start",
+        "category": "Code Workbench",
+        "title": "Plan Feature",
+        "icon": "$(compass)"
+      },
+      {
         "command": "codeWorkbench.themeTokens",
         "category": "Code Workbench",
         "title": "Theme Tokens",

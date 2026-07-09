@@ -23,8 +23,10 @@ Turn a feature request into a structured, persisted plan. **Never implement anyt
 3. **Confirm with the user.** Present the plan and wait for approval before
    persisting.
 4. **Persist.** For each approved top-level item call \`task_create\` with
-   title + rationale in \`description\` + \`priority\`, capture the id, then
-   call \`task_create\` for each subtask with \`parentId\`.
+   title + rationale in \`description\` + \`priority\` + \`phase: "implement"\`
+   (so the Phase Board files it in Implement, not Unstarted), capture the id,
+   then call \`task_create\` for each subtask with \`parentId\` and
+   \`tags: ["plan-step"]\`.
 5. **Report.** List the created task ids so the user can find them in the
    workbench.
 

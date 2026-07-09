@@ -27,11 +27,12 @@ const ACTIONS: ActionEntry[] = [
       'Start a Claude session that runs a multi-agent review workflow (dimension fan-out + adversarial verification) over the current changes and files findings as tasks',
   },
   {
-    label: 'Plan Session',
-    description: 'start a chat in plan mode',
+    label: 'Plan Feature',
+    description: 'design & file tasks for a feature',
     icon: 'compass',
-    command: 'codeWorkbench.sessions.newPlan',
-    tooltip: 'Start a new Claude session directly in plan mode (no edits until a plan is approved)',
+    command: 'codeWorkbench.plan.start',
+    tooltip:
+      'Start a Claude session that runs a multi-agent planning workflow (context gathering, competing designs, judging, synthesis) and files the approved plan as tasks',
   },
   {
     label: 'Search Code',

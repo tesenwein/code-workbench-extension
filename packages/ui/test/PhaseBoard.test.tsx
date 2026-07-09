@@ -46,7 +46,7 @@ const MODELS: PhaseModelMap = {
 };
 
 describe('PhaseBoard', () => {
-  it('puts a task in the column its `phase` names, and unphased tasks in Unstarted', async () => {
+  it('puts a task in the column its `phase` names, and unphased tasks in Plan', async () => {
     const api = mockApi([
       task({ id: 'a1', title: 'No phase yet' }),
       task({ id: 'b2', title: 'Ready to build', phase: 'implement' }),
@@ -55,9 +55,21 @@ describe('PhaseBoard', () => {
     render(<PhaseBoard api={api} />);
 
     await screen.findByText('No phase yet');
-    expect(within(column('Unstarted')).getByText('No phase yet')).toBeTruthy();
+    expect(within(column('Plan')).getByText('No phase yet')).toBeTruthy();
     expect(within(column('Implement')).getByText('Ready to build')).toBeTruthy();
     expect(within(column('Review')).getByText('Needs review')).toBeTruthy();
+  });
+
+  it('derives Implement for an unphased task that already has plan-step subtasks', async () => {
+    const api = mockApi([
+      task({ id: 'a1', title: 'Already planned' }),
+      task({ id: 's1', title: 'step 1', parentId: 'a1', tags: ['plan-step'] }),
+    ]);
+    render(<PhaseBoard api={api} />);
+
+    await screen.findByText('Already planned');
+    expect(within(column('Implement')).getByText('Already planned')).toBeTruthy();
+    expect(within(column('Plan')).getByText('0')).toBeTruthy();
   });
 
   it('counts the tasks in each column', async () => {
@@ -85,12 +97,12 @@ describe('PhaseBoard', () => {
     expect(screen.queryByText('Finished')).toBeNull();
   });
 
-  it('starts the column’s own phase — Unstarted starts Plan', async () => {
+  it('starts the column’s own phase — an unphased task starts Plan', async () => {
     const api = mockApi([task({ id: 'a1', title: 'Fresh' })]);
     render(<PhaseBoard api={api} />);
 
     await screen.findByText('Fresh');
-    await userEvent.click(within(column('Unstarted')).getByRole('button', { name: /Start Plan/ }));
+    await userEvent.click(within(column('Plan')).getByRole('button', { name: /Start Plan/ }));
     expect(api.startPhase).toHaveBeenCalledWith('a1', 'plan');
   });
 
@@ -113,7 +125,7 @@ describe('PhaseBoard', () => {
     render(<PhaseBoard api={api} phaseModels={MODELS} />);
 
     await screen.findByText('Unassigned');
-    const cards = within(column('Unstarted'));
+    const cards = within(column('Plan'));
     // Unassigned falls back to the active worktree's map; the assigned one
     // uses its own override.
     expect(cards.getByText('opus')).toBeTruthy();
@@ -144,7 +156,7 @@ describe('PhaseBoard', () => {
 
     render(<PhaseBoard api={api} />);
     await screen.findByText('Mover');
-    await userEvent.click(within(column('Unstarted')).getByRole('button', { name: /Start Plan/ }));
+    await userEvent.click(within(column('Plan')).getByRole('button', { name: /Start Plan/ }));
 
     await waitFor(() => expect(within(column('Implement')).getByText('Mover')).toBeTruthy());
   });
