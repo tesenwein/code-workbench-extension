@@ -59,7 +59,9 @@ export async function checkWorkbenchPermissions(targetPath: string): Promise<str
 /**
  * Merge Code Workbench's own MCP permissions into <target>/.claude/settings.json,
  * creating the file if absent. Preserves every other key and any permission
- * entries already there — only appends what's missing.
+ * entries already there — only appends what's missing. Note: the file is
+ * rewritten via JSON.parse/stringify, so any comments or custom formatting
+ * a user hand-edited into settings.json are not preserved.
  */
 export async function installWorkbenchPermissions(targetPath: string): Promise<string[]> {
   const file = settingsFile(targetPath);
