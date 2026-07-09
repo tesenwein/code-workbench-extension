@@ -1,0 +1,40 @@
+{
+  "slug": "workflows-bundle",
+  "name": "Workflows Bundle",
+  "description": "Mirrors skills-bundle for the Workflow tool: bundled orchestration scripts live as strings in @code-workbench/mcp-core (packages/mcp-core/workflows/<name>.cjs exporting {name, script}, indexed by workflows.{cjs,mjs,d.ts,d.cts} as BUNDLED_WORKFLOWS, exposed via the \"./workflows\" package export). The extension's writeWorkflowScript(ctx, name) in packages/extension/src/workflowsBundle.ts looks the workflow up, mkdir -p's <globalStorage>/workflows/, and unconditionally overwrites <name>.workflow.js with the bundled script, returning its absolute path. Every command invocation rewrites the file, so it is always current with the installed extension version and there is no drift-detection machinery (unlike skills, which are installed into the user's repo and can go stale). Nothing is added to the user's repo — the file lives under VS Code's per-extension globalStorage directory. esbuild inlines each workflow's script string into dist/extension.js via the same require chain that already inlines skills.cjs, so no .vscodeignore or copy-step changes are needed.",
+  "files": [
+    "packages/mcp-core/workflows.cjs",
+    "packages/mcp-core/workflows.mjs",
+    "packages/mcp-core/workflows.d.ts",
+    "packages/mcp-core/workflows.d.cts",
+    "packages/mcp-core/workflows/code-review.cjs",
+    "packages/extension/src/workflowsBundle.ts"
+  ],
+  "guidelines": [
+    "A bundled script's `export const meta = {...}` must be a pure literal — no variables, function calls, spreads, or template interpolation — since the Workflow tool parses it without executing arbitrary code first.",
+    "Scripts are plain JavaScript, not TypeScript: no type annotations, interfaces, or generics.",
+    "Never call Date.now(), Math.random(), or argless new Date() in a script — they throw at runtime because they would break workflow resume. Vary agent labels/prompts by array index instead.",
+    "Every phase('X') call in the script body needs a matching entry in meta.phases with the same title.",
+    "To add a workflow: create packages/mcp-core/workflows/<name>.cjs exporting {name, script} and add it to BUNDLED_WORKFLOWS in workflows.cjs — mirror the skills.cjs index exactly.",
+    "writeWorkflowScript always overwrites — do not add change-detection or prompt-before-overwrite logic; the whole point is that it's always current."
+  ],
+  "anti_patterns": [
+    "Resolving workflow scripts by name convention under .claude/workflows/ in the user's repo — rejected: it's an unverified convention, adds git noise, and would need its own drift-detection prompt.",
+    "Adding drift-detection (stale/missing checks like skillsBundle's checkWorkbenchSkills) for workflow scripts — unnecessary since every run rewrites the file unconditionally."
+  ],
+  "decisions": [],
+  "tags": [
+    "workflow",
+    "workflows",
+    "bundled scripts",
+    "globalStorage",
+    "Workflow tool",
+    "code review",
+    "orchestration"
+  ],
+  "dependsOn": [
+    "code-review-tool"
+  ],
+  "updatedAt": "2026-07-09T13:29:29.941Z",
+  "createdAt": "2026-07-09T13:29:29.941Z"
+}

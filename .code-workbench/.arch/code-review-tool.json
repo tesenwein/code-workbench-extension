@@ -1,36 +1,43 @@
 {
   "slug": "code-review-tool",
   "name": "Code Review Tool",
-  "description": "The \"Code Review\" entry in the Tools action bar. Unlike the other entries it runs no static analyser and opens no page: commands/codeReview.ts registers codeWorkbench.codeReview.start, which spawns a normal Claude session (kind 'claude', so the full cw-* MCP wiring is present) in the active worktree, forced to sonnet, titled \"Code Review\", primed with buildCodeReviewPrompt() as the CLI's positional first turn. The prompt scopes the review to the uncommitted working tree plus the branch's commits vs the resolved base branch, requires running whatever lint/format/typecheck/test scripts the project actually has, files each finding via the cw-tasks task_create tool (tag \"code-review\"), and only afterwards asks the user whether to apply fixes.",
+  "description": "The \"Code Review\" entry in the Tools action bar. Unlike the other entries it runs no static analyser and opens no page: commands/codeReview.ts registers codeWorkbench.codeReview.start, which writes the bundled `cw-code-review` Workflow script to `<globalStorage>/workflows/cw-code-review.workflow.js` via writeWorkflowScript(ctx, name), then spawns a normal Claude session (kind 'claude', so the full cw-* MCP wiring is present) in the active worktree, forced to opus (it now acts as an orchestrator), titled \"Code Review\", primed with buildCodeReviewPrompt(scriptPath) as the CLI's positional first turn. That prompt tells the session to invoke the built-in Workflow tool with the given scriptPath rather than reading the diff itself. The script fans out one sonnet finder per review dimension (correctness & logic; error handling/concurrency/resource lifecycle; type safety & API contracts; security & data handling; dead code/duplication/needless complexity; tests & docs coverage), adversarially verifies each finding across three distinct refutation lenses (dropping it when ≥2 of 3 refute), and concurrently runs a Checks agent that discovers and runs whatever lint/format/typecheck/test scripts the project has. It returns {baseBranch, empty, findings, checks} to the session, which files each finding via the cw-tasks task_create tool (tag \"code-review\", rootCause-grouped findings become a parent task + subtasks, checks.failures file as high-priority findings), and only afterwards asks the user whether to apply fixes.",
   "files": [
     "packages/extension/src/commands/codeReview.ts",
     "packages/extension/src/codeHealthView.ts",
     "packages/extension/src/sessions.ts",
-    "packages/extension/src/sessionTypes.ts"
+    "packages/extension/src/sessionTypes.ts",
+    "packages/extension/src/workflowsBundle.ts",
+    "packages/mcp-core/workflows/code-review.cjs"
   ],
   "guidelines": [
     "Launch purpose-built agents through SessionManager.create(kind, wt, undefined, CreateSessionOptions) — never through SessionProfile, which bypasses buildLaunch and therefore the MCP config, so the agent would lose the cw-tasks tools it needs.",
     "SavedSession.initialPrompt is applied only on the first launch; a resumed session already carries it in its transcript.",
-    "SavedSession.modelOverride wins over the worktree's model pref; the effort flag still keys off the resolved model's `thinking` capability."
+    "SavedSession.modelOverride wins over the worktree's model pref; the effort flag still keys off the resolved model's `thinking` capability.",
+    "The Workflow tool refuses to run unless the prompt explicitly asks for it in the user's own words — buildCodeReviewPrompt() must say \"Run the Workflow tool with scriptPath: <abs>\" verbatim, not just describe the goal.",
+    "A bundled workflow script's `export const meta` must be a pure literal (no variables, calls, spreads, interpolation), is plain JS not TypeScript, and must never call Date.now()/Math.random()/argless new Date() — see workflows-bundle."
   ],
   "anti_patterns": [
     "Sending the prompt with terminal.sendText — it races the TUI's startup and gets swallowed.",
-    "Letting the review agent edit code before the user answers the fix prompt."
+    "Letting the review agent edit code before the user answers the fix prompt.",
+    "Having the session read the diff and review it itself instead of delegating to the Workflow script — defeats the whole point of the dimension fan-out + adversarial verification."
   ],
   "decisions": [],
   "tags": [
     "code review",
     "review",
-    "sonnet",
+    "opus",
     "code health",
     "tools action bar",
     "session prompt",
-    "initial prompt"
+    "initial prompt",
+    "workflow"
   ],
   "dependsOn": [
     "editor-tab-pages",
-    "mcp-config"
+    "mcp-config",
+    "workflows-bundle"
   ],
-  "updatedAt": "2026-07-09T13:12:06.855Z",
+  "updatedAt": "2026-07-09T13:29:14.535Z",
   "createdAt": "2026-07-09T08:30:07.724Z"
 }

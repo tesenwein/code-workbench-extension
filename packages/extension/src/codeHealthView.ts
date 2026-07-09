@@ -23,7 +23,8 @@ const ACTIONS: ActionEntry[] = [
     description: 'review branch & uncommitted changes',
     icon: 'checklist',
     command: 'codeWorkbench.codeReview.start',
-    tooltip: 'Start a Claude session that reviews the current changes and files findings as tasks',
+    tooltip:
+      'Start a Claude session that runs a multi-agent review workflow (dimension fan-out + adversarial verification) over the current changes and files findings as tasks',
   },
   {
     label: 'Plan Session',
