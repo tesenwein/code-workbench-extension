@@ -65,6 +65,7 @@ function serializeTask(task) {
     `worktree: ${task.worktree ?? "null"}`,
     `parentId: ${task.parentId ?? "null"}`,
     `parallel: ${task.parallel ? "true" : "false"}`,
+    `order: ${task.order ?? "null"}`,
     `dueDate: ${task.dueDate ?? "null"}`,
     `epic: ${task.epic ?? "null"}`,
     `phase: ${task.phase ?? "null"}`,
@@ -136,6 +137,7 @@ function parseTask(raw) {
   const rawWorktree = get("worktree");
   const rawParentId = get("parentId");
   const rawParallel = get("parallel");
+  const rawOrder = get("order");
   const rawDueDate = get("dueDate");
   const rawEpic = get("epic");
   const rawPhase = get("phase");
@@ -170,6 +172,10 @@ function parseTask(raw) {
     worktree: rawWorktree === "null" || !rawWorktree ? null : rawWorktree,
     parentId: rawParentId === "null" || !rawParentId ? null : rawParentId,
     parallel: rawParallel === "true",
+    order:
+      rawOrder === "null" || rawOrder === "" || Number.isNaN(Number(rawOrder))
+        ? null
+        : Number(rawOrder),
     dueDate:
       rawDueDate === "null" || !/^\d{4}-\d{2}-\d{2}$/.test(rawDueDate)
         ? null
@@ -193,6 +199,20 @@ function taskCmp(a, b) {
   return a.created.localeCompare(b.created);
 }
 
+// Sibling-group comparator: lower `order` first, null/undefined `order` sorts
+// last and falls back to `created` order among themselves.
+function siblingCmp(a, b) {
+  const ao = a.order ?? null;
+  const bo = b.order ?? null;
+  if (ao !== null && bo !== null) {
+    if (ao !== bo) return ao - bo;
+    return a.created.localeCompare(b.created);
+  }
+  if (ao !== null) return -1;
+  if (bo !== null) return 1;
+  return a.created.localeCompare(b.created);
+}
+
 function sortTasks(tasks) {
   const ids = new Set(tasks.map((t) => t.id));
   const roots = tasks.filter((t) => !t.parentId);
@@ -208,7 +228,7 @@ function sortTasks(tasks) {
   for (const r of roots) {
     result.push(r);
     const children = childMap.get(r.id) ?? [];
-    children.sort(taskCmp);
+    children.sort(siblingCmp);
     result.push(...children);
   }
   // orphaned subtasks (parent deleted) appended at end
@@ -228,4 +248,5 @@ module.exports = {
   serializeTask,
   parseTask,
   sortTasks,
+  siblingCmp,
 };

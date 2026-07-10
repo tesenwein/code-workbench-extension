@@ -225,6 +225,7 @@ function makeTask(input) {
     worktree: parentId || !input.worktree ? null : worktreeKey(input.worktree),
     parentId,
     parallel: input.parallel ?? false,
+    order: input.order ?? null,
     dueDate: input.dueDate ?? null,
     epic: input.epic ?? null,
     phase: input.phase ?? null,

@@ -10,6 +10,9 @@ export interface Task {
   worktree: string | null;
   parentId: string | null;
   parallel: boolean;
+  /** Sibling-group sort key (lower first). Null siblings sort last, falling
+   *  back to `created` order among themselves. */
+  order: number | null;
   dueDate: string | null;
   epic: string | null;
   /** Workflow phase this (root) task is being driven through, or null. */
@@ -38,3 +41,10 @@ export function parseTask(raw: string): Task | null;
 
 /** Sort tasks by priority, then status, with subtasks grouped under parents. */
 export function sortTasks<T extends Task>(tasks: T[]): T[];
+
+/** Sibling-group comparator: lower `order` first, null `order` sorts last and
+ *  falls back to `created` order among themselves. */
+export function siblingCmp<T extends Pick<Task, "order" | "created">>(
+  a: T,
+  b: T,
+): number;

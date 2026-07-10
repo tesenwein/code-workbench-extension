@@ -32,6 +32,9 @@ export interface WorkspaceTask {
   updated: string;
   parentId?: string | null;
   parallel?: boolean;
+  /** Sibling-group sort key (lower first). Null/undefined siblings sort last,
+   *  falling back to `created` order among themselves. */
+  order?: number | null;
   dueDate?: string | null;
   epic?: string | null;
   phase?: TaskPhase | null;

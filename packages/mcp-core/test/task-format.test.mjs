@@ -7,6 +7,7 @@ const {
   serializeTask,
   parseTask,
   sortTasks,
+  siblingCmp,
 } = require('../task-format.cjs');
 
 /** A fully-populated task, used as the round-trip fixture. */
@@ -19,6 +20,7 @@ function makeTask(overrides = {}) {
     worktree: 'feature-x',
     parentId: null,
     parallel: false,
+    order: 3,
     dueDate: null,
     epic: 'auth-revamp',
     phase: 'implement',
@@ -56,6 +58,7 @@ describe('serializeTask / parseTask round-trip', () => {
       worktree: task.worktree,
       parentId: task.parentId,
       parallel: task.parallel,
+      order: task.order,
       dueDate: task.dueDate,
       epic: task.epic,
       phase: task.phase,
@@ -83,6 +86,17 @@ describe('serializeTask / parseTask round-trip', () => {
     expect(parsed.tags).toEqual([]);
     expect(parsed.worktree).toBeNull();
     expect(parsed.description).toBe('');
+  });
+
+  it('round-trips a null order', () => {
+    const task = makeTask({ order: null });
+    const parsed = parseTask(serializeTask(task));
+    expect(parsed.order).toBeNull();
+  });
+
+  it('round-trips a numeric order, including 0', () => {
+    expect(parseTask(serializeTask(makeTask({ order: 0 }))).order).toBe(0);
+    expect(parseTask(serializeTask(makeTask({ order: 7 }))).order).toBe(7);
   });
 
   it('round-trips a memo when the description is empty', () => {
@@ -148,5 +162,61 @@ describe('sortTasks', () => {
     ];
     const ids = sortTasks(tasks).map((x) => x.id);
     expect(ids).toEqual(['root', 'orphan']);
+  });
+
+  it('sorts siblings by order, ascending, ahead of null-order siblings', () => {
+    const tasks = [
+      t({ id: 'root', priority: 'high', parentId: null }),
+      t({ id: 'c-2', parentId: 'root', order: 2 }),
+      t({ id: 'c-unordered', parentId: 'root', order: null }),
+      t({ id: 'c-0', parentId: 'root', order: 0 }),
+      t({ id: 'c-1', parentId: 'root', order: 1 }),
+    ];
+    const ids = sortTasks(tasks).map((x) => x.id);
+    expect(ids).toEqual(['root', 'c-0', 'c-1', 'c-2', 'c-unordered']);
+  });
+
+  it('falls back to created order among null-order siblings', () => {
+    const tasks = [
+      t({ id: 'root', parentId: null }),
+      t({ id: 'later', parentId: 'root', order: null, created: '2026-01-02T00:00:00.000Z' }),
+      t({ id: 'earlier', parentId: 'root', order: null, created: '2026-01-01T00:00:00.000Z' }),
+    ];
+    const ids = sortTasks(tasks).map((x) => x.id);
+    expect(ids).toEqual(['root', 'earlier', 'later']);
+  });
+
+  it('does not change root ordering when order is present', () => {
+    const tasks = [
+      t({ id: 'low', priority: 'low', parentId: null, order: 0 }),
+      t({ id: 'high', priority: 'high', parentId: null, order: 5 }),
+      t({ id: 'med', priority: 'medium', parentId: null, order: 1 }),
+    ];
+    const ids = sortTasks(tasks).map((x) => x.id);
+    expect(ids).toEqual(['high', 'med', 'low']);
+  });
+});
+
+describe('siblingCmp', () => {
+  const t = (o) => ({ created: '2026-01-01T00:00:00.000Z', order: null, ...o });
+
+  it('orders by order ascending when both are set', () => {
+    expect(siblingCmp(t({ order: 1 }), t({ order: 2 }))).toBeLessThan(0);
+    expect(siblingCmp(t({ order: 2 }), t({ order: 1 }))).toBeGreaterThan(0);
+  });
+
+  it('sorts a null order after any numeric order', () => {
+    expect(siblingCmp(t({ order: null }), t({ order: 0 }))).toBeGreaterThan(0);
+    expect(siblingCmp(t({ order: 0 }), t({ order: null }))).toBeLessThan(0);
+  });
+
+  it('falls back to created among ties (same order or both null)', () => {
+    const earlier = t({ order: 1, created: '2026-01-01T00:00:00.000Z' });
+    const later = t({ order: 1, created: '2026-01-02T00:00:00.000Z' });
+    expect(siblingCmp(earlier, later)).toBeLessThan(0);
+
+    const earlierNull = t({ order: null, created: '2026-01-01T00:00:00.000Z' });
+    const laterNull = t({ order: null, created: '2026-01-02T00:00:00.000Z' });
+    expect(siblingCmp(earlierNull, laterNull)).toBeLessThan(0);
   });
 });
