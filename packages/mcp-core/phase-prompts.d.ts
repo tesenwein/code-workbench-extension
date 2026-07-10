@@ -34,6 +34,9 @@ export function phaseProcedure(phase: TaskPhase, taskId: string): string;
 /** Full prompt for a spawned phase session. */
 export function phasePrompt(phase: TaskPhase, task: PhaseTask): string;
 
+/** Full prompt for ONE session that runs a phase across several tasks in sequence. */
+export function phasePromptBulk(phase: TaskPhase, tasks: PhaseTask[]): string;
+
 /** `.claude/skills/cw-<phase>/SKILL.md` body. */
 export function phaseSkillBody(phase: TaskPhase): string;
 

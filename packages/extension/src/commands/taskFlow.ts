@@ -15,7 +15,8 @@ import * as vscode from 'vscode';
 import type { SessionManager } from '../sessions';
 import type { TaskPhase } from '@code-workbench/mcp-core/task-format';
 import { worktreeKey } from '@code-workbench/mcp-core/task-format';
-import { PHASE_META, phasePrompt } from '@code-workbench/mcp-core/phase-prompts';
+import { PHASE_META, phasePrompt, phasePromptBulk } from '@code-workbench/mcp-core/phase-prompts';
+import type { Task } from '@code-workbench/mcp-core/task-format';
 import { listTasks, updateTask } from '../tasks';
 import { listWorktrees } from '../git';
 
@@ -95,7 +96,7 @@ export async function startTaskPhase(
   });
 }
 
-/** Outcome of a bulk fan-out: one entry per task we actually tried to start.
+/** Outcome of a bulk start: one entry per task we actually tried to start.
  *  Tasks skipped as stale (deleted, or already in-progress when the user chose
  *  not to include those) appear in neither list — they are not failures. */
 export interface BulkStartResult {
@@ -103,13 +104,43 @@ export interface BulkStartResult {
   failed: { id: string; error: string }[];
 }
 
-/** Start `phase` for every id, each in its own session. The ids come from the
- *  board's snapshot, so re-read the live status and drop anything that has
- *  since been deleted, finished, or picked up by another session (unless the
- *  user explicitly asked to include in-progress tasks).
+/** Spawn ONE session that runs `phase` over `tasks`, sequentially. All of them
+ *  must live in `wt` — a phase edits the working tree, so a batch can only span
+ *  tasks that share one. */
+async function startTaskPhaseBatch(
+  deps: TaskFlowDeps,
+  key: string,
+  wt: string,
+  tasks: Task[],
+  phase: TaskPhase,
+): Promise<void> {
+  const spec = PHASE_META[phase];
+  const title =
+    tasks.length === 1
+      ? `${spec.label}: ${tasks[0].title}`
+      : `${spec.label}: ${tasks.length} tasks`;
+  // Flip status before spawning, for the same reason as the single-task path:
+  // status — not `phase` — is what says a session is live on this task.
+  for (const t of tasks) {
+    if (t.status === 'open') await updateTask(key, t.id, { status: 'in-progress' });
+  }
+  await deps.sessionMgr.create('claude', wt, undefined, {
+    title: title.slice(0, 80),
+    icon: spec.icon,
+    model: deps.sessionMgr.resolvePhaseModel(wt, phase),
+    prompt: phasePromptBulk(phase, tasks),
+    ...(spec.effort != null ? { effort: spec.effort } : {}),
+  });
+}
+
+/** Start `phase` for every id in as FEW sessions as possible: one chat per
+ *  worktree, working its tasks one after another. "Start all" means one agent
+ *  with a queue, not N agents racing over the same working tree — sessions in a
+ *  shared worktree would interleave edits and produce diffs nobody can review.
  *
- *  Deliberately un-throttled: the confirmation modal's count is the user's
- *  guard against starting more sessions than they meant to. */
+ *  The ids come from the board's snapshot, so re-read the live status and drop
+ *  anything that has since been deleted, finished, or picked up by another
+ *  session (unless the user explicitly asked to include in-progress tasks). */
 export async function startTaskPhaseBulk(
   deps: TaskFlowDeps,
   key: string,
@@ -118,30 +149,42 @@ export async function startTaskPhaseBulk(
   phase: TaskPhase,
   includeInProgress: boolean,
 ): Promise<BulkStartResult> {
-  // De-dupe: a stale board snapshot listing a task twice must not double-spawn.
+  // De-dupe: a stale board snapshot listing a task twice must not double-queue.
   const unique = [...new Set(ids)];
   const live = new Map((await listTasks(key)).map((t) => [t.id, t]));
-  const runnable = unique.filter((id) => {
-    const task = live.get(id);
-    if (!task || task.status === 'done') return false;
-    return includeInProgress || task.status === 'open';
-  });
-
-  const settled = await Promise.allSettled(
-    runnable.map((id) => startTaskPhase(deps, key, repoRoot, id, phase)),
-  );
+  const runnable = unique
+    .map((id) => live.get(id))
+    .filter((t): t is Task => {
+      if (!t || t.status === 'done') return false;
+      return includeInProgress || t.status === 'open';
+    });
 
   const result: BulkStartResult = { succeeded: [], failed: [] };
-  settled.forEach((outcome, i) => {
-    const id = runnable[i];
-    if (outcome.status === 'fulfilled') result.succeeded.push(id);
-    else
-      result.failed.push({
-        id,
-        error:
-          outcome.reason instanceof Error ? outcome.reason.message : String(outcome.reason ?? ''),
-      });
-  });
+
+  // Group by the worktree each task resolves to. Tasks assigned to different
+  // worktrees cannot share a session; unassigned ones fall back to the active
+  // worktree and so batch together.
+  const byWorktree = new Map<string, Task[]>();
+  for (const task of runnable) {
+    const wt = await resolveTaskWorktree(repoRoot, task.worktree, deps.ensureActiveWorktree);
+    if (!wt) {
+      result.failed.push({ id: task.id, error: 'No worktree to run this phase in.' });
+      continue;
+    }
+    const group = byWorktree.get(wt);
+    if (group) group.push(task);
+    else byWorktree.set(wt, [task]);
+  }
+
+  for (const [wt, tasks] of byWorktree) {
+    try {
+      await startTaskPhaseBatch(deps, key, wt, tasks, phase);
+      result.succeeded.push(...tasks.map((t) => t.id));
+    } catch (err) {
+      const error = err instanceof Error ? err.message : String(err ?? '');
+      result.failed.push(...tasks.map((t) => ({ id: t.id, error })));
+    }
+  }
   return result;
 }
 

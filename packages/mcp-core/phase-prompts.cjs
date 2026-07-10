@@ -140,6 +140,41 @@ function phasePrompt(phase, task) {
   return [header, "", ...context, "", phaseProcedure(phase, task.id)].join("\n");
 }
 
+/**
+ * Full prompt for ONE session that runs `phase` across several tasks, one after
+ * another. The per-task procedure is repeated verbatim with each task's id
+ * substituted, so a batched task is instructed exactly as it would be in its own
+ * session — including its own handoff `task_update`. Sequential, not concurrent:
+ * the phases mutate the board and the working tree, and a batch that interleaves
+ * them would produce diffs no Review phase can attribute to a task.
+ */
+function phasePromptBulk(phase, tasks) {
+  assertPhase(phase);
+  if (tasks.length === 1) return phasePrompt(phase, tasks[0]);
+  const label = PHASE_META[phase].label;
+  const header = [
+    `${label.toUpperCase()} phase for ${tasks.length} tasks, run in THIS one session.`,
+    "",
+    `Work them STRICTLY ONE AT A TIME in the order below: finish a task's ${label} phase completely — including its handoff task_update — before you read the next one. Never batch the board writes and never run two tasks' work in parallel.`,
+    `If one task blocks you, record the blocker in its memo as its procedure says, then CONTINUE with the next task; one blocked task must not abandon the rest. When every task below is finished, report a one-line result per task.`,
+  ].join("\n");
+
+  const blocks = tasks.map((task, i) => {
+    const context = [`Task ${task.id}: ${task.title}`];
+    if (task.description) context.push("", task.description);
+    if (phase === "implement" && task.memo) context.push("", `Plan memo:\n${task.memo}`);
+    return [
+      `--- Task ${i + 1} of ${tasks.length} — ${task.id} ---`,
+      "",
+      ...context,
+      "",
+      phaseProcedure(phase, task.id),
+    ].join("\n");
+  });
+
+  return [header, "", ...blocks].join("\n\n");
+}
+
 /** `.claude/skills/cw-<phase>/SKILL.md` body — the same procedure, driven by
  *  hand as `/cw-<phase> <taskId>`. */
 function phaseSkillBody(phase) {
@@ -172,6 +207,7 @@ module.exports = {
   PHASE_DESCRIPTIONS,
   phaseProcedure,
   phasePrompt,
+  phasePromptBulk,
   phaseSkillBody,
   phaseSkill,
 };
