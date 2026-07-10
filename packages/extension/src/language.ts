@@ -29,7 +29,8 @@ const MAX_LANGUAGE_LENGTH = 64;
 export function sanitizeLanguage(value: unknown): string {
   if (typeof value !== 'string') return '';
   return value
-    .replace(/[\r\n]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/[\x00-\x1f\x7f]+/g, '')
     .trim()
     .slice(0, MAX_LANGUAGE_LENGTH);
 }
