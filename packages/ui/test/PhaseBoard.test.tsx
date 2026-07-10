@@ -26,6 +26,7 @@ function mockApi(tasks: WorkspaceTask[], extra: Partial<TasksApi> = {}): TasksAp
     update: vi.fn(),
     remove: vi.fn(),
     startPhase: vi.fn(async () => undefined),
+    confirmBulkStart: vi.fn(async () => ({ succeeded: [], failed: [] })),
     ...extra,
   } as TasksApi;
 }
@@ -165,5 +166,75 @@ describe('PhaseBoard', () => {
     const api = mockApi([task({ id: 'a1', title: 'X' })], { startPhase: undefined });
     render(<PhaseBoard api={api} />);
     expect(screen.getByText(/can.t spawn Claude sessions/)).toBeTruthy();
+  });
+
+  describe('bulk column start', () => {
+    const COLUMN_TASKS = [
+      task({ id: 'p1', title: 'Open one' }),
+      task({ id: 'p2', title: 'Open two' }),
+      task({ id: 'p3', title: 'Running', status: 'in-progress' }),
+    ];
+
+    it('counts only startable tasks and passes both id sets to the host', async () => {
+      const api = mockApi(COLUMN_TASKS);
+      render(<PhaseBoard api={api} />);
+
+      await screen.findByText('Open one');
+      const bulk = within(column('Plan')).getByRole('button', { name: 'Start all Plan (2)' });
+      await userEvent.click(bulk);
+
+      expect(api.confirmBulkStart).toHaveBeenCalledWith('plan', ['p1', 'p2'], ['p3']);
+    });
+
+    it('hides the footer button in a column with nothing startable', async () => {
+      const api = mockApi([task({ id: 'p3', title: 'Running', status: 'in-progress' })]);
+      render(<PhaseBoard api={api} />);
+
+      await screen.findByText('Running');
+      expect(screen.queryByRole('button', { name: /Start all/ })).toBeNull();
+    });
+
+    it('hides the footer button when the host offers no bulk start', async () => {
+      const api = mockApi(COLUMN_TASKS, { confirmBulkStart: undefined });
+      render(<PhaseBoard api={api} />);
+
+      await screen.findByText('Open one');
+      expect(screen.queryByRole('button', { name: /Start all/ })).toBeNull();
+    });
+
+    it('reports partial failures, and the summary survives a tasks-changed reload', async () => {
+      const api = mockApi(COLUMN_TASKS, {
+        confirmBulkStart: vi.fn(async () => ({
+          succeeded: ['p1'],
+          failed: [{ id: 'p2', error: 'no worktree' }],
+        })),
+      });
+      const { rerender } = render(<PhaseBoard api={api} reloadKey={0} />);
+
+      await screen.findByText('Open one');
+      await userEvent.click(within(column('Plan')).getByRole('button', { name: /Start all/ }));
+
+      const summary = await screen.findByText(/1 of 2 failed to start/);
+      expect(summary.textContent).toContain('no worktree');
+
+      // The host's watcher fires after the started sessions touch the task
+      // files; the load effect must not wipe the summary.
+      rerender(<PhaseBoard api={api} reloadKey={1} />);
+      await waitFor(() => expect(api.list).toHaveBeenCalledTimes(3));
+      expect(screen.getByText(/1 of 2 failed to start/)).toBeTruthy();
+    });
+
+    it('leaves no error strip when every start succeeds', async () => {
+      const api = mockApi(COLUMN_TASKS, {
+        confirmBulkStart: vi.fn(async () => ({ succeeded: ['p1', 'p2'], failed: [] })),
+      });
+      render(<PhaseBoard api={api} />);
+
+      await screen.findByText('Open one');
+      await userEvent.click(within(column('Plan')).getByRole('button', { name: /Start all/ }));
+
+      await waitFor(() => expect(api.list).toHaveBeenCalledTimes(2));
+      expect(screen.queryByText(/failed to start/)).toBeNull();
+    });
   });
 });

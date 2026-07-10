@@ -1519,6 +1519,27 @@
   flex-direction: column;
   gap: 8px;
 }
+/* Pinned to the bottom of the (flex-column) .phase-column while the body
+   scrolls — a whole-column action belongs below the cards it acts on. */
+.phase-column-footer {
+  flex-shrink: 0;
+  padding: 8px;
+  border-top: 1px solid var(--border);
+}
+.phase-column-start {
+  width: 100%;
+  justify-content: center;
+  font-weight: 600;
+  color: var(--fg-1);
+  background: var(--bg-2);
+}
+.phase-column-start:hover:not(:disabled) {
+  color: var(--fg-0);
+}
+.phase-column-start:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
 .phase-column-empty {
   margin: 0;
   padding: 6px 2px;

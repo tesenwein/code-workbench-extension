@@ -11,7 +11,12 @@ export const commands = {
     return Promise.resolve(undefined);
   },
 };
-export const window = {};
+export const window = {
+  showWarningMessage: (..._args: unknown[]): Thenable<string | undefined> =>
+    Promise.resolve(undefined),
+  showErrorMessage: (..._args: unknown[]): Thenable<string | undefined> =>
+    Promise.resolve(undefined),
+};
 export const workspace = { getConfiguration: () => ({ get: () => true }) };
 export const Uri = { joinPath: () => ({}), parse: () => ({}), file: () => ({}) };
 export const ProgressLocation = { Notification: 15 };

@@ -3,7 +3,9 @@ import * as fs from 'fs/promises';
 import * as vscode from 'vscode';
 import { listTasks, createTask, updateTask, deleteTask, tasksDir, taskFilePath } from './tasks';
 import { listWorktrees } from './git';
-import type { Task } from '@code-workbench/mcp-core/task-format';
+import type { Task, TaskPhase } from '@code-workbench/mcp-core/task-format';
+import { PHASE_META } from '@code-workbench/mcp-core/phase-prompts';
+import type { BulkStartResult } from './commands/taskFlow';
 import { reactWebviewHtml } from './reactWebview';
 import { attachRpc, type RpcContext } from './webviewRpc';
 
@@ -11,6 +13,46 @@ export interface TaskFilter {
   text?: string;
   priority?: Task['priority'];
   status?: Task['status'];
+}
+
+const NO_BULK_START: BulkStartResult = { succeeded: [], failed: [] };
+
+/** The bulk-start modal helper: confirms a whole-column phase start with the
+ *  user, then fans it out. Native and modal on purpose — a webview button that
+ *  can spawn a dozen Claude sessions needs a host-level "are you sure", and the
+ *  count in the button label is the only throttle the fan-out has.
+ *
+ *  In-progress tasks are skipped by default (a phase is probably already
+ *  running for them); the second button opts them in. Dismissing the modal
+ *  (Escape) returns `undefined`, which is a Cancel like any other. */
+export async function confirmBulkStartPhase(
+  phase: TaskPhase,
+  startableIds: string[],
+  inProgressIds: string[],
+): Promise<BulkStartResult> {
+  if (!(phase in PHASE_META) || startableIds.length === 0) return NO_BULK_START;
+
+  const label = PHASE_META[phase].label;
+  const startOnly = `Start ${startableIds.length}`;
+  const includeAll = `Include in-progress (${startableIds.length + inProgressIds.length})`;
+  const message =
+    inProgressIds.length > 0
+      ? `Start ${label} for ${startableIds.length} tasks? ${inProgressIds.length} in-progress tasks will be skipped.`
+      : `Start ${label} for ${startableIds.length} tasks?`;
+
+  const buttons =
+    inProgressIds.length > 0 ? [startOnly, includeAll, 'Cancel'] : [startOnly, 'Cancel'];
+  const answer = await vscode.window.showWarningMessage(message, { modal: true }, ...buttons);
+  if (answer !== startOnly && answer !== includeAll) return NO_BULK_START;
+
+  const ids = answer === includeAll ? [...startableIds, ...inProgressIds] : startableIds;
+  const result = await vscode.commands.executeCommand<BulkStartResult>(
+    'codeWorkbench.tasks.startPhaseBulk',
+    ids,
+    phase,
+    answer === includeAll,
+  );
+  return result ?? NO_BULK_START;
 }
 
 /** RPC handler set the shared TasksPanel React component needs — used by
@@ -63,6 +105,12 @@ export function buildTaskRpcHandlers(
     startPhase: async (id: unknown, phase: unknown) => {
       await vscode.commands.executeCommand('codeWorkbench.tasks.startPhase', String(id), phase);
     },
+    confirmBulkStart: async (phase: unknown, startableIds: unknown, inProgressIds: unknown) =>
+      confirmBulkStartPhase(
+        phase as TaskPhase,
+        (startableIds as string[]) ?? [],
+        (inProgressIds as string[]) ?? [],
+      ),
   };
 }
 
