@@ -306,6 +306,7 @@ function TaskEditForm({
   const [memo, setMemo] = useState(task.memo ?? '');
   const [priority, setPriority] = useState(task.priority);
   const [status, setStatus] = useState(task.status);
+  const [phase, setPhase] = useState<TaskPhase | ''>(task.phase ?? '');
   const [worktree, setWorktree] = useState(worktreeKey(task.worktree));
   const [epic, setEpic] = useState(task.epic ?? '');
   const [tagsInput, setTagsInput] = useState((task.tags ?? []).join(', '));
@@ -322,6 +323,7 @@ function TaskEditForm({
         memo,
         priority,
         status,
+        ...(task.parentId ? {} : { phase: phase || null }),
         worktree: worktree || null,
         epic: epic.trim() || null,
         tags: parseTags(tagsInput),
@@ -408,6 +410,22 @@ function TaskEditForm({
             <option value="done">Done</option>
           </select>
         </label>
+        {!task.parentId && (
+          <label className="task-field">
+            <span className="task-field-label">Phase</span>
+            <select
+              className="task-select"
+              value={phase}
+              onChange={(e) => setPhase(e.target.value as TaskPhase | '')}
+            >
+              <option value="">None</option>
+              <option value="plan">Plan</option>
+              <option value="implement">Implement</option>
+              <option value="review">Review</option>
+              <option value="fix">Fix</option>
+            </select>
+          </label>
+        )}
         {!task.parentId && (
           <label className="task-field">
             <span className="task-field-label">Worktree</span>
