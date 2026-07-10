@@ -8,6 +8,7 @@ export {
   PHASE_DESCRIPTIONS,
   phaseProcedure,
   phasePrompt,
+  phasePromptBulk,
   phaseSkillBody,
   phaseSkill,
 } from "./phase-prompts.cjs";

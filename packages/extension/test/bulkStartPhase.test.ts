@@ -62,15 +62,28 @@ beforeEach(() => {
 });
 
 describe('startTaskPhaseBulk', () => {
-  it('de-dupes ids so a doubled board snapshot cannot double-spawn', async () => {
+  it('starts every task of a worktree in ONE session, not one session each', async () => {
+    listTasksMock.mockResolvedValue([task('a'), task('b'), task('c')]);
+    const d = deps();
+
+    const result = await run(d, ['a', 'b', 'c']);
+
+    expect(d.create).toHaveBeenCalledTimes(1);
+    const opts = d.create.mock.calls[0][3] as unknown as { title: string; prompt: string };
+    expect(opts.title).toBe('Implement: 3 tasks');
+    // Each batched task carries its own copy of the procedure, keyed by its id.
+    for (const id of ['a', 'b', 'c']) expect(opts.prompt).toContain(`Task ${id}:`);
+    expect(result.succeeded).toEqual(['a', 'b', 'c']);
+    expect(result.failed).toEqual([]);
+  });
+
+  it('de-dupes ids so a doubled board snapshot cannot double-queue a task', async () => {
     listTasksMock.mockResolvedValue([task('a'), task('b')]);
     const d = deps();
 
     const result = await run(d, ['a', 'a', 'b']);
 
-    expect(d.create).toHaveBeenCalledTimes(2);
     expect(result.succeeded).toEqual(['a', 'b']);
-    expect(result.failed).toEqual([]);
   });
 
   it('skips ids that went stale since the board snapshot', async () => {
@@ -94,18 +107,29 @@ describe('startTaskPhaseBulk', () => {
     expect(result.succeeded).toEqual(['a', 'b']);
   });
 
-  it('aggregates partial failures instead of rejecting the whole batch', async () => {
+  it('keeps a single task on the single-task title and prompt', async () => {
+    listTasksMock.mockResolvedValue([task('a')]);
+    const d = deps();
+
+    await run(d, ['a']);
+
+    const opts = d.create.mock.calls[0][3] as unknown as { title: string; prompt: string };
+    expect(opts.title).toBe('Implement: Task a');
+    expect(opts.prompt).toContain('IMPLEMENT phase for task a.');
+  });
+
+  it('fails every task of a batch whose session could not spawn', async () => {
     listTasksMock.mockResolvedValue([task('a'), task('b')]);
-    const create = vi.fn(
-      async (_agent: string, _wt: string, _x: unknown, opts: { title: string }) =>
-        opts.title.endsWith('Task b') ? Promise.reject(new Error('spawn failed')) : undefined,
-    );
+    const create = vi.fn(async () => Promise.reject(new Error('spawn failed')));
     const d = deps(create as never);
 
     const result = await run(d, ['a', 'b']);
 
-    expect(result.succeeded).toEqual(['a']);
-    expect(result.failed).toEqual([{ id: 'b', error: 'spawn failed' }]);
+    expect(result.succeeded).toEqual([]);
+    expect(result.failed).toEqual([
+      { id: 'a', error: 'spawn failed' },
+      { id: 'b', error: 'spawn failed' },
+    ]);
   });
 });
 
