@@ -2,7 +2,7 @@
   "name": "code-workbench",
   "displayName": "Code Workbench",
   "description": "Saved Claude sessions, task management, and git worktree tree management.",
-  "version": "0.1.29",
+  "version": "0.1.30",
   "publisher": "tesenwein",
   "license": "MIT",
   "engines": {
