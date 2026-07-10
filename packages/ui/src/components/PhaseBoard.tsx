@@ -346,9 +346,7 @@ export function PhaseBoard({ api, reloadKey = 0, phaseModels, onOpenTask }: Phas
                     >
                       {bulkStarting === column
                         ? 'Starting…'
-                        : startable > 0
-                          ? `Start all ${COLUMN_LABELS[column]} (${startable})`
-                          : `Restart all ${COLUMN_LABELS[column]} (${inProgress})`}
+                        : `Start all ${COLUMN_LABELS[column]} (${startable + inProgress})`}
                     </button>
                   </footer>
                 )}

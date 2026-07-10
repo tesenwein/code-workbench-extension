@@ -269,6 +269,19 @@ async function updateTask(repoKey, id, patch) {
   const effectiveParentId =
     next.parentId !== undefined ? next.parentId : existing.parentId;
   if (effectiveParentId) next.worktree = null;
+  // A phase handoff (task_update setting `phase` to something new) means the
+  // spawned session for the OLD phase is done — status must drop back to
+  // "open" so the board offers the next phase's Start button, otherwise the
+  // card stays stuck showing "in progress" forever. Skip this when the patch
+  // sets status itself (e.g. the terminal handoff to status: "done").
+  if (
+    patch.status === undefined &&
+    patch.phase !== undefined &&
+    patch.phase !== existing.phase &&
+    existing.status === "in-progress"
+  ) {
+    next.status = "open";
+  }
   const updated = {
     ...existing,
     ...next,
