@@ -36,6 +36,7 @@ Working with Claude Code across several branches means juggling worktrees, termi
 | 🧹 **Code health**          | Duplicate detection (exact/renamed/structural), dead-code scanning (unused exports/locals, commented code), and type-safety escape hatch detection (`as`/`any`/`!`/`@ts-ignore`) — full editor-tab pages with clickable snippets and per-repo acknowledgements. |
 | 🧩 **Bundled skills**       | Ships `cw-*` Claude Code skills (`cw-work`, `cw-plan`, `cw-implement`, `cw-review`, `cw-fix`, `cw-arch`, `cw-dead-code`, `cw-duplicate-cleanup`, `cw-type-safety`, …), installable per-user or per-worktree and auto-synced when updated.                       |
 | 🎨 **Theme-aware UI**       | Webview panels derive their palette from the active VS Code theme, tinted per-worktree, with high-contrast support.                                                                                                                                             |
+| 🌐 **Language**             | Set the natural language Claude replies in (and, independently, the language for code comments) in **Settings → Language** — locale/sprache. Applies to sessions started after the change; identifiers, commit messages, and PR titles stay English.          |
 
 ## 💻 Installation
 

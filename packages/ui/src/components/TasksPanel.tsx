@@ -34,6 +34,21 @@ const NO_SUBTASKS: WorkspaceTask[] = [];
 /** localStorage key for the page-mode list-column width the user dragged. */
 const LIST_WIDTH_KEY = 'cwTaskPageListWidth';
 
+// Sibling-group comparator: lower `order` first, null/undefined `order` sorts
+// last and falls back to `created` order among themselves. Mirrors
+// `siblingCmp` in packages/mcp-core/task-format.cjs — keep both in sync.
+function siblingCmp(a: WorkspaceTask, b: WorkspaceTask): number {
+  const ao = a.order ?? null;
+  const bo = b.order ?? null;
+  if (ao !== null && bo !== null) {
+    if (ao !== bo) return ao - bo;
+    return a.created.localeCompare(b.created);
+  }
+  if (ao !== null) return -1;
+  if (bo !== null) return 1;
+  return a.created.localeCompare(b.created);
+}
+
 function buildChildMap(tasks: WorkspaceTask[]): Map<string, WorkspaceTask[]> {
   const map = new Map<string, WorkspaceTask[]>();
   for (const t of tasks) {
@@ -42,6 +57,7 @@ function buildChildMap(tasks: WorkspaceTask[]): Map<string, WorkspaceTask[]> {
       map.get(t.parentId)!.push(t);
     }
   }
+  for (const children of map.values()) children.sort(siblingCmp);
   return map;
 }
 
@@ -191,6 +207,16 @@ const SubtaskRow = React.memo(function SubtaskRow({
             style={onOpen ? { cursor: 'pointer' } : undefined}
           >
             {task.title}
+          </span>
+        )}
+        {typeof task.order === 'number' && (
+          <span className="task-order-chip" title={`Sequence position ${task.order}`}>
+            #{task.order}
+          </span>
+        )}
+        {task.parallel && (
+          <span className="task-parallel-chip" title="Safe to run in parallel with sibling parallel subtasks at the same order">
+            ∥
           </span>
         )}
         <span className={`task-status-chip task-status-${task.status}`}>

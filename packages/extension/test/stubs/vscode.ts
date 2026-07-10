@@ -15,3 +15,19 @@ export const window = {};
 export const workspace = { getConfiguration: () => ({ get: () => true }) };
 export const Uri = { joinPath: () => ({}), parse: () => ({}), file: () => ({}) };
 export const ProgressLocation = { Notification: 15 };
+export class TreeItem {
+  constructor(
+    public label?: unknown,
+    public collapsibleState?: unknown,
+  ) {}
+}
+export class Disposable {
+  constructor(private readonly onDispose: () => void = () => {}) {}
+  dispose(): void {
+    this.onDispose();
+  }
+}
+export const TreeItemCollapsibleState = { None: 0, Collapsed: 1, Expanded: 2 };
+export const ThemeIcon = class {
+  constructor(public id: string) {}
+};

@@ -229,6 +229,11 @@ export const TOOLS = [
           description:
             "Mark this subtask as safe to execute in parallel with its sibling parallel subtasks. cw-work will dispatch parallel-flagged subtasks of the same parent concurrently via subagents. Only meaningful on subtasks (parentId set).",
         },
+        order: {
+          type: "number",
+          description:
+            "Sibling-group sort key (lower runs first). Use it to sequence subtasks under the same parent — adjacent subtasks that share the same order (and are both parallel) form a concurrent wave. Omit to sort last, after any ordered siblings.",
+        },
         epic: {
           type: "string",
           description:
@@ -304,6 +309,11 @@ export const TOOLS = [
           type: "boolean",
           description:
             "Toggle the parallel-execution flag. See task_create for semantics.",
+        },
+        order: {
+          type: "number",
+          description:
+            "Set the sibling-group sort key. See task_create for semantics.",
         },
         epic: {
           type: "string",
@@ -478,6 +488,8 @@ export async function handle(req) {
               ? " [unassigned]"
               : "";
           const par = t.parallel ? " [∥]" : "";
+          const orderLabel =
+            depth > 0 && typeof t.order === "number" ? ` (#${t.order})` : "";
           const epicLabel = depth === 0 && t.epic ? ` {${t.epic}}` : "";
           const phaseLabel = depth === 0 && t.phase ? ` <${t.phase}>` : "";
           const tagsLabel =
@@ -486,7 +498,7 @@ export async function handle(req) {
             ? "\n  " + t.description.split("\n")[0]
             : "";
           const memo = t.memo ? "\n  memo: " + t.memo.split("\n")[0] : "";
-          const line = `${indent}[${t.id.slice(0, 8)}] [${t.priority}] [${t.status}]${par}${wt}${epicLabel}${phaseLabel}${tagsLabel} ${t.title}${desc}${memo}`;
+          const line = `${indent}[${t.id.slice(0, 8)}] [${t.priority}] [${t.status}]${par}${orderLabel}${wt}${epicLabel}${phaseLabel}${tagsLabel} ${t.title}${desc}${memo}`;
           const childLines = (childMap.get(t.id) ?? []).map((c) =>
             renderTask(c, depth + 1),
           );
@@ -567,6 +579,7 @@ export async function handle(req) {
           worktree: args.worktree ?? null,
           parentId,
           parallel: args.parallel === true,
+          order: typeof args.order === "number" ? args.order : null,
           epic: args.epic || null,
           tags: Array.isArray(args.tags) ? args.tags.map(String) : [],
           phase: args.phase && VALID_PHASES.has(args.phase) ? args.phase : null,
@@ -654,6 +667,8 @@ export async function handle(req) {
             patch.worktree =
               args.worktree === "" ? null : worktreeKey(args.worktree);
           if (args.parallel != null) patch.parallel = args.parallel === true;
+          if (args.order != null)
+            patch.order = typeof args.order === "number" ? args.order : null;
           if (args.epic != null)
             patch.epic = args.epic === "" ? null : args.epic;
           if (args.tags != null)

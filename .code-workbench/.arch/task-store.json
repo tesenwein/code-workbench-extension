@@ -14,31 +14,38 @@
     "The .mjs files are thin ESM shims over the canonical .cjs module — keep logic only in the .cjs source.",
     "Consumers import via the @code-workbench/mcp-core/task-store and /task-format package specifiers.",
     "listTasks/readDir keep an in-process parse cache keyed by file path + (mtimeMs, size): a list stats every .md and re-reads/re-parses only files whose mtime or size changed, reusing cached parses for the rest. Writes flow through this module and bump mtime, so the cache is self-invalidating — do not add manual cache busting. Task objects returned by readDir/listTasks may be shared cached references; never mutate them in place.",
-    "These .cjs/.mjs files use a different committed style than the root .prettierrc — never run prettier --write on them; hand-edit to match the surrounding 2-space/double-quote style."
+    "These .cjs/.mjs files use a different committed style than the root .prettierrc — never run prettier --write on them; hand-edit to match the surrounding 2-space/double-quote style.",
+    "Task gained an `order` field (number|null), a sibling-group sort key. sortTasks() sorts ROOTS by the unchanged priority/status/created taskCmp, but sorts each parent's CHILDREN by the new siblingCmp: lower `order` first, null `order` sorts last and falls back to `created` among ties. `siblingCmp` is exported from task-format.cjs/.mjs and mirrored in packages/ui/src/components/TasksPanel.tsx's buildChildMap (the UI package can't require the CJS module) — keep the two comparators in sync by hand.",
+    "`parallel` + adjacent equal `order` together mean a 'wave': the Implement phase (phase-prompts.cjs) dispatches same-order, both-`parallel` sibling subtasks concurrently via subagents, then moves to the next order. Distinct `order` values (or a non-parallel pair) force strictly sequential execution — this is stated in the Plan and Implement phase procedure text, not enforced by task-store itself."
   ],
   "anti_patterns": [
     "Do not read/write task .md files directly from the extension or app — always call task-store functions.",
     "Do not duplicate task-format parsing logic in consumers — import task-format.",
     "Do not assume os.homedir() is correct in WSL environments — check CODE_WORKBENCH_HOME first.",
     "Do not mutate a task returned from readDir/listTasks — it may be a cached shared reference (the parse cache reuses it across calls); construct a new object instead.",
-    "Do not re-list the whole board to apply a single change in a tight loop — the renderer-side watcher is debounced (see app-main); rely on one coalesced reload."
+    "Do not re-list the whole board to apply a single change in a tight loop — the renderer-side watcher is debounced (see app-main); rely on one coalesced reload.",
+    "Do not sort children with the root taskCmp (priority/status) — use siblingCmp so `order` governs sibling sequencing; root ordering must stay untouched by the presence of `order`.",
+    "Do not let the UI's local siblingCmp (TasksPanel.tsx) drift from task-format.cjs's — they must produce identical ordering for the same task list."
   ],
   "decisions": [
     "CommonJS was chosen so both CJS consumers (extension, Electron main) and ESM MCP servers can share one implementation via a thin shim.",
     "Bucket name is derived from the repo key (sanitized checkout basename) so the same board is shared across all worktrees of a repo.",
-    "2026-06-03: readDir gained an mtime/size parse cache so reloading a large unchanged board re-parses nothing (measured ~29ms→4ms for 405 tasks); per-field frontmatter regexes in task-format.cjs are now compiled once at module scope (FIELD_REGEX) instead of once per file. Pairs with the app's debounced tasks watcher (see app-main) that collapses an agent's MCP write burst into a single reload."
+    "2026-06-03: readDir gained an mtime/size parse cache so reloading a large unchanged board re-parses nothing (measured ~29ms→4ms for 405 tasks); per-field frontmatter regexes in task-format.cjs are now compiled once at module scope (FIELD_REGEX) instead of once per file. Pairs with the app's debounced tasks watcher (see app-main) that collapses an agent's MCP write burst into a single reload.",
+    "2026-07-10: added `order` (number|null) alongside the existing `parallel` flag so the Implement phase can consume both — a sibling group with the same `order` and `parallel: true` on each member runs as one concurrent wave; everything else runs strictly in `order` sequence. Chose a per-sibling sort key over a linked-list/array-position scheme so a single task_update can reorder one subtask without rewriting its siblings."
   ],
   "dependsOn": [
     "mcp-core",
     "git-utils"
   ],
-  "updatedAt": "2026-06-03T05:30:32.102Z",
+  "updatedAt": "2026-07-10T04:44:52.040Z",
   "createdAt": "2026-05-19T10:41:37.149Z",
   "tags": [
     "tasks",
     "task-store",
     "cache",
     "performance",
-    "parse"
+    "parse",
+    "order",
+    "parallel"
   ]
 }

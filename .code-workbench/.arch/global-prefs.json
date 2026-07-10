@@ -1,23 +1,38 @@
 {
   "slug": "global-prefs",
   "name": "Global Preferences",
-  "description": "Manages user-level preferences persisted to ~/.code-workbench/settings.json (outside VS Code settings). Covers claude command path, yolo args, default model/effort/yolo, custom system prompt injections, and open-on-startup. Provides sync and async loaders plus a file watcher for live reload.",
+  "description": "Manages user-level preferences persisted to ~/.code-workbench/settings.json (outside VS Code settings). Covers claude command path, yolo args, default model/effort/yolo, custom system prompt injections, response/comment language, and open-on-startup. Provides sync and async loaders plus a file watcher for live reload.",
   "files": [
     "packages/extension/src/globalPrefs.ts",
     "packages/extension/src/globalPrefsPanel.ts",
-    "packages/extension/src/globalPrefsPanelHtml.ts"
+    "packages/extension/src/globalPrefsPanelHtml.ts",
+    "packages/extension/src/language.ts",
+    "packages/extension/src/sessions.ts"
   ],
   "guidelines": [
     "Prefer globalPrefs values over VS Code workspace config for claude command and yolo args — global prefs win.",
-    "Use watchGlobalPrefs() to keep SessionManager.globalPrefs in sync; never cache a stale copy across sessions."
+    "Use watchGlobalPrefs() to keep SessionManager.globalPrefs in sync; never cache a stale copy across sessions.",
+    "GlobalPrefs.language ('auto' default) and .commentLanguage ('inherit' default) are free strings, not a closed enum — sanitize with language.ts's sanitizeLanguage() (trim, single line, ~64 char cap) since they land in a system prompt, not a CLI flag.",
+    "languagePromptBody() in language.ts turns the two prefs into a prompt clause; SessionManager.buildLaunch() prepends it to extraPrompts (sessions.ts, extraPrompts assembly) so it renders before user-defined prompt snippets, which can still override it by coming later.",
+    "Changing language/commentLanguage only affects sessions launched after the change — it is not pushed to already-running sessions."
   ],
   "anti_patterns": [
-    "Do not store workbench-level user preferences in VS Code settings — they would silently differ per workspace. Use the shared ~/.code-workbench/settings.json."
+    "Do not store workbench-level user preferences in VS Code settings — they would silently differ per workspace. Use the shared ~/.code-workbench/settings.json.",
+    "Do not treat language/commentLanguage as a closed enum when validating — a custom user string (e.g. a dialect not in the LANGUAGES catalog) must still normalize and inject correctly."
   ],
   "decisions": [
-    "Stored outside VS Code to be accessible to the Electron app and other tooling that reads the same config directory."
+    "Stored outside VS Code to be accessible to the Electron app and other tooling that reads the same config directory.",
+    "Language preference is two independent fields (reply language vs. comment language) rather than one, because users often want prose in their native language but code comments in English; commentLanguage defaults to 'inherit' (same as language)."
   ],
   "dependsOn": [],
-  "updatedAt": "2026-05-19T04:49:47.994Z",
-  "createdAt": "2026-05-19T04:49:47.994Z"
+  "updatedAt": "2026-07-10T04:37:14.711Z",
+  "createdAt": "2026-05-19T04:49:47.994Z",
+  "tags": [
+    "language",
+    "locale",
+    "sprache",
+    "comment language",
+    "i18n",
+    "system prompt"
+  ]
 }

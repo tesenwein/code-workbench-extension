@@ -15,4 +15,5 @@ export {
   serializeTask,
   parseTask,
   sortTasks,
+  siblingCmp,
 } from "./task-format.cjs";

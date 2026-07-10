@@ -10,6 +10,7 @@ export interface TaskInput {
   worktree?: string | null;
   parentId?: string | null;
   parallel?: boolean;
+  order?: number | null;
   dueDate?: string | null;
   epic?: string | null;
   phase?: Task["phase"];

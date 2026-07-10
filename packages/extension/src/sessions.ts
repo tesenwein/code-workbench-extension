@@ -5,6 +5,7 @@ import { findRepoKey, findRepoRoot, listWorktrees } from './git';
 import { NotifyServer } from './notifications';
 import { writeWorktreeWorkspaceColors } from './workspaceInit';
 import { loadGlobalPrefsSync, watchGlobalPrefs, type GlobalPrefs } from './globalPrefs';
+import { languagePromptBody } from './language';
 import { PHASE_META, PHASE_ORDER, type TaskPhase } from '@code-workbench/mcp-core/phase-prompts';
 import {
   EFFORT_FLAGS,
@@ -949,10 +950,17 @@ export class SessionManager {
 
     const repoPath = (await findRepoRoot(worktreePath)) ?? worktreePath;
     const repoKey = (await findRepoKey(worktreePath)) ?? undefined;
-    const extraPrompts = this.globalPrefs.prompts
-      .filter((p) => p.enabled)
-      .map((p) => p.body.trim())
-      .filter(Boolean);
+    const languageBody = languagePromptBody(
+      this.globalPrefs.language,
+      this.globalPrefs.commentLanguage,
+    );
+    const extraPrompts = [
+      ...(languageBody ? [languageBody] : []),
+      ...this.globalPrefs.prompts
+        .filter((p) => p.enabled)
+        .map((p) => p.body.trim())
+        .filter(Boolean),
+    ];
     const mcp = await this.mcp.write({
       sessionId,
       worktreePath,
