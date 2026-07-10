@@ -166,6 +166,14 @@ export function PhaseBoard({ api, reloadKey = 0, phaseModels, onOpenTask }: Phas
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState<string | null>(null);
+  const [bulkStarting, setBulkStarting] = useState<ColumnKey | null>(null);
+  /* Kept apart from `error` on purpose. A bulk start marks its tasks
+   * in-progress, the host's watcher fires `tasks-changed`, `reloadKey` bumps,
+   * and the load effect's success branch calls setError(null) — which would
+   * wipe a partial-failure summary within a few seconds of showing it. The
+   * load effect never touches `bulkError`, so it survives that reload and is
+   * cleared only by the next bulk click or an all-success batch. */
+  const [bulkError, setBulkError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -240,6 +248,36 @@ export function PhaseBoard({ api, reloadKey = 0, phaseModels, onOpenTask }: Phas
     [api],
   );
 
+  const startColumn = useCallback(
+    async (column: ColumnKey, items: WorkspaceTask[]) => {
+      const confirmBulkStart = api.confirmBulkStart;
+      if (!confirmBulkStart) return;
+      const startableIds = items.filter((t) => t.status === 'open').map((t) => t.id);
+      const inProgressIds = items.filter((t) => t.status === 'in-progress').map((t) => t.id);
+      if (startableIds.length === 0) return;
+
+      setBulkStarting(column);
+      setBulkError(null);
+      try {
+        const { succeeded, failed } = await confirmBulkStart(column, startableIds, inProgressIds);
+        // Same reason as the single-card start: the cards stay in this column,
+        // but they are now in-progress. Re-list rather than wait for the watcher.
+        setTasks(await api.list());
+        setError(null);
+        if (failed.length > 0) {
+          const total = succeeded.length + failed.length;
+          const detail = failed.map((f) => `${f.id.slice(0, 8)}: ${f.error}`).join('; ');
+          setBulkError(`${failed.length} of ${total} failed to start — ${detail}`);
+        }
+      } catch (err) {
+        setBulkError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setBulkStarting(null);
+      }
+    },
+    [api],
+  );
+
   if (!api.startPhase) {
     return (
       <div className="phase-board-empty">
@@ -252,12 +290,14 @@ export function PhaseBoard({ api, reloadKey = 0, phaseModels, onOpenTask }: Phas
     <div className="phase-board">
       <PaneHeader title="Phase Board" />
       {error && <div className="phase-board-error">{error}</div>}
+      {bulkError && <div className="phase-board-error">{bulkError}</div>}
       {loading ? (
         <div className="phase-board-empty">Loading…</div>
       ) : (
         <div className="phase-board-columns">
           {COLUMNS.map((column) => {
             const items = columns.get(column) ?? [];
+            const startable = items.filter((t) => t.status === 'open').length;
             return (
               <section key={column} className={`phase-column phase-column-${column}`}>
                 <header className="phase-column-head" title={COLUMN_HINTS[column]}>
@@ -282,6 +322,21 @@ export function PhaseBoard({ api, reloadKey = 0, phaseModels, onOpenTask }: Phas
                     ))
                   )}
                 </div>
+                {api.confirmBulkStart && startable > 0 && (
+                  <footer className="phase-column-footer">
+                    <button
+                      type="button"
+                      className="task-action-btn phase-column-start"
+                      disabled={bulkStarting !== null}
+                      onClick={() => void startColumn(column, items)}
+                      title={`Spawn one Claude session per startable task in this column, all running the ${COLUMN_LABELS[column]} phase`}
+                    >
+                      {bulkStarting === column
+                        ? 'Starting…'
+                        : `Start all ${COLUMN_LABELS[column]} (${startable})`}
+                    </button>
+                  </footer>
+                )}
               </section>
             );
           })}

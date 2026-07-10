@@ -134,6 +134,16 @@ export interface TasksApi {
    *  can't spawn sessions (e.g. the Electron app) omit it and the panel hides
    *  the phase stepper. */
   startPhase?: (id: string, phase: TaskPhase) => Promise<void>;
+  /** Confirm with the user (host-native modal), then start `phase` for every
+   *  startable task in a column at once. `inProgressIds` are offered as an
+   *  opt-in; the resolved value reports which starts settled how, and is empty
+   *  on both lists when the user cancels. Optional for the same reason as
+   *  `startPhase` — hosts that can't spawn sessions omit it. */
+  confirmBulkStart?: (
+    phase: TaskPhase,
+    startableIds: string[],
+    inProgressIds: string[],
+  ) => Promise<{ succeeded: string[]; failed: { id: string; error: string }[] }>;
 }
 
 /** Open a file in the host editor. `loc` is an absolute-ish path. */

@@ -14,6 +14,10 @@ const api: TasksApi = {
   remove: (id) => bridge.call('remove', id) as Promise<void>,
   openInEditor: (id) => bridge.call('openInEditor', id) as Promise<void>,
   startPhase: (id, phase) => bridge.call('startPhase', id, phase) as Promise<void>,
+  confirmBulkStart: (phase, startableIds, inProgressIds) =>
+    bridge.call('confirmBulkStart', phase, startableIds, inProgressIds) as ReturnType<
+      NonNullable<TasksApi['confirmBulkStart']>
+    >,
 };
 
 function App() {
