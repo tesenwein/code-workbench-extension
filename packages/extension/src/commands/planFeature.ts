@@ -1,12 +1,12 @@
 /* "Plan Feature" code-health tool.
  *
- * Like Code Review, this spawns a dedicated Opus orchestrator session primed
- * to run a bundled Workflow script — here `cw-plan-feature`, which designs a
- * feature via a fleet of subagents (context gathering, three competing
- * designs, judging, synthesis, and a completeness critique) and returns a
- * hierarchical plan. The session resolves open questions and gets explicit
- * approval from the user before persisting anything to the shared cw-tasks
- * board, and it never edits code. */
+ * Opens a normal chat session primed with a planning prompt: the session
+ * interviews the user with multiple-choice questions (AskUserQuestion) until
+ * the feature request is sharp, then designs it — optionally via the bundled
+ * `cw-plan-feature` Workflow script (context gathering, three competing
+ * designs, judging, synthesis, completeness critique) — presents the plan for
+ * approval, and persists it to the shared cw-tasks board. It never edits
+ * code. */
 
 import * as vscode from 'vscode';
 import type { SessionManager } from '../sessions';
@@ -17,28 +17,33 @@ const REQUEST_END = '<<<FEATURE_REQUEST_END>>>';
 
 /** First turn handed to the plan session. */
 export function buildPlanPrompt(scriptPath: string, request: string): string {
+  const idea = request.trim();
   return [
-    `Run the Workflow tool with scriptPath: ${scriptPath}`,
+    'You are running a feature-planning conversation. You never edit code in this session — planning only.',
     '',
-    'The feature request is the exact text between the markers below. Pass it to the Workflow tool as its `args` parameter — an object `{ "request": "<the text>" }` — never type or interpolate it into a script.',
+    idea
+      ? ['The user\'s starting idea is the exact text between the markers below:', '', REQUEST_START, idea, REQUEST_END].join('\n')
+      : 'The user has not described the feature yet. Open by asking what they want to build.',
     '',
-    REQUEST_START,
-    request,
-    REQUEST_END,
+    '## 1. Interview the user',
+    'First orient yourself in the codebase (cw-code `search_code`, `arch_list`/`arch_search`, reading the relevant files) so your questions are grounded in what actually exists.',
     '',
-    'Do not design anything yourself first — the workflow script gathers context (repo map, architecture wiki, prior art), produces three independent designs, judges them, synthesizes a plan, and critiques it for completeness across a fleet of subagents.',
+    'Then use the **AskUserQuestion** tool to turn the rough idea into a precise feature request. Ask in rounds of 1–4 questions, each with 2–4 concrete options; put your recommendation first and mark it "(Recommended)". Cover the things that change the design: scope and non-goals, where it lives in the existing architecture, the user-facing behavior and entry points, data/persistence, edge cases and failure modes, and what is explicitly out of scope for a first cut.',
     '',
-    'The workflow returns { request, summary, openQuestions, tasks }, where tasks is a hierarchical breakdown: each entry has title, description, priority, and subtasks (each with title, description).',
+    'Do not ask about things you can answer yourself by reading the code, and do not ask about choices with an obvious default — pick it and say so. Keep interviewing (usually 2–3 rounds) until you could hand the request to another engineer with no follow-up. Then restate the finished feature request in prose and confirm it.',
     '',
-    'Then, in order:',
-    '1. If openQuestions is non-empty, ask the user to resolve them in one numbered message and wait for their answers.',
-    '2. Present the plan (summary + the task/subtask breakdown) and explicitly ask the user to approve it. Change nothing until they approve.',
-    '3. Once approved, persist the plan with the cw-tasks `task_create` tool: first create one task per entry in `tasks` with tags: ["plan"] and phase: "implement", writing the workflow\'s `summary` into that task\'s `memo` field. Then, for each of its subtasks in order, create a task with parentId set to the parent\'s id and tags: ["plan-step"].',
+    '## 2. Design it',
+    `Run the Workflow tool with scriptPath: ${scriptPath}, passing the finished feature request as its \`args\` parameter — an object \`{ "request": "<the text>" }\`. Never interpolate the text into a script.`,
+    '',
+    'The workflow gathers context (repo map, architecture wiki, prior art), produces three independent designs, judges them, synthesizes a plan, and critiques it for completeness across a fleet of subagents. It returns { request, summary, openQuestions, tasks }, where tasks is a hierarchical breakdown: each entry has title, description, priority, and subtasks (each with title, description).',
+    '',
+    'If the Workflow tool is unavailable, design the feature yourself instead: gather context, weigh at least two approaches, and note risks and open questions.',
+    '',
+    '## 3. Resolve, approve, persist',
+    '1. If openQuestions is non-empty, resolve them with the user — use AskUserQuestion where the answers are a small set of choices, plain prose otherwise.',
+    '2. Present the plan (summary + the task/subtask breakdown) and explicitly ask the user to approve it. Persist nothing until they approve.',
+    '3. Once approved, persist the plan with the cw-tasks `task_create` tool: first create one task per entry in `tasks` with tags: ["plan"] and phase: "implement", writing the `summary` into that task\'s `memo` field. Then, for each of its subtasks in order, create a task with parentId set to the parent\'s id and tags: ["plan-step"].',
     '4. Print the ids of every task and subtask you created.',
-    '',
-    'Never edit any code in this session — planning only.',
-    '',
-    'Fallback: if the Workflow tool is unavailable, design the feature yourself directly (gather context, weigh at least two approaches, note risks and open questions) and follow the same resolve → present → approve → persist steps above.',
   ].join('\n');
 }
 
@@ -52,11 +57,11 @@ export function registerPlanFeatureCommand(
   ctx.subscriptions.push(
     vscode.commands.registerCommand('codeWorkbench.plan.start', async () => {
       const request = await vscode.window.showInputBox({
-        prompt: 'What feature should be planned?',
+        prompt: 'What feature should be planned? (optional — leave empty and Claude will ask)',
         placeHolder: 'Describe the feature to design…',
         ignoreFocusOut: true,
       });
-      if (!request) return;
+      if (request === undefined) return;
       const wt = await deps.ensureActiveWorktree();
       if (!wt) return;
       const scriptPath = await writeWorkflowScript(ctx, 'cw-plan-feature');
