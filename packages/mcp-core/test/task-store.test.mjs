@@ -69,6 +69,37 @@ describe('updateTask', () => {
   it('returns null for a missing task', async () => {
     expect(await store.updateTask(REPO_KEY, 'nope', { status: 'done' })).toBeNull();
   });
+
+  it('resets status to open on a phase handoff', async () => {
+    const t = await store.createTask(REPO_KEY, {
+      title: 'phased',
+      status: 'in-progress',
+      phase: 'plan',
+    });
+    const updated = await store.updateTask(REPO_KEY, t.id, { phase: 'implement' });
+    expect(updated.status).toBe('open');
+    expect(updated.phase).toBe('implement');
+  });
+
+  it('does not touch status when the patch sets it explicitly alongside phase', async () => {
+    const t = await store.createTask(REPO_KEY, {
+      title: 'phased',
+      status: 'in-progress',
+      phase: 'fix',
+    });
+    const updated = await store.updateTask(REPO_KEY, t.id, { phase: '', status: 'done' });
+    expect(updated.status).toBe('done');
+  });
+
+  it('leaves status alone when phase is unchanged', async () => {
+    const t = await store.createTask(REPO_KEY, {
+      title: 'phased',
+      status: 'in-progress',
+      phase: 'plan',
+    });
+    const updated = await store.updateTask(REPO_KEY, t.id, { phase: 'plan' });
+    expect(updated.status).toBe('in-progress');
+  });
 });
 
 describe('deleteTask cascade', () => {
