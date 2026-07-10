@@ -572,10 +572,22 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     }
   };
 
+  // ── MCP server backfill ─ same reasoning as the permissions backfill above:
+  // merge Code Workbench's MCP servers into ~/.claude.json on every activation
+  // so cw-code tools are always reachable, without ever touching project scope.
+  const registerUserMcpServers = async () => {
+    try {
+      await registerWorkbenchMcpServers(ctx.extensionPath, os.homedir());
+    } catch (e) {
+      console.error('User MCP server backfill failed', e);
+    }
+  };
+
   void (async () => {
     // Sequential so scopes/checks never stack notifications on one activation.
     await promptSkillsDrift('user', os.homedir());
     await installUserPermissions();
+    await registerUserMcpServers();
   })();
 
   // ── Register workbench MCP servers into .claude.json ──────────────────
