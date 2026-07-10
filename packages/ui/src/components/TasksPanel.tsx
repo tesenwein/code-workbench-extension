@@ -203,7 +203,9 @@ const SubtaskRow = React.memo(function SubtaskRow({
               e.stopPropagation();
               setEditing(true);
             }}
-            title={onOpen ? 'Open task · double-click to rename' : 'Click to view · double-click to edit'}
+            title={
+              onOpen ? 'Open task · double-click to rename' : 'Click to view · double-click to edit'
+            }
             style={onOpen ? { cursor: 'pointer' } : undefined}
           >
             {task.title}
@@ -215,7 +217,10 @@ const SubtaskRow = React.memo(function SubtaskRow({
           </span>
         )}
         {task.parallel && (
-          <span className="task-parallel-chip" title="Safe to run in parallel with sibling parallel subtasks at the same order">
+          <span
+            className="task-parallel-chip"
+            title="Safe to run in parallel with sibling parallel subtasks at the same order"
+          >
             ∥
           </span>
         )}
@@ -365,33 +370,35 @@ function TaskEditForm({
       <label className="task-field">
         <span className="task-field-label">Title</span>
         <input
-          className="task-input"
+          className="task-input task-input-title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="What needs doing?"
           autoFocus
         />
       </label>
-      <label className="task-field">
-        <span className="task-field-label">Description</span>
-        <textarea
-          className="task-textarea"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Details, acceptance criteria…"
-          rows={4}
-        />
-      </label>
-      <label className="task-field">
-        <span className="task-field-label">Memo</span>
-        <textarea
-          className="task-textarea"
-          value={memo}
-          onChange={(e) => setMemo(e.target.value)}
-          placeholder="Agent notes, findings, blockers…"
-          rows={4}
-        />
-      </label>
+      <div className="task-edit-row task-edit-row-text">
+        <label className="task-field">
+          <span className="task-field-label">Description</span>
+          <textarea
+            className="task-textarea"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Details, acceptance criteria…"
+            rows={5}
+          />
+        </label>
+        <label className="task-field">
+          <span className="task-field-label">Memo</span>
+          <textarea
+            className="task-textarea"
+            value={memo}
+            onChange={(e) => setMemo(e.target.value)}
+            placeholder="Agent notes, findings, blockers…"
+            rows={5}
+          />
+        </label>
+      </div>
       <div className="task-edit-row">
         <label className="task-field">
           <span className="task-field-label">Epic</span>
@@ -783,103 +790,105 @@ function TaskDetailPane({
 
   return (
     <div className="task-detail-pane">
-      <div className="task-detail-header">
-        <span
-          className="task-priority-dot"
-          title={`${task.priority} priority`}
-          style={{ background: PRIORITY_COLORS[task.priority] }}
-        />
-        <span className={`task-status-chip task-status-${task.status}`}>
-          {STATUS_LABELS[task.status]}
-        </span>
-        <span className="task-detail-id" title={`Task ${task.id}`}>
-          {task.id.slice(0, 8)}
-        </span>
-        {saved && <span className="task-detail-saved">✓ saved</span>}
-        {onOpenInEditor && (
+      <div className="task-detail-inner">
+        <div className="task-detail-header">
+          <span
+            className="task-priority-dot"
+            title={`${task.priority} priority`}
+            style={{ background: PRIORITY_COLORS[task.priority] }}
+          />
+          <span className={`task-status-chip task-status-${task.status}`}>
+            {STATUS_LABELS[task.status]}
+          </span>
+          <span className="task-detail-id" title={`Task ${task.id}`}>
+            {task.id.slice(0, 8)}
+          </span>
+          {saved && <span className="task-detail-saved">✓ saved</span>}
+          {onOpenInEditor && (
+            <button
+              className="task-icon-btn"
+              title="Open backing .md file"
+              onClick={() => onOpenInEditor(task.id)}
+            >
+              ↗
+            </button>
+          )}
           <button
-            className="task-icon-btn"
-            title="Open backing .md file"
-            onClick={() => onOpenInEditor(task.id)}
+            className="task-delete-btn"
+            title="Delete task"
+            onClick={() => {
+              void onDelete(task.id);
+              onClose();
+            }}
           >
-            ↗
+            🗑
           </button>
-        )}
-        <button
-          className="task-delete-btn"
-          title="Delete task"
-          onClick={() => {
-            void onDelete(task.id);
-            onClose();
-          }}
-        >
-          🗑
-        </button>
-        <button className="task-icon-btn" title="Close editor" onClick={onClose}>
-          ✕
-        </button>
-      </div>
-      {onStartPhase && !task.parentId && (
-        <PhaseStepper task={task} subtasks={subtasks} onStartPhase={onStartPhase} />
-      )}
-      <TaskEditForm
-        key={task.id}
-        task={task}
-        worktrees={worktrees}
-        onSave={async (patch) => {
-          await onUpdate(task.id, patch);
-          setSaved(true);
-          clearTimeout(savedTimer.current);
-          savedTimer.current = setTimeout(() => setSaved(false), 1500);
-        }}
-        onCancel={onClose}
-      />
-      {task.parentId ? (
-        /* Subtasks can't nest, so instead of a dead Subtasks section a subtask
-           links back up to its parent. */
-        <div className="task-detail-subtasks">
-          <div className="task-detail-subhead">
-            <span>Part of</span>
-          </div>
-          <button
-            className="task-detail-parent-link"
-            onClick={() => onOpenTask?.(task.parentId!)}
-            title="Open parent task"
-          >
-            ↑ {parent?.title ?? task.parentId}
+          <button className="task-icon-btn" title="Close editor" onClick={onClose}>
+            ✕
           </button>
         </div>
-      ) : (
-        <div className="task-detail-subtasks">
-          <div className="task-detail-subhead">
-            <span>Subtasks</span>
-            <button className="task-action-btn" onClick={() => setAddingSubtask((x) => !x)}>
-              + Subtask
+        {onStartPhase && !task.parentId && (
+          <PhaseStepper task={task} subtasks={subtasks} onStartPhase={onStartPhase} />
+        )}
+        <TaskEditForm
+          key={task.id}
+          task={task}
+          worktrees={worktrees}
+          onSave={async (patch) => {
+            await onUpdate(task.id, patch);
+            setSaved(true);
+            clearTimeout(savedTimer.current);
+            savedTimer.current = setTimeout(() => setSaved(false), 1500);
+          }}
+          onCancel={onClose}
+        />
+        {task.parentId ? (
+          /* Subtasks can't nest, so instead of a dead Subtasks section a subtask
+           links back up to its parent. */
+          <div className="task-detail-subtasks">
+            <div className="task-detail-subhead">
+              <span>Part of</span>
+            </div>
+            <button
+              className="task-detail-parent-link"
+              onClick={() => onOpenTask?.(task.parentId!)}
+              title="Open parent task"
+            >
+              ↑ {parent?.title ?? task.parentId}
             </button>
           </div>
-          {subtasks.length === 0 && !addingSubtask && (
-            <div className="cw-empty">No subtasks.</div>
-          )}
-          {subtasks.map((sub) => (
-            <SubtaskRow
-              key={sub.id}
-              task={sub}
-              onUpdate={onUpdate}
-              onDelete={onDelete}
-              onOpen={onOpenTask}
-            />
-          ))}
-          {addingSubtask && (
-            <AddSubtaskForm
-              onSubmit={async (t) => {
-                await onCreateSubtask(task.id, t);
-                setAddingSubtask(false);
-              }}
-              onCancel={() => setAddingSubtask(false)}
-            />
-          )}
-        </div>
-      )}
+        ) : (
+          <div className="task-detail-subtasks">
+            <div className="task-detail-subhead">
+              <span>Subtasks</span>
+              <button className="task-action-btn" onClick={() => setAddingSubtask((x) => !x)}>
+                + Subtask
+              </button>
+            </div>
+            {subtasks.length === 0 && !addingSubtask && (
+              <div className="cw-empty">No subtasks.</div>
+            )}
+            {subtasks.map((sub) => (
+              <SubtaskRow
+                key={sub.id}
+                task={sub}
+                onUpdate={onUpdate}
+                onDelete={onDelete}
+                onOpen={onOpenTask}
+              />
+            ))}
+            {addingSubtask && (
+              <AddSubtaskForm
+                onSubmit={async (t) => {
+                  await onCreateSubtask(task.id, t);
+                  setAddingSubtask(false);
+                }}
+                onCancel={() => setAddingSubtask(false)}
+              />
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -916,31 +925,33 @@ function TaskCreatePane({
 }) {
   return (
     <div className="task-detail-pane">
-      <div className="task-detail-header">
-        <span className="task-detail-title">New task</span>
-        <button className="task-icon-btn" title="Cancel" onClick={onClose}>
-          ✕
-        </button>
+      <div className="task-detail-inner">
+        <div className="task-detail-header">
+          <span className="task-detail-title">New task</span>
+          <button className="task-icon-btn" title="Cancel" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+        <TaskEditForm
+          task={{ ...BLANK_TASK, worktree: defaultWorktree }}
+          worktrees={worktrees}
+          submitLabel="Create task"
+          onSave={async (patch) => {
+            await onCreate({
+              title: patch.title ?? '',
+              description: patch.description ?? '',
+              memo: patch.memo ?? '',
+              priority: patch.priority ?? 'medium',
+              status: patch.status ?? 'open',
+              worktree: patch.worktree ?? null,
+              parentId: null,
+              epic: patch.epic ?? null,
+              tags: patch.tags ?? [],
+            });
+          }}
+          onCancel={onClose}
+        />
       </div>
-      <TaskEditForm
-        task={{ ...BLANK_TASK, worktree: defaultWorktree }}
-        worktrees={worktrees}
-        submitLabel="Create task"
-        onSave={async (patch) => {
-          await onCreate({
-            title: patch.title ?? '',
-            description: patch.description ?? '',
-            memo: patch.memo ?? '',
-            priority: patch.priority ?? 'medium',
-            status: patch.status ?? 'open',
-            worktree: patch.worktree ?? null,
-            parentId: null,
-            epic: patch.epic ?? null,
-            tags: patch.tags ?? [],
-          });
-        }}
-        onCancel={onClose}
-      />
     </div>
   );
 }
@@ -1394,7 +1405,7 @@ export function TasksPanel({
   );
 
   return (
-    <div className="cw-pane">
+    <div className={`cw-pane${pageMode ? ' cw-pane-page' : ''}`}>
       {resizable && !collapsed && (
         <div
           className="cw-pane-resizer"
@@ -1442,7 +1453,7 @@ export function TasksPanel({
 
       {!collapsed && (
         <>
-          <div className="task-search-row">
+          <div className={`task-search-row${pageMode ? ' task-toolbar-row' : ''}`}>
             <input
               className="task-search-input"
               type="search"
