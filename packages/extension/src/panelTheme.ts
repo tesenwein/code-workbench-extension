@@ -217,13 +217,13 @@ const panelCss = () => `
 
   /* action buttons */
   .acts {
-    flex:0 0 auto; display:flex; gap:2px; align-self:center;
+    flex:0 0 auto; display:flex; gap:6px; align-self:center; padding-right:2px;
     opacity:0; transition:opacity .12s ease;
   }
   .row:hover .acts { opacity:1; }
   .ibtn {
     display:flex; align-items:center; justify-content:center;
-    width:21px; height:21px; padding:0;
+    width:23px; height:23px; padding:0;
     background:transparent; border:1px solid transparent; border-radius:5px;
     color:var(--fg-3); cursor:pointer;
     transition:all .12s ease;
