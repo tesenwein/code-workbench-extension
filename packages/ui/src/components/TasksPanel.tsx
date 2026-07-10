@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { PaneHeader } from './primitives';
+import { columnFor } from './PhaseBoard';
 import type { WorkspaceTask, NewWorkspaceTask, TasksApi, TaskPhase } from '../types';
 
 /* Platform-independent worktree identifier — last path segment, lowercased.
@@ -658,24 +659,31 @@ const PHASE_LABELS: Record<TaskPhase, string> = {
  *
  *  A task's `phase` names the phase to run NEXT — the Plan session hands off by
  *  setting phase:'implement', and startPhase re-writes the same value when it
- *  launches. So the pending phase IS `task.phase`, everything before it is
- *  done, and an unset phase means the flow hasn't started. The board's columns
- *  read the field the same way. */
+ *  launches. The pending phase is resolved by the SAME `columnFor` the Phase
+ *  Board uses (including the plan-step-subtask inference for tasks whose Plan
+ *  session filed subtasks but never advanced `phase`), so the two surfaces
+ *  can't disagree about what "next" means. */
 function PhaseStepper({
   task,
+  subtasks,
   onStartPhase,
 }: {
   task: WorkspaceTask;
+  subtasks: WorkspaceTask[];
   onStartPhase: (id: string, phase: TaskPhase) => Promise<void>;
 }) {
   const [starting, setStarting] = useState<TaskPhase | null>(null);
-  const pendingIdx = task.phase ? PHASE_FLOW.indexOf(task.phase) : 0;
-  const pendingPhase = PHASE_FLOW[pendingIdx];
+  const [error, setError] = useState<string | null>(null);
+  const pendingPhase = columnFor(task, subtasks);
+  const pendingIdx = pendingPhase ? PHASE_FLOW.indexOf(pendingPhase) : PHASE_FLOW.length;
 
   const start = async (phase: TaskPhase) => {
     setStarting(phase);
+    setError(null);
     try {
       await onStartPhase(task.id, phase);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setStarting(null);
     }
@@ -697,14 +705,17 @@ function PhaseStepper({
           );
         })}
       </div>
-      <button
-        className="task-action-btn task-phase-start"
-        disabled={starting !== null}
-        onClick={() => void start(pendingPhase)}
-        title={`Spawn a Claude session to run the ${PHASE_LABELS[pendingPhase]} phase for this task`}
-      >
-        {starting === pendingPhase ? 'Starting…' : `Start ${PHASE_LABELS[pendingPhase]}`}
-      </button>
+      {pendingPhase && (
+        <button
+          className="task-action-btn task-phase-start"
+          disabled={starting !== null}
+          onClick={() => void start(pendingPhase)}
+          title={`Spawn a Claude session to run the ${PHASE_LABELS[pendingPhase]} phase for this task`}
+        >
+          {starting === pendingPhase ? 'Starting…' : `Start ${PHASE_LABELS[pendingPhase]}`}
+        </button>
+      )}
+      {error && <div className="task-phase-error">{error}</div>}
     </div>
   );
 }
@@ -783,7 +794,7 @@ function TaskDetailPane({
         </button>
       </div>
       {onStartPhase && !task.parentId && (
-        <PhaseStepper task={task} onStartPhase={onStartPhase} />
+        <PhaseStepper task={task} subtasks={subtasks} onStartPhase={onStartPhase} />
       )}
       <TaskEditForm
         key={task.id}

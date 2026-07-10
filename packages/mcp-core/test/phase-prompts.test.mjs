@@ -63,10 +63,8 @@ describe("phaseSkill", () => {
 describe("PHASE_META", () => {
   it("plans on opus and executes on sonnet", () => {
     expect(PHASE_META.plan.model).toBe("opus");
-    expect(PHASE_META.plan.planOnly).toBe(true);
     for (const phase of ["implement", "review", "fix"]) {
       expect(PHASE_META[phase].model).toBe("sonnet");
-      expect(PHASE_META[phase].planOnly).toBeUndefined();
     }
   });
 });

@@ -24,7 +24,10 @@ const PHASE_ORDER = ["plan", "implement", "review", "fix"];
  *  Claude session runs on: planning wants the strongest model, the rest are
  *  execution against an already-made plan. */
 const PHASE_META = {
-  plan: { label: "Plan", icon: "compass", model: "opus", planOnly: true, effort: 4 },
+  // No `--permission-mode plan` here: plan mode blocks the mutating cw-tasks
+  // calls (task_create/task_update) the procedure needs to file its
+  // deliverable. The procedure text itself forbids code edits instead.
+  plan: { label: "Plan", icon: "compass", model: "opus", effort: 4 },
   implement: { label: "Implement", icon: "rocket", model: "sonnet" },
   review: { label: "Review", icon: "checklist", model: "sonnet" },
   fix: { label: "Fix", icon: "wrench", model: "sonnet" },
@@ -55,7 +58,7 @@ const PHASE_PROCEDURES = {
     REREAD,
     STAY_IN_LANE,
     "",
-    "Explore the codebase enough to design a concrete implementation approach — do not guess at unfamiliar code. Consult the architecture wiki (`arch_list`, `arch_search`, `arch_get`) so the plan respects existing guidelines. You are running in --permission-mode plan: file edits are blocked, so there is no risk in exploring freely.",
+    "Explore the codebase enough to design a concrete implementation approach — do not guess at unfamiliar code. Consult the architecture wiki (`arch_list`, `arch_search`, `arch_get`) so the plan respects existing guidelines.",
     "",
     "When you have an approach:",
     `1. Write it into the task's memo via task_update (id: "${TASK_ID}", memo: "...").`,

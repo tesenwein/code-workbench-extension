@@ -20,6 +20,8 @@ const SKIPPED_VERSION_KEY = 'codeWorkbench.update.skippedVersion';
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 /** Unauthenticated GitHub API allows 60 requests/hour per IP — keep it snappy. */
 const REQUEST_TIMEOUT_MS = 15_000;
+/** The VSIX itself is a few MB — generous, but bounded. */
+const DOWNLOAD_TIMEOUT_MS = 120_000;
 
 export interface ReleaseAsset {
   name: string;
@@ -71,17 +73,23 @@ export function pickVsix(release: Release): ReleaseAsset | undefined {
  * rejects anything else with a bare `No Servers`, so the VSIX has to land on a
  * real filesystem path — `globalStorageUri` is not guaranteed to be one.
  */
-async function downloadVsix(asset: ReleaseAsset): Promise<vscode.Uri> {
+async function downloadVsix(asset: ReleaseAsset, signal: AbortSignal): Promise<vscode.Uri> {
   const res = await fetch(asset.browser_download_url, {
     headers: { 'User-Agent': 'code-workbench-extension' },
     redirect: 'follow',
+    signal,
   });
   if (!res.ok) throw new Error(`Download failed: ${res.status} ${res.statusText}`);
   const bytes = Buffer.from(await res.arrayBuffer());
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'code-workbench-update-'));
-  const target = path.join(dir, asset.name);
-  await fs.writeFile(target, bytes);
-  return vscode.Uri.file(target);
+  try {
+    const target = path.join(dir, asset.name);
+    await fs.writeFile(target, bytes);
+    return vscode.Uri.file(target);
+  } catch (err) {
+    await fs.rm(dir, { recursive: true, force: true }).catch(() => undefined);
+    throw err;
+  }
 }
 
 async function installVsix(uri: vscode.Uri): Promise<void> {
@@ -94,10 +102,24 @@ async function installVsix(uri: vscode.Uri): Promise<void> {
 
 async function downloadAndInstall(release: Release, asset: ReleaseAsset): Promise<void> {
   await vscode.window.withProgress(
-    { location: vscode.ProgressLocation.Notification, title: `Installing ${release.tag_name}…` },
-    async () => {
-      const vsix = await downloadVsix(asset);
-      await installVsix(vsix);
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: `Installing ${release.tag_name}…`,
+      cancellable: true,
+    },
+    async (_progress, token) => {
+      // Cap the download so a stalled connection can't spin the notification
+      // forever; the cancel button aborts it too.
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS);
+      const sub = token.onCancellationRequested(() => controller.abort());
+      try {
+        const vsix = await downloadVsix(asset, controller.signal);
+        await installVsix(vsix);
+      } finally {
+        clearTimeout(timer);
+        sub.dispose();
+      }
     },
   );
   const reload = await vscode.window.showInformationMessage(
