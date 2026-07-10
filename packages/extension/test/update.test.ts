@@ -1,5 +1,51 @@
-import { describe, expect, it } from 'vitest';
-import { compareVersions, pickVsix } from '../src/update';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { executedCommands } from './stubs/vscode';
+import { applyUpdateState, compareVersions, pickVsix } from '../src/update';
+
+const AVAILABLE_VERSION_KEY = 'codeWorkbench.update.availableVersion';
+
+describe('applyUpdateState', () => {
+  const setup = () => {
+    const store = new Map<string, unknown>();
+    const badges: Array<{ count: number; tooltip: string }> = [];
+    const ctx = {
+      globalState: {
+        get: (key: string) => store.get(key),
+        update: (key: string, value: unknown) => {
+          if (value === undefined) store.delete(key);
+          else store.set(key, value);
+          return Promise.resolve();
+        },
+      },
+    } as never;
+    const brandView = {
+      setBadge: (count: number, tooltip: string) => badges.push({ count, tooltip }),
+    };
+    return { store, badges, ctx, brandView };
+  };
+
+  beforeEach(() => {
+    executedCommands.length = 0;
+  });
+
+  it('persists the tag, sets the context key and badges the view', async () => {
+    const { store, badges, ctx, brandView } = setup();
+    await applyUpdateState(ctx, brandView, 'v1.2.3');
+    expect(store.get(AVAILABLE_VERSION_KEY)).toBe('v1.2.3');
+    expect(executedCommands).toEqual([['setContext', 'codeWorkbench.updateAvailable', true]]);
+    expect(badges).toEqual([{ count: 1, tooltip: 'Code Workbench v1.2.3 is available' }]);
+  });
+
+  it('clears everything when there is no available version', async () => {
+    const { store, badges, ctx, brandView } = setup();
+    await applyUpdateState(ctx, brandView, 'v1.2.3');
+    executedCommands.length = 0;
+    await applyUpdateState(ctx, brandView, undefined);
+    expect(store.has(AVAILABLE_VERSION_KEY)).toBe(false);
+    expect(executedCommands).toEqual([['setContext', 'codeWorkbench.updateAvailable', false]]);
+    expect(badges.at(-1)).toEqual({ count: 0, tooltip: '' });
+  });
+});
 
 describe('compareVersions', () => {
   it('treats a leading v as noise', () => {

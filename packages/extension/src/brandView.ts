@@ -15,6 +15,7 @@ function escapeHtml(s: string): string {
 export class BrandViewProvider implements vscode.WebviewViewProvider {
   static readonly viewId = 'codeWorkbench.brand';
   private view?: vscode.WebviewView;
+  private badge?: vscode.ViewBadge;
 
   constructor(private readonly sessionMgr: SessionManager) {
     sessionMgr.onDidChange(() => this.update());
@@ -24,6 +25,13 @@ export class BrandViewProvider implements vscode.WebviewViewProvider {
     this.view = view;
     view.webview.options = { enableScripts: false };
     view.webview.html = this.render();
+    // The view is lazy: a badge set before it resolved has to be re-applied here.
+    view.badge = this.badge;
+  }
+
+  setBadge(count: number, tooltip: string): void {
+    this.badge = count ? { value: count, tooltip } : undefined;
+    if (this.view) this.view.badge = this.badge;
   }
 
   update(): void {

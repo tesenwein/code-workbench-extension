@@ -205,6 +205,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     void sessionMgr.restoreSessions(repoRoot);
   }
 
+  const brandView = new BrandViewProvider(sessionMgr);
   const worktreesProvider = new WorktreesProvider(
     () => repoRoot,
     () => sessionMgr.getActiveWorktree(),
@@ -361,10 +362,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
         await sessionMgr.setPrefs(target, { note: next.trim() || undefined });
       },
     ),
-    vscode.window.registerWebviewViewProvider(
-      BrandViewProvider.viewId,
-      new BrandViewProvider(sessionMgr),
-    ),
+    vscode.window.registerWebviewViewProvider(BrandViewProvider.viewId, brandView),
     vscode.window.registerWebviewViewProvider(WorktreesProvider.viewId, worktreesProvider, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
@@ -620,7 +618,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
 
   registerLayoutCommands(ctx);
 
-  registerUpdateCommand(ctx);
+  registerUpdateCommand(ctx, brandView);
 
   registerCodeReviewCommand(ctx, { sessionMgr, ensureActiveWorktree });
 
