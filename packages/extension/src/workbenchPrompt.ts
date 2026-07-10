@@ -26,6 +26,7 @@ export const WORKBENCH_SYSTEM_PROMPT =
   '- Use task_create to record any new task or piece of work you identify, including follow-ups discovered mid-work.\n' +
   '- SUBTASKS: when working on an in-progress task, create follow-up steps as subtasks via parentId.\n' +
   '- Use task_update to set status to "in-progress" BEFORE starting a task, then "done" when complete. Keep the board accurate at all times — it is the source of truth for what you are doing.\n' +
+  '- COMMIT AFTER EVERY TASK: as soon as a task or subtask is marked "done" and its changes are verified, create a git commit covering exactly that task (Conventional Commits, subject referencing the task). One task = one commit, so progress stays clean and reviewable. Never bundle several finished tasks into one commit.\n' +
   '- Before starting a non-trivial task, call task_find_similar with the task title + description as `query` (and status: "done") to surface how similar prior tasks were handled — reuse their approach and memos instead of redesigning from scratch.\n' +
   '- NEVER read or edit task files directly with Read/Edit/Write — they live in ~/.code-workbench/ and are shared across worktrees.\n' +
   '- After finishing a large task, tell the user the task is done and to run /compact before continuing — context from that task is no longer needed. Do NOT compact between subtasks of the same task; that context is still needed to finish the parent.\n\n' +
