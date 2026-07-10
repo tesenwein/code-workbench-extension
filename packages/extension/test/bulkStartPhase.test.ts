@@ -200,9 +200,37 @@ describe('confirmBulkStartPhase', () => {
     expect(executeCommand).not.toHaveBeenCalled();
   });
 
-  it('never opens a modal for a column with nothing startable', async () => {
+  it('never opens a modal for a column with nothing startable and nothing in progress', async () => {
     const showWarning = warn();
-    expect(await confirmBulkStartPhase('plan', [], ['a'])).toEqual({ succeeded: [], failed: [] });
+    expect(await confirmBulkStartPhase('plan', [], [])).toEqual({ succeeded: [], failed: [] });
     expect(showWarning).not.toHaveBeenCalled();
+  });
+
+  it('offers a restart when a column has only in-progress tasks', async () => {
+    const showWarning = warn().mockResolvedValue('Restart 2' as never);
+    const executeCommand = exec();
+
+    await confirmBulkStartPhase('plan', [], ['a', 'b']);
+
+    expect(showWarning).toHaveBeenCalledWith(
+      '2 in-progress tasks. Restart Plan for all of them?',
+      { modal: true },
+      'Restart 2',
+      'Cancel',
+    );
+    expect(executeCommand).toHaveBeenCalledWith(
+      'codeWorkbench.tasks.startPhaseBulk',
+      ['a', 'b'],
+      'plan',
+      true,
+    );
+  });
+
+  it('cancelling the restart-only modal starts nothing', async () => {
+    const executeCommand = exec();
+    warn().mockResolvedValue('Cancel' as never);
+
+    expect(await confirmBulkStartPhase('plan', [], ['a'])).toEqual({ succeeded: [], failed: [] });
+    expect(executeCommand).not.toHaveBeenCalled();
   });
 });

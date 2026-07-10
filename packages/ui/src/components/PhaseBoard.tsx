@@ -34,6 +34,12 @@ const PRIORITY_COLORS: Record<WorkspaceTask['priority'], string> = {
   low: '#5c9de0',
 };
 
+const STATUS_LABELS: Record<WorkspaceTask['status'], string> = {
+  open: 'open',
+  'in-progress': 'in progress',
+  done: 'done',
+};
+
 type ColumnKey = TaskPhase;
 
 const COLUMNS: ColumnKey[] = ['plan', 'implement', 'review', 'fix'];
@@ -121,9 +127,11 @@ function TaskCard({
 
       <div className="phase-card-meta">
         <span className="phase-card-id">{task.id.slice(0, 8)}</span>
+        <span className={`task-status-chip task-status-${task.status}`}>
+          {STATUS_LABELS[task.status]}
+        </span>
         {task.worktree && <span className="phase-card-chip">{task.worktree}</span>}
         {task.epic && <span className="phase-card-chip">{task.epic}</span>}
-        {task.status === 'in-progress' && <span className="phase-card-chip">in progress</span>}
         {planSteps && (
           <span className="phase-card-chip" title="plan-step subtasks done / total">
             steps {planSteps.done}/{planSteps.total}
@@ -254,7 +262,7 @@ export function PhaseBoard({ api, reloadKey = 0, phaseModels, onOpenTask }: Phas
       if (!confirmBulkStart) return;
       const startableIds = items.filter((t) => t.status === 'open').map((t) => t.id);
       const inProgressIds = items.filter((t) => t.status === 'in-progress').map((t) => t.id);
-      if (startableIds.length === 0) return;
+      if (startableIds.length === 0 && inProgressIds.length === 0) return;
 
       setBulkStarting(column);
       setBulkError(null);
@@ -298,6 +306,7 @@ export function PhaseBoard({ api, reloadKey = 0, phaseModels, onOpenTask }: Phas
           {COLUMNS.map((column) => {
             const items = columns.get(column) ?? [];
             const startable = items.filter((t) => t.status === 'open').length;
+            const inProgress = items.filter((t) => t.status === 'in-progress').length;
             return (
               <section key={column} className={`phase-column phase-column-${column}`}>
                 <header className="phase-column-head" title={COLUMN_HINTS[column]}>
@@ -322,18 +331,24 @@ export function PhaseBoard({ api, reloadKey = 0, phaseModels, onOpenTask }: Phas
                     ))
                   )}
                 </div>
-                {api.confirmBulkStart && startable > 0 && (
+                {api.confirmBulkStart && (startable > 0 || inProgress > 0) && (
                   <footer className="phase-column-footer">
                     <button
                       type="button"
                       className="task-action-btn phase-column-start"
                       disabled={bulkStarting !== null}
                       onClick={() => void startColumn(column, items)}
-                      title={`Spawn one Claude session per startable task in this column, all running the ${COLUMN_LABELS[column]} phase`}
+                      title={
+                        startable > 0
+                          ? `Spawn one Claude session per startable task in this column, all running the ${COLUMN_LABELS[column]} phase`
+                          : `Restart the ${COLUMN_LABELS[column]} phase for all in-progress tasks in this column`
+                      }
                     >
                       {bulkStarting === column
                         ? 'Starting…'
-                        : `Start all ${COLUMN_LABELS[column]} (${startable})`}
+                        : startable > 0
+                          ? `Start all ${COLUMN_LABELS[column]} (${startable})`
+                          : `Restart all ${COLUMN_LABELS[column]} (${inProgress})`}
                     </button>
                   </footer>
                 )}

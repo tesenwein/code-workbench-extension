@@ -30,9 +30,33 @@ export async function confirmBulkStartPhase(
   startableIds: string[],
   inProgressIds: string[],
 ): Promise<BulkStartResult> {
-  if (!(phase in PHASE_META) || startableIds.length === 0) return NO_BULK_START;
+  if (!(phase in PHASE_META) || (startableIds.length === 0 && inProgressIds.length === 0)) {
+    return NO_BULK_START;
+  }
 
   const label = PHASE_META[phase].label;
+
+  // Nothing open, only in-progress tasks: the only meaningful action is a
+  // restart, so skip the "skip in-progress" branch entirely.
+  if (startableIds.length === 0) {
+    const restart = `Restart ${inProgressIds.length}`;
+    const message = `${inProgressIds.length} in-progress tasks. Restart ${label} for all of them?`;
+    const answer = await vscode.window.showWarningMessage(
+      message,
+      { modal: true },
+      restart,
+      'Cancel',
+    );
+    if (answer !== restart) return NO_BULK_START;
+    const result = await vscode.commands.executeCommand<BulkStartResult>(
+      'codeWorkbench.tasks.startPhaseBulk',
+      inProgressIds,
+      phase,
+      true,
+    );
+    return result ?? NO_BULK_START;
+  }
+
   const startOnly = `Start ${startableIds.length}`;
   const includeAll = `Include in-progress (${startableIds.length + inProgressIds.length})`;
   const message =
