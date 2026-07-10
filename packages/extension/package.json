@@ -470,7 +470,7 @@
         {
           "command": "codeWorkbench.tasks.openPhaseBoard",
           "when": "view == codeWorkbench.tasks",
-          "group": "navigation@2"
+          "group": "navigation@3"
         }
       ]
     },

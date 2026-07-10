@@ -212,6 +212,9 @@ let plan = await agent(
   ].join('\\n'),
   { model: 'opus', phase: 'Synthesize', schema: PLAN_SCHEMA },
 )
+if (!plan) {
+  throw new Error('Synthesize agent failed to produce a plan')
+}
 
 phase('Critique')
 const seenGaps = new Set()
@@ -226,11 +229,12 @@ for (let round = 0; round < 2; round++) {
     ].join('\\n'),
     { model: 'opus', phase: 'Critique', schema: CRITIQUE_SCHEMA },
   )
-  const fresh = (critique.gaps || []).filter(g => !seenGaps.has(g.gap.toLowerCase()))
+  // A failed critique agent (null) means no gaps to act on — keep the plan.
+  const fresh = (critique?.gaps || []).filter(g => !seenGaps.has(g.gap.toLowerCase()))
   if (!fresh.length) break
   fresh.forEach(g => seenGaps.add(g.gap.toLowerCase()))
 
-  plan = await agent(
+  const revised = await agent(
     [
       \`Re-synthesize this implementation plan to close the gaps below, for feature request: "\${request}"\`,
       '',
@@ -242,6 +246,8 @@ for (let round = 0; round < 2; round++) {
     ].join('\\n'),
     { model: 'opus', phase: 'Synthesize', schema: PLAN_SCHEMA },
   )
+  // A failed re-synthesis must not replace a working plan with null.
+  if (revised) plan = revised
 }
 
 return { request, summary: plan.summary, openQuestions: plan.openQuestions, tasks: plan.tasks }

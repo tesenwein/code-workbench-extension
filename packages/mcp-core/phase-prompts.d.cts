@@ -5,8 +5,6 @@ export interface PhaseMeta {
   /** VS Code codicon id for the spawned session's tab. */
   icon: string;
   model: 'opus' | 'sonnet';
-  /** Forces read-only planning via `claude --permission-mode plan`. */
-  planOnly?: boolean;
   /** Overrides the worktree's effort pref for this phase's session. */
   effort?: 0 | 1 | 2 | 3 | 4;
 }

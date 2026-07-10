@@ -122,7 +122,11 @@ async function verifyFinding(f, index) {
       }),
     ),
   )
-  const refutedCount = verdicts.filter(Boolean).filter(v => v.refuted).length
+  // A crashed lens (null verdict) counts as refuted — the lens prompts say
+  // "if uncertain, default to refuted", and a failure is maximal uncertainty.
+  // Counting it as not-refuted would make refutation impossible with two
+  // failed lenses, inverting the adversarial policy.
+  const refutedCount = verdicts.filter(v => !v || v.refuted).length
   return refutedCount >= 2 ? null : f
 }
 
@@ -160,7 +164,13 @@ const [dimensionResults, checks] = await parallel([
     pipeline(
       DIMENSIONS,
       d => agent(d.prompt, { label: \`review:\${d.key}\`, phase: 'Review', model: 'sonnet', schema: FINDINGS_SCHEMA }),
-      review => parallel((review.findings || []).map((f, i) => () => verifyFinding(f, \`\${review.findings.length}-\${i}\`))),
+      // Guard: a failed dimension agent resolves to null — degrade to the other
+      // dimensions instead of throwing. Verify labels are keyed by dimension so
+      // they never collide across dimensions (labels are the resume identity).
+      (review, d) =>
+        review
+          ? parallel((review.findings || []).map((f, i) => () => verifyFinding(f, \`\${d.key}-\${i}\`)))
+          : [],
     ),
   checksPromiseFactory,
 ])

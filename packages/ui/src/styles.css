@@ -1393,6 +1393,10 @@
 .phase-board-error {
   color: var(--danger);
 }
+.task-phase-error {
+  font-size: 12px;
+  color: var(--danger);
+}
 .phase-board-columns {
   flex: 1;
   display: grid;

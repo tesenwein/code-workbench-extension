@@ -57,10 +57,13 @@ const COLUMN_HINTS: Record<ColumnKey, string> = {
  *  with no explicit `phase` is inferred from its subtasks: already having
  *  plan-step subtasks means planning happened, so it belongs in Implement;
  *  otherwise it hasn't been planned yet. */
-function columnFor(task: WorkspaceTask, children: WorkspaceTask[]): ColumnKey | null {
+export function columnFor(task: WorkspaceTask, children: WorkspaceTask[]): ColumnKey | null {
   if (task.parentId) return null;
-  if (task.phase) return task.phase;
+  // Done wins over a lingering `phase`: marking a task done from the Task
+  // Board doesn't clear `phase`, and a done task must never keep a live
+  // "Start <phase>" card on the board.
   if (task.status === 'done') return null;
+  if (task.phase) return task.phase;
   return children.some((c) => c.tags?.includes('plan-step')) ? 'implement' : 'plan';
 }
 

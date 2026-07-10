@@ -60,8 +60,12 @@ export function readFirstUserMessage(sessionId: string): string | undefined {
     } catch {
       continue;
     }
-    const e = entry as { type?: string; message?: { role?: string; content?: unknown } };
-    if (e.type !== 'user' || e.message?.role !== 'user') continue;
+    const e = entry as {
+      type?: string;
+      isMeta?: boolean;
+      message?: { role?: string; content?: unknown };
+    };
+    if (e.type !== 'user' || e.message?.role !== 'user' || e.isMeta) continue;
     const content = e.message.content;
     let text: string | undefined;
     if (typeof content === 'string') {
@@ -74,7 +78,10 @@ export function readFirstUserMessage(sessionId: string): string | undefined {
       text = block?.text;
     }
     const clean = text?.split('\n')[0]?.trim();
-    return clean || undefined;
+    // Slash-command turns land as `<command-name>…</command-name>` wrapper
+    // entries — markup, not a title. Keep scanning for a real typed message.
+    if (!clean || clean.startsWith('<')) continue;
+    return clean;
   }
   return undefined;
 }

@@ -284,7 +284,9 @@ export const TOOLS = [
         },
         phase: {
           type: "string",
-          enum: ["plan", "implement", "review", "fix"],
+          // "" is a legal value: the Review/Fix procedures clear the phase with
+          // it, so it must pass schema validation, not just the handler.
+          enum: ["plan", "implement", "review", "fix", ""],
           description:
             'Workflow phase this task is in (set by the Code Workbench phase flow — Plan → Implement → Review → Fix). Advance it when your phase\'s work is handed off to the next one. Pass an empty string to clear it.',
         },
@@ -567,7 +569,7 @@ export async function handle(req) {
           parallel: args.parallel === true,
           epic: args.epic || null,
           tags: Array.isArray(args.tags) ? args.tags.map(String) : [],
-          phase: VALID_PHASES.has(args.phase) ? args.phase : null,
+          phase: args.phase && VALID_PHASES.has(args.phase) ? args.phase : null,
         });
         return {
           content: [

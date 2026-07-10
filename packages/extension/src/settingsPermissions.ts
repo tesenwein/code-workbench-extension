@@ -38,7 +38,13 @@ async function readSettings(file: string): Promise<ClaudeSettings> {
 export async function installWorkbenchPermissions(targetPath: string): Promise<string[]> {
   const file = settingsFile(targetPath);
   const settings = await readSettings(file);
-  const allow = settings.permissions?.allow ?? [];
+  const rawAllow = settings.permissions?.allow;
+  // A malformed `allow` (string, object, …) must not be spread into garbage and
+  // written back — leave the user's file alone rather than corrupt it.
+  if (rawAllow !== undefined && !Array.isArray(rawAllow)) {
+    throw new Error(`${file}: permissions.allow is not an array — not touching it`);
+  }
+  const allow = rawAllow ?? [];
   const missing = WORKBENCH_PERMISSIONS.filter((p) => !allow.includes(p));
   if (missing.length === 0) return [];
 
@@ -47,6 +53,9 @@ export async function installWorkbenchPermissions(targetPath: string): Promise<s
     permissions: { ...settings.permissions, allow: [...allow, ...missing] },
   };
   await fs.mkdir(path.dirname(file), { recursive: true });
-  await fs.writeFile(file, `${JSON.stringify(next, null, 2)}\n`);
+  // Write atomically — a crash mid-write must not truncate the settings file.
+  const tmp = `${file}.${process.pid}.tmp`;
+  await fs.writeFile(tmp, `${JSON.stringify(next, null, 2)}\n`);
+  await fs.rename(tmp, file);
   return missing;
 }

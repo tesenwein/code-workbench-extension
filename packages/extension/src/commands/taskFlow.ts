@@ -79,7 +79,6 @@ export function registerTaskFlowCommand(
           // Settings can override the phase's built-in model, globally or per worktree.
           model: deps.sessionMgr.resolvePhaseModel(wt, phase),
           prompt: phasePrompt(phase, task),
-          ...(spec.planOnly ? { permissionMode: 'plan' } : {}),
           ...(spec.effort != null ? { effort: spec.effort } : {}),
         });
       },
