@@ -364,8 +364,14 @@
         },
         {
           "command": "codeWorkbench.checkForUpdates",
-          "when": "view == codeWorkbench.brand",
+          "when": "view == codeWorkbench.brand && !codeWorkbench.updateAvailable",
           "group": "navigation@0"
+        },
+        {
+          "command": "codeWorkbench.checkForUpdates",
+          "when": "view == codeWorkbench.brand && codeWorkbench.updateAvailable",
+          "group": "navigation@0",
+          "icon": "$(arrow-circle-up)"
         },
         {
           "command": "codeWorkbench.openGlobalPrefs",

@@ -205,6 +205,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     void sessionMgr.restoreSessions(repoRoot);
   }
 
+  const brandView = new BrandViewProvider(sessionMgr);
   const worktreesProvider = new WorktreesProvider(
     () => repoRoot,
     () => sessionMgr.getActiveWorktree(),
@@ -361,10 +362,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
         await sessionMgr.setPrefs(target, { note: next.trim() || undefined });
       },
     ),
-    vscode.window.registerWebviewViewProvider(
-      BrandViewProvider.viewId,
-      new BrandViewProvider(sessionMgr),
-    ),
+    vscode.window.registerWebviewViewProvider(BrandViewProvider.viewId, brandView),
     vscode.window.registerWebviewViewProvider(WorktreesProvider.viewId, worktreesProvider, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
@@ -572,10 +570,22 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     }
   };
 
+  // ── MCP server backfill ─ same reasoning as the permissions backfill above:
+  // merge Code Workbench's MCP servers into ~/.claude.json on every activation
+  // so cw-code tools are always reachable, without ever touching project scope.
+  const registerUserMcpServers = async () => {
+    try {
+      await registerWorkbenchMcpServers(ctx.extensionPath, os.homedir());
+    } catch (e) {
+      console.error('User MCP server backfill failed', e);
+    }
+  };
+
   void (async () => {
     // Sequential so scopes/checks never stack notifications on one activation.
     await promptSkillsDrift('user', os.homedir());
     await installUserPermissions();
+    await registerUserMcpServers();
   })();
 
   // ── Register workbench MCP servers into .claude.json ──────────────────
@@ -608,7 +618,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
 
   registerLayoutCommands(ctx);
 
-  registerUpdateCommand(ctx);
+  registerUpdateCommand(ctx, brandView);
 
   registerCodeReviewCommand(ctx, { sessionMgr, ensureActiveWorktree });
 

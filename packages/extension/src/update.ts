@@ -9,6 +9,7 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import type { BrandViewProvider } from './brandView';
 
 /** packageJSON.repository points at the old monorepo path; releases live here. */
 const REPO = 'tesenwein/code-workbench-extension';
@@ -16,6 +17,7 @@ const LATEST_RELEASE_URL = `https://api.github.com/repos/${REPO}/releases/latest
 
 const LAST_CHECK_KEY = 'codeWorkbench.update.lastCheck';
 const SKIPPED_VERSION_KEY = 'codeWorkbench.update.skippedVersion';
+const AVAILABLE_VERSION_KEY = 'codeWorkbench.update.availableVersion';
 
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 /** Unauthenticated GitHub API allows 60 requests/hour per IP — keep it snappy. */
@@ -66,6 +68,25 @@ async function fetchJson<T>(url: string): Promise<T> {
 
 export function pickVsix(release: Release): ReleaseAsset | undefined {
   return release.assets.find((a) => a.name.endsWith('.vsix'));
+}
+
+/** The state the brand view's title-bar icon and badge are derived from. */
+export type UpdateStateHost = Pick<vscode.ExtensionContext, 'globalState'>;
+export type UpdateBadgeTarget = Pick<BrandViewProvider, 'setBadge'>;
+
+/**
+ * Single writer for "an update is available": persists the tag, drives the
+ * `codeWorkbench.updateAvailable` context key (icon swap) and the view badge.
+ * Pass `undefined` to clear all three.
+ */
+export async function applyUpdateState(
+  ctx: UpdateStateHost,
+  brandView: UpdateBadgeTarget,
+  tag: string | undefined,
+): Promise<void> {
+  await ctx.globalState.update(AVAILABLE_VERSION_KEY, tag);
+  await vscode.commands.executeCommand('setContext', 'codeWorkbench.updateAvailable', Boolean(tag));
+  brandView.setBadge(tag ? 1 : 0, tag ? `Code Workbench ${tag} is available` : '');
 }
 
 /**
@@ -136,6 +157,7 @@ async function downloadAndInstall(release: Release, asset: ReleaseAsset): Promis
  */
 export async function checkForUpdates(
   ctx: vscode.ExtensionContext,
+  brandView: UpdateBadgeTarget,
   opts: { silent: boolean },
 ): Promise<void> {
   const current = String(ctx.extension.packageJSON.version ?? '0.0.0');
@@ -153,11 +175,14 @@ export async function checkForUpdates(
   }
 
   if (compareVersions(release.tag_name, current) <= 0) {
+    await applyUpdateState(ctx, brandView, undefined);
     if (!opts.silent) {
       void vscode.window.showInformationMessage(`Code Workbench ${current} is up to date.`);
     }
     return;
   }
+
+  await applyUpdateState(ctx, brandView, release.tag_name);
 
   if (opts.silent && ctx.globalState.get<string>(SKIPPED_VERSION_KEY) === release.tag_name) return;
 
@@ -183,6 +208,7 @@ export async function checkForUpdates(
   }
   if (choice === 'Skip This Version') {
     await ctx.globalState.update(SKIPPED_VERSION_KEY, release.tag_name);
+    await applyUpdateState(ctx, brandView, undefined);
     return;
   }
   if (choice !== 'Update Now') return;
@@ -200,12 +226,28 @@ export async function checkForUpdates(
 }
 
 /** Registers the manual command and runs a throttled background check. */
-export function registerUpdateCommand(ctx: vscode.ExtensionContext): void {
+export function registerUpdateCommand(
+  ctx: vscode.ExtensionContext,
+  brandView: UpdateBadgeTarget,
+): void {
+  // A prior run may have found an update; the context key and badge don't
+  // survive a reload, so replay the persisted state before any new check.
+  // Awaited (not fire-and-forget) so a command invoked right after activation
+  // can't race this write and have its result clobbered.
+  const known = ctx.globalState.get<string>(AVAILABLE_VERSION_KEY);
+  const current = String(ctx.extension.packageJSON.version ?? '0.0.0');
+  const replayed = applyUpdateState(
+    ctx,
+    brandView,
+    known && compareVersions(known, current) > 0 ? known : undefined,
+  );
+
   ctx.subscriptions.push(
     vscode.commands.registerCommand('codeWorkbench.checkForUpdates', async () => {
+      await replayed;
       await ctx.globalState.update(SKIPPED_VERSION_KEY, undefined);
       await ctx.globalState.update(LAST_CHECK_KEY, Date.now());
-      await checkForUpdates(ctx, { silent: false });
+      await checkForUpdates(ctx, brandView, { silent: false });
     }),
   );
 
@@ -217,7 +259,8 @@ export function registerUpdateCommand(ctx: vscode.ExtensionContext): void {
   const last = ctx.globalState.get<number>(LAST_CHECK_KEY, 0);
   if (Date.now() - last < CHECK_INTERVAL_MS) return;
   void (async () => {
+    await replayed;
     await ctx.globalState.update(LAST_CHECK_KEY, Date.now());
-    await checkForUpdates(ctx, { silent: true });
+    await checkForUpdates(ctx, brandView, { silent: true });
   })();
 }

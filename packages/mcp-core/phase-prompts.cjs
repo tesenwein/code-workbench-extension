@@ -53,12 +53,19 @@ const REREAD = `Work ONLY on task ${TASK_ID} on the shared cw-tasks board. Start
 const STAY_IN_LANE =
   "Do the work of THIS phase and nothing else. Hand off by setting `phase` exactly as instructed below — never skip a phase, never set it past the next one, and never start the next phase's work yourself, even if it looks trivial or you can already see the answer. If this phase's work turns out to be unnecessary, still hand off; do not absorb the next phase.";
 
+/** Every phase needs a way OUT that isn't a lie: a session that can't finish
+ *  must leave the board recoverable, not stranded in-progress with no signal. */
+const IF_BLOCKED = `If you get blocked and cannot finish this phase (missing information, impossible step, broken environment), write what blocks you into the task's memo via task_update (id: "${TASK_ID}", memo: "...") and STOP — leave \`phase\` unchanged so the board still shows this phase as pending. Never advance \`phase\` or mark anything done to get unstuck.`;
+
 const PHASE_PROCEDURES = {
   plan: [
     REREAD,
     STAY_IN_LANE,
+    IF_BLOCKED,
     "",
     "Explore the codebase enough to design a concrete implementation approach — do not guess at unfamiliar code. Consult the architecture wiki (`arch_list`, `arch_search`, `arch_get`) so the plan respects existing guidelines.",
+    "",
+    'If the task ALREADY has "plan-step" subtasks (a previous Plan run), reconcile instead of duplicating: update or delete stale ones and only add what is missing — never file a second copy of an existing step.',
     "",
     "When you have an approach:",
     `1. Write it into the task's memo via task_update (id: "${TASK_ID}", memo: "...").`,
@@ -71,6 +78,7 @@ const PHASE_PROCEDURES = {
   implement: [
     REREAD,
     STAY_IN_LANE,
+    IF_BLOCKED,
     "",
     'Work its subtasks tagged "plan-step" in order (if there are none, work the task\'s description directly). Mark each subtask in-progress before you start it and done when it passes. Run whatever lint, typecheck, and test scripts the project has; treat a failure as unfinished work, not a separate finding.',
     "",
@@ -82,6 +90,7 @@ const PHASE_PROCEDURES = {
   review: [
     REREAD,
     STAY_IN_LANE,
+    IF_BLOCKED,
     "",
     "Review the work done for this task: `git status --short`, `git diff`, `git diff --staged`, and this branch's commits vs its base (resolve origin/HEAD, else develop, else main/master). Read surrounding files for context. Look for correctness bugs, logic errors, missing error handling, type-safety escapes, security issues, and needless complexity.",
     "",
@@ -89,18 +98,19 @@ const PHASE_PROCEDURES = {
     "",
     `File each real finding as a subtask via task_create (parentId: "${TASK_ID}", tags: ["review-finding"], priority reflecting severity, description: "file:line, what is wrong, why it matters, suggested fix").`,
     "",
-    `Then task_update the task: id: "${TASK_ID}", phase: "fix" if you filed any findings, otherwise phase: "" (clear it) and status: "done" if nothing else is pending.`,
+    `Then hand off via task_update on the task: if you filed any findings, id: "${TASK_ID}", phase: "fix". If you filed none and no other subtasks are still open, id: "${TASK_ID}", phase: "" (clear it), status: "done". If you filed none but other subtasks ARE still open, note in the memo what is left and set phase: "implement" so the remaining work gets picked up — never leave the task with no phase while it is unfinished.`,
   ].join("\n"),
 
   fix: [
     REREAD,
     STAY_IN_LANE,
+    IF_BLOCKED,
     "",
-    'List its open subtasks tagged "review-finding" and fix each one: mark it in-progress before you start, done once fixed. Re-run lint, typecheck, and tests at the end.',
+    'List the subtasks tagged "review-finding" that were open when you started, and fix each one: mark it in-progress before you start, done once fixed. Re-run lint, typecheck, and tests at the end.',
     "",
-    'You may NOT review: fix the findings already on the board and no more. If you spot a new problem, file it as another "review-finding" subtask and leave it for the next Review — do not silently widen the diff.',
+    'You may NOT review: fix the findings already on the board and no more. If you spot a NEW problem while fixing, file it as another "review-finding" subtask but do NOT fix it — it belongs to the next Review/Fix round.',
     "",
-    `When every "review-finding" subtask is done, task_update the task: id: "${TASK_ID}", phase: "" (clear it), status: "done".`,
+    `Then hand off via task_update on the task: if you filed any NEW findings (or had to change code beyond trivial finding fixes), id: "${TASK_ID}", phase: "review" so the new work gets reviewed. Otherwise, once every "review-finding" subtask is done: id: "${TASK_ID}", phase: "" (clear it), status: "done".`,
   ].join("\n"),
 };
 
@@ -123,8 +133,8 @@ function phaseProcedure(phase, taskId) {
  */
 function phasePrompt(phase, task) {
   assertPhase(phase);
-  const header = `${PHASE_META[phase].label.toUpperCase()} phase.`;
-  const context = [`Task: ${task.title}`];
+  const header = `${PHASE_META[phase].label.toUpperCase()} phase for task ${task.id}.`;
+  const context = [`Task ${task.id}: ${task.title}`];
   if (task.description) context.push("", task.description);
   if (phase === "implement" && task.memo) context.push("", `Plan memo:\n${task.memo}`);
   return [header, "", ...context, "", phaseProcedure(phase, task.id)].join("\n");

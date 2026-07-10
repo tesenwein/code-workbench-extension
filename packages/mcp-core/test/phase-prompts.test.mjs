@@ -24,11 +24,17 @@ describe("phaseProcedure", () => {
 });
 
 describe("phasePrompt", () => {
-  it("names the phase and carries the task's title and description", () => {
+  it("names the phase and carries the task's id, title, and description", () => {
     const prompt = phasePrompt("implement", TASK);
-    expect(prompt.startsWith("IMPLEMENT phase.")).toBe(true);
-    expect(prompt).toContain(TASK.title);
+    expect(prompt.startsWith(`IMPLEMENT phase for task ${TASK.id}.`)).toBe(true);
+    expect(prompt).toContain(`Task ${TASK.id}: ${TASK.title}`);
     expect(prompt).toContain(TASK.description);
+  });
+
+  it("names the task id in the header of every phase", () => {
+    for (const phase of PHASE_ORDER) {
+      expect(phasePrompt(phase, TASK)).toContain(`phase for task ${TASK.id}.`);
+    }
   });
 
   it("includes the plan memo only for the Implement phase", () => {
@@ -40,6 +46,16 @@ describe("phasePrompt", () => {
     expect(phasePrompt("plan", TASK)).toContain('phase: "implement"');
     expect(phasePrompt("implement", TASK)).toContain('phase: "review"');
     expect(phasePrompt("review", TASK)).toContain('phase: "fix"');
+  });
+
+  it("routes Fix back to Review when new findings were filed", () => {
+    expect(phasePrompt("fix", TASK)).toContain('phase: "review"');
+  });
+
+  it("gives every phase a blocked escape hatch that never advances the phase", () => {
+    for (const phase of PHASE_ORDER) {
+      expect(phasePrompt(phase, TASK)).toContain("If you get blocked");
+    }
   });
 });
 

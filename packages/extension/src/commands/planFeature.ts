@@ -56,12 +56,6 @@ export function registerPlanFeatureCommand(
 ): void {
   ctx.subscriptions.push(
     vscode.commands.registerCommand('codeWorkbench.plan.start', async () => {
-      const request = await vscode.window.showInputBox({
-        prompt: 'What feature should be planned? (optional — leave empty and Claude will ask)',
-        placeHolder: 'Describe the feature to design…',
-        ignoreFocusOut: true,
-      });
-      if (request === undefined) return;
       const wt = await deps.ensureActiveWorktree();
       if (!wt) return;
       const scriptPath = await writeWorkflowScript(ctx, 'cw-plan-feature');
@@ -69,7 +63,7 @@ export function registerPlanFeatureCommand(
         title: 'Plan',
         icon: 'compass',
         model: 'opus',
-        prompt: buildPlanPrompt(scriptPath, request),
+        prompt: buildPlanPrompt(scriptPath, ''),
       });
     }),
   );
