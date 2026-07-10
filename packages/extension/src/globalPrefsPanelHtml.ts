@@ -6,6 +6,7 @@ import {
   PHASE_META,
   PHASE_ORDER,
 } from '@code-workbench/mcp-core/phase-prompts';
+import { LANGUAGES } from './language';
 import type { GlobalPrefs } from './globalPrefs';
 import { themeTokenDecls, hcOverrideCss } from './webviewTheme';
 
@@ -27,6 +28,12 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
     .join('');
   const effortLabels = safeJson(EFFORT_LABELS);
   const modelMeta = safeJson(CLAUDE_MODELS);
+  const languageOptions = LANGUAGES.map(
+    (l) => `<option value="${l.code}">${l.label}</option>`,
+  ).join('');
+  const commentLanguageOptions = LANGUAGES.map(
+    (l) => `<option value="${l.code}">${l.label}</option>`,
+  ).join('');
   const sessionPanel = vscode.workspace
     .getConfiguration('codeWorkbench')
     .get<string>('sessionPanel', 'panel');
@@ -367,6 +374,7 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
         <a href="#sec-defaults"><span class="num">04</span>Defaults</a>
         <a href="#sec-phases"><span class="num">04b</span>Task Flow</a>
         <a href="#sec-binary"><span class="num">05</span>Binary</a>
+        <a href="#sec-language"><span class="num">05b</span>Language</a>
         <a href="#sec-prompts"><span class="num">06</span>Prompts</a>
       </nav>
 
@@ -519,6 +527,35 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
         </div>
       </section>
 
+      <section id="sec-language">
+        <div class="secthead">
+          <span class="num">05b</span><h2>Language</h2>
+          <span class="tag">--append-system-prompt</span>
+        </div>
+        <p class="sectlede">Which natural language Claude uses. Feeds the same appended system prompt as the entries below.</p>
+
+        <div class="field">
+          <div class="field-head"><label>Claude replies in</label></div>
+          <select id="language">
+            ${languageOptions}
+            <option value="__other__">Other…</option>
+          </select>
+          <input id="languageOther" type="text" spellcheck="false" placeholder="Language name" style="display:none; margin-top:8px;" />
+        </div>
+
+        <div class="field">
+          <div class="field-head"><label>Code comments in</label></div>
+          <select id="commentLanguage">
+            <option value="inherit">Same as replies</option>
+            ${commentLanguageOptions}
+            <option value="__other__">Other…</option>
+          </select>
+          <input id="commentLanguageOther" type="text" spellcheck="false" placeholder="Language name" style="display:none; margin-top:8px;" />
+        </div>
+
+        <div class="hint">Applies to sessions started from now on. Identifiers, commit messages, and PR titles stay English.</div>
+      </section>
+
       <section id="sec-prompts">
         <div class="secthead">
           <span class="num">06</span><h2>Prompts</h2>
@@ -553,6 +590,12 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
   const promptsEl = document.getElementById('prompts');
   const addPromptEl = document.getElementById('addPrompt');
   const pathnoteEl = document.getElementById('pathnote');
+  const languageEl = document.getElementById('language');
+  const languageOtherEl = document.getElementById('languageOther');
+  const commentLanguageEl = document.getElementById('commentLanguage');
+  const commentLanguageOtherEl = document.getElementById('commentLanguageOther');
+  const KNOWN_LANGUAGE_CODES = ${safeJson(LANGUAGES.map((l) => l.code))};
+  const KNOWN_COMMENT_CODES = ['inherit', ...KNOWN_LANGUAGE_CODES];
 
   function escapeHtml(s) {
     return String(s ?? '').replace(/[&<>"']/g, (c) =>
@@ -626,6 +669,20 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
       el.value = (state.phaseModels || {})[el.dataset.phase] || 'default';
     }
     renderPrompts();
+
+    const lang = state.language || 'auto';
+    const isCustomLang = !KNOWN_LANGUAGE_CODES.includes(lang);
+    languageEl.value = isCustomLang ? '__other__' : lang;
+    languageOtherEl.style.display = isCustomLang ? '' : 'none';
+    if (isCustomLang && document.activeElement !== languageOtherEl) languageOtherEl.value = lang;
+
+    const commentLang = state.commentLanguage || 'inherit';
+    const isCustomComment = !KNOWN_COMMENT_CODES.includes(commentLang);
+    commentLanguageEl.value = isCustomComment ? '__other__' : commentLang;
+    commentLanguageOtherEl.style.display = isCustomComment ? '' : 'none';
+    if (isCustomComment && document.activeElement !== commentLanguageOtherEl) {
+      commentLanguageOtherEl.value = commentLang;
+    }
   }
 
   if (modelChipsEl) {
@@ -679,6 +736,37 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
   });
   document.getElementById('sessionPanel').addEventListener('change', (e) => {
     vscode.postMessage({ type: 'setSessionPanel', value: e.target.value });
+  });
+
+  languageEl.addEventListener('change', () => {
+    if (languageEl.value === '__other__') {
+      state.language = languageOtherEl.value || '';
+      languageOtherEl.style.display = '';
+      languageOtherEl.focus();
+    } else {
+      state.language = languageEl.value;
+      languageOtherEl.style.display = 'none';
+    }
+    vscode.postMessage({ type: 'setLanguage', value: state.language });
+  });
+  languageOtherEl.addEventListener('change', () => {
+    state.language = languageOtherEl.value;
+    vscode.postMessage({ type: 'setLanguage', value: state.language });
+  });
+  commentLanguageEl.addEventListener('change', () => {
+    if (commentLanguageEl.value === '__other__') {
+      state.commentLanguage = commentLanguageOtherEl.value || '';
+      commentLanguageOtherEl.style.display = '';
+      commentLanguageOtherEl.focus();
+    } else {
+      state.commentLanguage = commentLanguageEl.value;
+      commentLanguageOtherEl.style.display = 'none';
+    }
+    vscode.postMessage({ type: 'setCommentLanguage', value: state.commentLanguage });
+  });
+  commentLanguageOtherEl.addEventListener('change', () => {
+    state.commentLanguage = commentLanguageOtherEl.value;
+    vscode.postMessage({ type: 'setCommentLanguage', value: state.commentLanguage });
   });
 
   window.addEventListener('message', (e) => {

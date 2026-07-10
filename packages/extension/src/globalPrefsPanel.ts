@@ -93,6 +93,10 @@ export class GlobalPrefsPanel {
       await this.patch({ ...cur, claudeYoloArgs: msg.value });
     } else if (msg.type === 'setOpenOnStartup' && typeof msg.value === 'boolean') {
       await this.patch({ ...cur, openOnStartup: msg.value });
+    } else if (msg.type === 'setLanguage' && typeof msg.value === 'string') {
+      await this.patch({ ...cur, language: msg.value });
+    } else if (msg.type === 'setCommentLanguage' && typeof msg.value === 'string') {
+      await this.patch({ ...cur, commentLanguage: msg.value });
     } else if (msg.type === 'addPrompt') {
       const next: GlobalPrompt = {
         id: newPromptId(),

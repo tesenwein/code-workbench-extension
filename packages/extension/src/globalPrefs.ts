@@ -11,6 +11,7 @@ import {
   type PhaseModels,
 } from './sessions';
 import { PHASE_ORDER } from '@code-workbench/mcp-core/phase-prompts';
+import { sanitizeLanguage } from './language';
 
 export interface GlobalPrompt {
   id: string;
@@ -36,6 +37,10 @@ export interface GlobalPrefs {
   openOnStartup: boolean;
   syncRemoteUrl: string;
   syncBranch: string;
+  /** Natural language Claude replies in. 'auto' = follow the user, no prompt injected. */
+  language: string;
+  /** Natural language for code comments/doc strings. 'inherit' = same as `language`. */
+  commentLanguage: string;
 }
 
 export const DEFAULT_GLOBAL_PREFS: GlobalPrefs = {
@@ -47,6 +52,8 @@ export const DEFAULT_GLOBAL_PREFS: GlobalPrefs = {
   openOnStartup: true,
   syncRemoteUrl: '',
   syncBranch: 'main',
+  language: 'auto',
+  commentLanguage: 'inherit',
 };
 
 export function globalPrefsDir(): string {
@@ -100,6 +107,8 @@ function normalize(raw: unknown): GlobalPrefs {
       typeof r.syncBranch === 'string' && r.syncBranch.trim()
         ? r.syncBranch
         : DEFAULT_GLOBAL_PREFS.syncBranch,
+    language: sanitizeLanguage(r.language) || DEFAULT_GLOBAL_PREFS.language,
+    commentLanguage: sanitizeLanguage(r.commentLanguage) || DEFAULT_GLOBAL_PREFS.commentLanguage,
   };
 }
 
