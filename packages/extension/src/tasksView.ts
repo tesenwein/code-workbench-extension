@@ -23,8 +23,9 @@ const NO_BULK_START: BulkStartResult = { succeeded: [], failed: [] };
  *  count in the button label is the only throttle the fan-out has.
  *
  *  In-progress tasks are skipped by default (a phase is probably already
- *  running for them); the second button opts them in. Dismissing the modal
- *  (Escape) returns `undefined`, which is a Cancel like any other. */
+ *  running for them); the "Include in-progress" button opts them in. The modal
+ *  supplies its own Cancel button, so we don't add one — dismissing (Escape or
+ *  Cancel) returns `undefined`, which is a Cancel like any other. */
 export async function confirmBulkStartPhase(
   phase: TaskPhase,
   startableIds: string[],
@@ -41,12 +42,7 @@ export async function confirmBulkStartPhase(
   if (startableIds.length === 0) {
     const restart = `Restart ${inProgressIds.length}`;
     const message = `${inProgressIds.length} in-progress tasks. Restart ${label} for all of them?`;
-    const answer = await vscode.window.showWarningMessage(
-      message,
-      { modal: true },
-      restart,
-      'Cancel',
-    );
+    const answer = await vscode.window.showWarningMessage(message, { modal: true }, restart);
     if (answer !== restart) return NO_BULK_START;
     const result = await vscode.commands.executeCommand<BulkStartResult>(
       'codeWorkbench.tasks.startPhaseBulk',
@@ -64,8 +60,7 @@ export async function confirmBulkStartPhase(
       ? `Start ${label} for ${startableIds.length} tasks? ${inProgressIds.length} in-progress tasks will be skipped.`
       : `Start ${label} for ${startableIds.length} tasks?`;
 
-  const buttons =
-    inProgressIds.length > 0 ? [startOnly, includeAll, 'Cancel'] : [startOnly, 'Cancel'];
+  const buttons = inProgressIds.length > 0 ? [startOnly, includeAll] : [startOnly];
   const answer = await vscode.window.showWarningMessage(message, { modal: true }, ...buttons);
   if (answer !== startOnly && answer !== includeAll) return NO_BULK_START;
 
