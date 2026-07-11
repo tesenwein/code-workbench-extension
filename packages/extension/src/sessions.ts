@@ -346,12 +346,6 @@ export class SessionManager {
     return this.list().filter((s) => normalizeWtPath(s.worktreePath) === want);
   }
 
-  private save(sessions: SavedSession[]): Thenable<void> {
-    return this.updateRepoState((s) => {
-      s.sessions = sessions;
-    });
-  }
-
   isOpen(id: string): boolean {
     return this.terminals.has(id);
   }
@@ -392,9 +386,9 @@ export class SessionManager {
       ...(opts?.permissionMode ? { permissionMode: opts.permissionMode } : {}),
       ...(opts?.effort != null ? { effortOverride: opts.effort } : {}),
     };
-    const sessions = this.list();
-    sessions.push(session);
-    await this.save(sessions);
+    await this.updateRepoState((st) => {
+      st.sessions.push(session);
+    });
     await this.open(session);
     this._onDidChange.fire();
     // Titling is normally driven by the agent calling notify_chat_title as
@@ -561,13 +555,15 @@ export class SessionManager {
       this.terminals.set(session.id, term);
       this.showStartupOverlay(term);
       if (!session.launched || session.claudeSessionId !== launch.claudeSessionId) {
-        const sessions = this.list();
-        const s = sessions.find((x) => x.id === session.id);
-        if (s) {
-          s.claudeSessionId = launch.claudeSessionId;
-          s.launched = true;
-          await this.save(sessions);
-        }
+        session.claudeSessionId = launch.claudeSessionId;
+        session.launched = true;
+        await this.updateRepoState((st) => {
+          const s = st.sessions.find((x) => x.id === session.id);
+          if (s) {
+            s.claudeSessionId = launch.claudeSessionId;
+            s.launched = true;
+          }
+        });
       }
     }
 
@@ -589,8 +585,7 @@ export class SessionManager {
       .trim()
       .slice(0, 80);
     if (!clean) return;
-    const sessions = this.list();
-    const s = sessions.find((x) => x.id === sessionId);
+    const s = this.list().find((x) => x.id === sessionId);
     if (!s) return;
     // After an extension-host restart the session→terminal map is empty even
     // though the terminal may still be alive — re-adopt it by its tab name.
@@ -600,8 +595,13 @@ export class SessionManager {
     // repeated notify_chat_title must be able to retry the tab rename.
     if (s.title === clean && (!term || term.name === clean)) return;
     if (s.title !== clean) {
-      s.title = clean;
-      await this.save(sessions);
+      // Mutate the freshly-read committed state by id rather than persisting a
+      // captured snapshot — otherwise a concurrent close() could be undone by
+      // this write re-committing the session it just removed.
+      await this.updateRepoState((st) => {
+        const cur = st.sessions.find((x) => x.id === sessionId);
+        if (cur) cur.title = clean;
+      });
     }
     if (term && term.name !== clean) await this.renameTerminalTab(term, clean);
     this._onDidChange.fire();
@@ -661,19 +661,22 @@ export class SessionManager {
    * picks up any change to `Terminal.name` made through the terminal UI.
    */
   private async syncTerminalNames(): Promise<void> {
-    const sessions = this.list();
-    let changed = false;
+    const updates: Array<[string, string]> = [];
     for (const [id, term] of this.terminals) {
       const live = term.name?.trim();
       if (!live) continue;
-      const s = sessions.find((x) => x.id === id);
-      if (s && s.title !== live) {
-        s.title = live;
-        changed = true;
-      }
+      const s = this.list().find((x) => x.id === id);
+      if (s && s.title !== live) updates.push([id, live]);
     }
-    if (changed) {
-      await this.save(sessions);
+    if (updates.length > 0) {
+      // Persist by id against fresh committed state so this never resurrects a
+      // session removed by a concurrent close().
+      await this.updateRepoState((st) => {
+        for (const [id, live] of updates) {
+          const s = st.sessions.find((x) => x.id === id);
+          if (s) s.title = live;
+        }
+      });
       this._onDidChange.fire();
     }
   }
@@ -683,13 +686,19 @@ export class SessionManager {
    *  time the session terminal is opened. Returns true if there is a live
    *  terminal whose icon won't update until reopen. */
   async setIcon(id: string, iconId: string | undefined): Promise<boolean> {
-    const sessions = this.list();
-    const s = sessions.find((x) => x.id === id);
+    const s = this.list().find((x) => x.id === id);
     if (!s) return false;
     const clean = iconId?.trim() || undefined;
     if (s.icon === clean) return false;
-    s.icon = clean;
-    await this.save(sessions);
+    let changed = false;
+    await this.updateRepoState((st) => {
+      const cur = st.sessions.find((x) => x.id === id);
+      if (cur && cur.icon !== clean) {
+        cur.icon = clean;
+        changed = true;
+      }
+    });
+    if (!changed) return false;
     this._onDidChange.fire();
     return this.terminals.has(id);
   }
@@ -697,11 +706,15 @@ export class SessionManager {
   async rename(id: string, title: string): Promise<void> {
     const clean = title.trim();
     if (!clean) return;
-    const sessions = this.list();
-    const s = sessions.find((x) => x.id === id);
-    if (!s) return;
-    s.title = clean;
-    await this.save(sessions);
+    let found = false;
+    await this.updateRepoState((st) => {
+      const s = st.sessions.find((x) => x.id === id);
+      if (s) {
+        s.title = clean;
+        found = true;
+      }
+    });
+    if (!found) return;
     const term = this.terminals.get(id);
     if (term) await this.renameTerminalTab(term, clean);
     this._onDidChange.fire();
@@ -711,8 +724,12 @@ export class SessionManager {
     const term = this.terminals.get(id);
     term?.dispose();
     this.terminals.delete(id);
-    const sessions = this.list().filter((s) => s.id !== id);
-    await this.save(sessions);
+    // Remove by id against the fresh committed state — never persist a captured
+    // full-list snapshot, or a concurrent title/name write could re-commit the
+    // session and leave a dead row in the panel.
+    await this.updateRepoState((st) => {
+      st.sessions = st.sessions.filter((s) => s.id !== id);
+    });
     await this.mcp.delete(id);
     this._onDidChange.fire();
   }
@@ -722,46 +739,39 @@ export class SessionManager {
    *  Returns the number of sessions removed. */
   async closeInactive(worktreePath?: string): Promise<number> {
     this.pruneClosedTerminals();
-    const sessions = this.list();
-    const remaining: SavedSession[] = [];
-    let removed = 0;
-    for (const s of sessions) {
+    const toRemove = new Set<string>();
+    for (const s of this.list()) {
       const scoped =
         !worktreePath || normalizeWtPath(s.worktreePath) === normalizeWtPath(worktreePath);
-      if (scoped && !this.isOpen(s.id)) {
-        await this.mcp.delete(s.id);
-        removed++;
-      } else {
-        remaining.push(s);
-      }
+      if (scoped && !this.isOpen(s.id)) toRemove.add(s.id);
     }
-    if (removed > 0) {
-      await this.save(remaining);
-      this._onDidChange.fire();
-    }
-    return removed;
+    if (toRemove.size === 0) return 0;
+    for (const id of toRemove) await this.mcp.delete(id);
+    await this.updateRepoState((st) => {
+      st.sessions = st.sessions.filter((s) => !toRemove.has(s.id));
+    });
+    this._onDidChange.fire();
+    return toRemove.size;
   }
 
   /** Tear down all state tied to a worktree: live terminals, saved sessions,
    *  per-session MCP config files, stored prefs, and the active-worktree pointer
    *  if it referenced this path. Caller decides what to activate next. */
   async cleanupWorktree(worktreePath: string): Promise<void> {
-    const sessions = this.list();
-    const remaining: SavedSession[] = [];
     const want = normalizeWtPath(worktreePath);
-    for (const s of sessions) {
+    const toRemove = new Set<string>();
+    for (const s of this.list()) {
       if (normalizeWtPath(s.worktreePath) === want) {
         const term = this.terminals.get(s.id);
         term?.dispose();
         this.terminals.delete(s.id);
         await this.mcp.delete(s.id);
-      } else {
-        remaining.push(s);
+        toRemove.add(s.id);
       }
     }
-    await this.save(remaining);
 
     await this.updateRepoState((s) => {
+      s.sessions = s.sessions.filter((x) => !toRemove.has(x.id));
       delete s.prefs[worktreePath];
       if (s.activeWorktree === worktreePath) s.activeWorktree = undefined;
     });
