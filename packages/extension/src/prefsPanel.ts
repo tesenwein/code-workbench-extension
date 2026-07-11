@@ -11,6 +11,7 @@ import { renderPrefsHtml, type PrefsPanelState } from './prefsPanelHtml';
 import { normalizePhaseModels } from './globalPrefs';
 import { PHASE_META, PHASE_ORDER, type TaskPhase } from '@code-workbench/mcp-core/phase-prompts';
 import { installWorkbenchSkills } from './skillsBundle';
+import { installWorkbenchAgents } from './agentsBundle';
 import { registerWorkbenchMcpServers } from './mcpRegister';
 import { installWorkbenchPermissions } from './settingsPermissions';
 
@@ -97,6 +98,8 @@ export class PrefsPanel {
       }
     } else if (msg.type === 'installSkills') {
       await this.installSkills();
+    } else if (msg.type === 'installAgents') {
+      await this.installAgents();
     } else if (msg.type === 'registerMcp') {
       await this.registerMcp();
     } else if (msg.type === 'installPermissions') {
@@ -128,6 +131,31 @@ export class PrefsPanel {
         text,
       });
       vscode.window.showErrorMessage(`Install skills failed: ${text}`);
+    }
+  }
+
+  private async installAgents(): Promise<void> {
+    try {
+      const { installed, removed } = await installWorkbenchAgents(this.worktreePath);
+      const parts: string[] = [];
+      if (installed.length) parts.push(`installed ${installed.join(', ')}`);
+      if (removed.length) parts.push(`removed legacy ${removed.join(', ')}`);
+      const text = `${parts.join('; ') || 'nothing to do'} — .claude/agents`;
+      this.panel.webview.postMessage({
+        type: 'result',
+        target: 'agents',
+        ok: true,
+        text,
+      });
+    } catch (e) {
+      const text = (e as Error).message;
+      this.panel.webview.postMessage({
+        type: 'result',
+        target: 'agents',
+        ok: false,
+        text,
+      });
+      vscode.window.showErrorMessage(`Install agents failed: ${text}`);
     }
   }
 

@@ -121,6 +121,9 @@ export class GlobalPrefsPanel {
     } else if (msg.type === 'installWorkbenchSkills') {
       const scope = msg.value === 'user' ? 'user' : 'project';
       await vscode.commands.executeCommand('codeWorkbench.installWorkbenchSkills', scope);
+    } else if (msg.type === 'installWorkbenchAgents') {
+      const scope = msg.value === 'user' ? 'user' : 'project';
+      await vscode.commands.executeCommand('codeWorkbench.installWorkbenchAgents', scope);
     } else if (msg.type === 'registerWorkbenchMcp') {
       const scope = msg.value === 'user' ? 'user' : 'project';
       await vscode.commands.executeCommand('codeWorkbench.registerWorkbenchMcpServers', scope);

@@ -13,6 +13,11 @@ import {
   installWorkbenchSkills,
   skillsBundleSignature,
 } from './skillsBundle';
+import {
+  agentsBundleSignature,
+  checkWorkbenchAgents,
+  installWorkbenchAgents,
+} from './agentsBundle';
 import { installWorkbenchPermissions } from './settingsPermissions';
 import { registerWorkbenchMcpServers } from './mcpRegister';
 import { GlobalPrefsPanel } from './globalPrefsPanel';
@@ -532,6 +537,68 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
       console.error('Skills drift check failed', e);
     }
   };
+  // ── Install workbench agent definitions into .claude/agents ──────────
+  ctx.subscriptions.push(
+    vscode.commands.registerCommand(
+      'codeWorkbench.installWorkbenchAgents',
+      async (scope?: 'user' | 'project') => {
+        const target =
+          scope === 'user' ? os.homedir() : (sessionMgr.getActiveWorktree() ?? repoRoot);
+        if (!target) {
+          vscode.window.showWarningMessage('Open a git repository first.');
+          return;
+        }
+        try {
+          const { installed, removed } = await installWorkbenchAgents(target);
+          const parts: string[] = [];
+          if (installed.length) parts.push(`installed ${installed.join(', ')}`);
+          if (removed.length) parts.push(`removed legacy ${removed.join(', ')}`);
+          const where = scope === 'user' ? 'user (~/.claude)' : path.basename(target);
+          vscode.window.showInformationMessage(
+            `Workbench agents: ${parts.join('; ') || 'nothing to do'} at ${where}.`,
+          );
+        } catch (e) {
+          vscode.window.showErrorMessage(`Install agents failed: ${(e as Error).message}`);
+        }
+      },
+    ),
+  );
+
+  // ── Agents backfill ─ user scope is auto-injected on every activation:
+  // missing agent files are written to ~/.claude/agents without asking, but a
+  // user-MODIFIED copy is never clobbered — like the skills drift check, it
+  // prompts instead, and a dismissal is remembered until the bundle changes.
+  // Project scope is deliberately never written on activation (a repo's
+  // .claude/agents is usually tracked); reach it via the command or prefs.
+  const backfillUserAgents = async () => {
+    try {
+      const home = os.homedir();
+      const drift = await checkWorkbenchAgents(home);
+      if (drift.missing.length) {
+        await installWorkbenchAgents(home, { only: drift.missing });
+      }
+      if (!drift.stale.length && !drift.legacy.length) return;
+      const promptKey = 'codeWorkbench.agentsDriftDismissed.user';
+      const sig = agentsBundleSignature();
+      if (ctx.globalState.get<string>(promptKey) === sig) return;
+      const parts: string[] = [];
+      if (drift.stale.length) parts.push(`${drift.stale.length} outdated or modified`);
+      if (drift.legacy.length) parts.push(`${drift.legacy.length} legacy`);
+      const pick = await vscode.window.showInformationMessage(
+        `Code Workbench agents in ~/.claude are out of date (${parts.join(', ')}).`,
+        'Update agents',
+        'Not now',
+      );
+      if (pick === 'Update agents') {
+        await vscode.commands.executeCommand('codeWorkbench.installWorkbenchAgents', 'user');
+      } else {
+        await ctx.globalState.update(promptKey, sig);
+      }
+    } catch (e) {
+      console.error('Agents backfill failed', e);
+    }
+  };
+
   // ── Install workbench MCP permissions into <target>/.claude/settings.json ──
   ctx.subscriptions.push(
     vscode.commands.registerCommand(
@@ -584,6 +651,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
   void (async () => {
     // Sequential so scopes/checks never stack notifications on one activation.
     await promptSkillsDrift('user', os.homedir());
+    await backfillUserAgents();
     await installUserPermissions();
     await registerUserMcpServers();
   })();

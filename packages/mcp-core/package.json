@@ -49,6 +49,16 @@
         "default": "./skills.mjs"
       }
     },
+    "./agents": {
+      "require": {
+        "types": "./agents.d.cts",
+        "default": "./agents.cjs"
+      },
+      "import": {
+        "types": "./agents.d.ts",
+        "default": "./agents.mjs"
+      }
+    },
     "./workflows": {
       "require": {
         "types": "./workflows.d.cts",
