@@ -99,6 +99,11 @@
         "title": "Install Workbench Skills"
       },
       {
+        "command": "codeWorkbench.installWorkbenchAgents",
+        "category": "Code Workbench",
+        "title": "Install Workbench Agents"
+      },
+      {
         "command": "codeWorkbench.installWorkbenchPermissions",
         "category": "Code Workbench",
         "title": "Add Workbench MCP Permissions"

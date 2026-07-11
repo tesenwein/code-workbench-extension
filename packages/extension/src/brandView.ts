@@ -139,6 +139,8 @@ export class BrandViewProvider implements vscode.WebviewViewProvider {
     position: relative;
     padding: 12px;
   }
+  /* Same look as the worktrees view's "New worktree" button (.add in
+     panelTheme.ts), just larger. */
   .plan-btn {
     display: flex;
     align-items: center;
@@ -146,38 +148,25 @@ export class BrandViewProvider implements vscode.WebviewViewProvider {
     gap: 8px;
     width: 100%;
     box-sizing: border-box;
-    padding: 11px 14px;
-    border: 1px solid var(--clay-line);
-    border-radius: 8px;
-    background: linear-gradient(180deg,
-      color-mix(in srgb, var(--clay) 22%, var(--bg-1)),
-      color-mix(in srgb, var(--clay) 10%, var(--bg-1)));
-    color: var(--fg-0);
+    padding: 10px;
+    background: transparent;
+    border: 1px dashed var(--clay-line);
+    border-radius: 6px;
+    color: var(--clay-bright);
     font-family: var(--font-ui);
     font-size: 13px;
     font-weight: 600;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.02em;
     text-decoration: none;
     cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease, transform 0.08s ease;
+    transition: background 0.13s ease, border-color 0.13s ease;
   }
   .plan-btn:hover {
-    background: linear-gradient(180deg,
-      color-mix(in srgb, var(--clay) 32%, var(--bg-1)),
-      color-mix(in srgb, var(--clay) 16%, var(--bg-1)));
-    border-color: var(--clay-bright);
+    background: var(--clay-ghost);
+    border-style: solid;
+    border-color: var(--clay);
   }
-  .plan-btn:active { transform: translateY(1px); }
-  .plan-btn .glyph {
-    font-size: 15px;
-    line-height: 1;
-    color: var(--clay-bright);
-    flex: 0 0 auto;
-  }
-  .plan-btn .sub {
-    color: var(--fg-2);
-    font-weight: 500;
-  }
+  .plan-btn svg { width: 16px; height: 16px; flex: 0 0 auto; }
 </style>
 </head>
 <body>
@@ -190,7 +179,7 @@ export class BrandViewProvider implements vscode.WebviewViewProvider {
   </div>
   <div class="actions">
     <a class="plan-btn" href="command:codeWorkbench.plan.start" title="Plan a feature — interview, design, and file it to the task board">
-      <span class="glyph">🧭</span>
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="5.6"/><path d="m10.3 5.7-1.4 3.2-3.2 1.4 1.4-3.2z"/></svg>
       <span>Plan a feature</span>
     </a>
   </div>

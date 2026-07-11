@@ -369,6 +369,7 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
       <nav class="nav">
         <a href="#sec-appearance"><span class="num">01</span>Appearance</a>
         <a href="#sec-skills"><span class="num">02</span>Skills</a>
+        <a href="#sec-agents"><span class="num">02a</span>Agents</a>
         <a href="#sec-mcp"><span class="num">02b</span>MCP</a>
         <a href="#sec-layout"><span class="num">03</span>Layout</a>
         <a href="#sec-defaults"><span class="num">04</span>Defaults</a>
@@ -418,6 +419,18 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
           <button class="btn primary" id="installSkillsUser">Install skills</button>
         </div>
         <div class="hint">Installs to <code>~/.claude/skills/</code> so every project can use them. Writes SKILL.md files and removes any legacy-named skill folders. Re-run to update.</div>
+      </section>
+
+      <section id="sec-agents">
+        <div class="secthead">
+          <span class="num">02a</span><h2>Workbench Agents</h2>
+          <span class="tag">.claude/agents/</span>
+        </div>
+        <p class="sectlede">Reinstall <code>cw-implementer</code>, <code>cw-reviewer</code> and <code>cw-fixer</code> — phase subagents Claude can delegate board tasks to.</p>
+        <div class="btnrow">
+          <button class="btn primary" id="installAgentsUser">Reinstall agents</button>
+        </div>
+        <div class="hint">Missing agents are auto-installed to <code>~/.claude/agents/</code> on startup; this button also overwrites copies you have modified with the bundled versions.</div>
       </section>
 
       <section id="sec-mcp">
@@ -730,6 +743,9 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
   });
   document.getElementById('installSkillsUser').addEventListener('click', () => {
     vscode.postMessage({ type: 'installWorkbenchSkills', value: 'user' });
+  });
+  document.getElementById('installAgentsUser').addEventListener('click', () => {
+    vscode.postMessage({ type: 'installWorkbenchAgents', value: 'user' });
   });
   document.getElementById('registerMcpUser').addEventListener('click', () => {
     vscode.postMessage({ type: 'registerWorkbenchMcp', value: 'user' });
