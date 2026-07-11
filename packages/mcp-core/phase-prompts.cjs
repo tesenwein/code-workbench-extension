@@ -144,18 +144,32 @@ function phasePrompt(phase, task) {
  * Full prompt for ONE session that runs `phase` across several tasks, one after
  * another. The per-task procedure is repeated verbatim with each task's id
  * substituted, so a batched task is instructed exactly as it would be in its own
- * session — including its own handoff `task_update`. Sequential, not concurrent:
+ * session — including its own handoff `task_update`. Sequential by default:
  * the phases mutate the board and the working tree, and a batch that interleaves
- * them would produce diffs no Review phase can attribute to a task.
+ * them would produce diffs no Review phase can attribute to a task. The one
+ * exception is tasks the planner explicitly marked safe to overlap — same
+ * `order`, all flagged `parallel` — which form a wave dispatched via concurrent
+ * subagents, mirroring the Implement procedure's plan-step wave semantics.
  */
 function phasePromptBulk(phase, tasks) {
   assertPhase(phase);
   if (tasks.length === 1) return phasePrompt(phase, tasks[0]);
+  // Stable-sort by `order` (nulls last) so wave members — same order, all
+  // parallel — end up consecutive in the prompt no matter how the caller
+  // ordered the batch.
+  tasks = tasks
+    .map((task, i) => ({ task, i }))
+    .sort((a, b) => {
+      const ao = a.task.order ?? Infinity;
+      const bo = b.task.order ?? Infinity;
+      return ao === bo ? a.i - b.i : ao - bo;
+    })
+    .map(({ task }) => task);
   const label = PHASE_META[phase].label;
   const header = [
     `${label.toUpperCase()} phase for ${tasks.length} tasks, run in THIS one session.`,
     "",
-    `Work them STRICTLY ONE AT A TIME in the order below: finish a task's ${label} phase completely — including its handoff task_update — before you read the next one. Never batch the board writes and never run two tasks' work in parallel.`,
+    `Work them in the order below, STRICTLY ONE AT A TIME by default: finish a task's ${label} phase completely — including its handoff task_update — before you read the next one. Never batch the board writes. The ONLY exception: consecutive tasks below that share the same \`order\` AND are ALL flagged \`parallel: true\` form one wave — dispatch that whole wave concurrently via subagents (one per task, each running its full per-task procedure including its own handoff), wait for every subagent in the wave to finish, then continue sequentially. Tasks not in such a wave must never overlap.`,
     `If one task blocks you, record the blocker in its memo as its procedure says, then CONTINUE with the next task; one blocked task must not abandon the rest. When every task below is finished, report a one-line result per task.`,
   ].join("\n");
 
@@ -163,8 +177,9 @@ function phasePromptBulk(phase, tasks) {
     const context = [`Task ${task.id}: ${task.title}`];
     if (task.description) context.push("", task.description);
     if (phase === "implement" && task.memo) context.push("", `Plan memo:\n${task.memo}`);
+    const flags = `order: ${task.order ?? "none"}, parallel: ${task.parallel === true}`;
     return [
-      `--- Task ${i + 1} of ${tasks.length} — ${task.id} ---`,
+      `--- Task ${i + 1} of ${tasks.length} — ${task.id} (${flags}) ---`,
       "",
       ...context,
       "",

@@ -14,6 +14,10 @@ export interface PhaseTask {
   title: string;
   description: string;
   memo: string;
+  /** Sibling-group sort key; tasks sharing an order and all flagged
+   *  `parallel` may be run as one concurrent wave in bulk sessions. */
+  order?: number | null;
+  parallel?: boolean;
 }
 
 export interface BundledPhaseSkill {
