@@ -42,7 +42,7 @@
           "id": "codeWorkbench.brand",
           "name": "Workbench",
           "type": "webview",
-          "initialSize": 1,
+          "initialSize": 2,
           "visibility": "visible"
         },
         {
