@@ -23,7 +23,9 @@ export class BrandViewProvider implements vscode.WebviewViewProvider {
 
   resolveWebviewView(view: vscode.WebviewView): void {
     this.view = view;
-    view.webview.options = { enableScripts: false };
+    // Scripts stay off; the Plan button is a `command:` link, which needs
+    // command URIs enabled but no scripting.
+    view.webview.options = { enableScripts: false, enableCommandUris: true };
     view.webview.html = this.render();
     // The view is lazy: a badge set before it resolved has to be re-applied here.
     view.badge = this.badge;
@@ -133,6 +135,49 @@ export class BrandViewProvider implements vscode.WebviewViewProvider {
     letter-spacing: 0.02em;
   }
   .wrap.empty .wt { color: var(--fg-2); opacity: 0.6; font-style: italic; font-family: var(--font-ui); }
+  .actions {
+    position: relative;
+    padding: 12px;
+  }
+  .plan-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 11px 14px;
+    border: 1px solid var(--clay-line);
+    border-radius: 8px;
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--clay) 22%, var(--bg-1)),
+      color-mix(in srgb, var(--clay) 10%, var(--bg-1)));
+    color: var(--fg-0);
+    font-family: var(--font-ui);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.08s ease;
+  }
+  .plan-btn:hover {
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--clay) 32%, var(--bg-1)),
+      color-mix(in srgb, var(--clay) 16%, var(--bg-1)));
+    border-color: var(--clay-bright);
+  }
+  .plan-btn:active { transform: translateY(1px); }
+  .plan-btn .glyph {
+    font-size: 15px;
+    line-height: 1;
+    color: var(--clay-bright);
+    flex: 0 0 auto;
+  }
+  .plan-btn .sub {
+    color: var(--fg-2);
+    font-weight: 500;
+  }
 </style>
 </head>
 <body>
@@ -142,6 +187,12 @@ export class BrandViewProvider implements vscode.WebviewViewProvider {
       <span class="name">Code <em>Workbench</em></span>
     </div>
     <div class="wt">${active}</div>
+  </div>
+  <div class="actions">
+    <a class="plan-btn" href="command:codeWorkbench.plan.start" title="Plan a feature — interview, design, and file it to the task board">
+      <span class="glyph">🧭</span>
+      <span>Plan a feature</span>
+    </a>
   </div>
 </body>
 </html>`;
