@@ -8,7 +8,7 @@ module.exports = {
   phases: [
     { title: 'Context', detail: 'repo map, arch wiki cards, prior art', model: 'sonnet' },
     { title: 'Design', detail: 'three independent stances', model: 'sonnet' },
-    { title: 'Judge', detail: 'three lenses score each design' },
+    { title: 'Judge', detail: 'three lenses score each design', model: 'haiku' },
     { title: 'Synthesize', detail: 'merge winner + best runner-up ideas', model: 'opus' },
     { title: 'Critique', detail: 'completeness critic, loop until dry', model: 'opus' },
   ],
@@ -153,7 +153,7 @@ async function judgeDesign(design, index) {
           '',
           'Score 0-10 and give a one or two sentence reason.',
         ].join('\\n'),
-        { label: \`judge:\${index}:\${lensIndex}\`, phase: 'Judge', schema: JUDGE_SCHEMA },
+        { label: \`judge:\${index}:\${lensIndex}\`, model: 'haiku', phase: 'Judge', schema: JUDGE_SCHEMA },
       ),
     ),
   )
