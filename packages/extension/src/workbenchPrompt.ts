@@ -24,6 +24,7 @@ export const WORKBENCH_SYSTEM_PROMPT =
   '- ALWAYS call task_list at the start of every session.\n' +
   '- For ANY work the user asks for — features, fixes, refactors, investigations, chores, even one-line edits — first ensure a task exists: find the matching task on the board, or create one with task_create if none exists.\n' +
   '- Use task_create to record any new task or piece of work you identify, including follow-ups discovered mid-work.\n' +
+  '- PHASE BOARD: file even small, ad-hoc work on the phase board — pass phase: "implement" to task_create. It is fine to skip the Plan phase, but the task must enter the board at Implement so, once done, it flows into Review and Fix where the user can review and correct the work manually. Do not do board-worthy work off the board.\n' +
   '- SUBTASKS: when working on an in-progress task, create follow-up steps as subtasks via parentId.\n' +
   '- Use task_update to set status to "in-progress" BEFORE starting a task, then "done" when complete. Keep the board accurate at all times — it is the source of truth for what you are doing.\n' +
   '- COMMIT AFTER EVERY TASK: as soon as a task or subtask is marked "done" and its changes are verified, create a git commit covering exactly that task (Conventional Commits, subject referencing the task). One task = one commit, so progress stays clean and reviewable. Never bundle several finished tasks into one commit.\n' +
