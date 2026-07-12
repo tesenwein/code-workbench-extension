@@ -129,7 +129,7 @@
         "command": "codeWorkbench.checkForUpdatesAvailable",
         "category": "Code Workbench",
         "title": "Update Available…",
-        "icon": "media/update-blue.svg"
+        "icon": "media/update-accent.svg"
       },
       {
         "command": "codeWorkbench.toggleOpenOnStartup",
