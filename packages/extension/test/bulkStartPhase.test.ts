@@ -151,7 +151,6 @@ describe('confirmBulkStartPhase', () => {
       { modal: true },
       'Start 5',
       'Include in-progress (7)',
-      'Cancel',
     );
     expect(executeCommand).toHaveBeenCalledWith(
       'codeWorkbench.tasks.startPhaseBulk',
@@ -184,7 +183,6 @@ describe('confirmBulkStartPhase', () => {
       'Start Plan for 1 tasks?',
       { modal: true },
       'Start 1',
-      'Cancel',
     );
   });
 
@@ -216,7 +214,6 @@ describe('confirmBulkStartPhase', () => {
       '2 in-progress tasks. Restart Plan for all of them?',
       { modal: true },
       'Restart 2',
-      'Cancel',
     );
     expect(executeCommand).toHaveBeenCalledWith(
       'codeWorkbench.tasks.startPhaseBulk',
