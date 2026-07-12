@@ -47,7 +47,7 @@ function phaseAgent(phase, agentName, description, { tools, extra = [] } = {}) {
     "",
     `The task id is given in your prompt. Wherever the procedure below says \`${TASK_ID}\`, substitute that id. If your prompt names no task id, stop and report that you need one — never guess which task is meant.`,
     "",
-    "As a subagent you cannot spawn further subagents — where the procedure mentions dispatching work via subagents, work those steps yourself, sequentially, in order.",
+    "You may spawn subagents ONLY where the procedure below explicitly dispatches a parallel wave, and each one must be a plain general-purpose agent whose prompt contains exactly ONE subtask's work. NEVER spawn a phase agent (cw-implementer, cw-reviewer, cw-fixer) and NEVER hand a subagent the task id or the phase — a phase agent that spawns phase agents recurses without bound. When in doubt, work the steps yourself, sequentially, in order.",
     "",
     "Your final message is returned to the session that delegated to you: report what you did, the board updates you made, and anything that blocked you.",
     ...(extra.length ? ["", ...extra] : []),
