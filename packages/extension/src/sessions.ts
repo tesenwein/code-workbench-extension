@@ -4,6 +4,7 @@ import { McpConfigBuilder } from './mcp';
 import { findRepoKey, findRepoRoot, listWorktrees } from './git';
 import { NotifyServer } from './notifications';
 import { writeWorktreeWorkspaceColors } from './workspaceInit';
+import { injectWorktreeAssets } from './worktreeAssets';
 import { loadGlobalPrefsSync, watchGlobalPrefs, type GlobalPrefs } from './globalPrefs';
 import { languagePromptBody } from './language';
 import { PHASE_META, PHASE_ORDER, type TaskPhase } from '@code-workbench/mcp-core/phase-prompts';
@@ -960,6 +961,9 @@ export class SessionManager {
 
     const repoPath = (await findRepoRoot(worktreePath)) ?? worktreePath;
     const repoKey = (await findRepoKey(worktreePath)) ?? undefined;
+    // Refresh the bundled skills/agents inside this worktree so every session
+    // sees copies matching the installed extension version. Never throws.
+    await injectWorktreeAssets(worktreePath);
     const languageBody = languagePromptBody(
       this.globalPrefs.language,
       this.globalPrefs.commentLanguage,

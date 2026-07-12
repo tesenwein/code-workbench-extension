@@ -1,0 +1,30 @@
+{
+  "slug": "worktree-assets",
+  "name": "Per-Worktree Asset Injection",
+  "description": "Per-worktree injection of the bundled workbench skills + agents (packages/extension/src/worktreeAssets.ts). injectWorktreeAssets(worktreePath) runs on EVERY Claude session launch (SessionManager.buildLaunch, before mcp.write) and refreshes <worktree>/.claude/skills/<name>/SKILL.md and .claude/agents/<name>.md from BUNDLED_SKILLS/BUNDLED_AGENTS, so installed copies always match the running extension version and only exist where the cw-code MCP server is also injected. Ownership is tracked in a manifest (.claude/.cw-injected.json, {version:1, files:[worktree-relative posix paths]}): only manifest-owned files are overwritten or deleted; a pre-existing file that is git-tracked or differs from the bundled body is skipped (foreign), while an identical untracked copy is adopted. Owned files no longer in the bundle are removed with empty-dir pruning. Injected paths are hidden from git status via a marker-delimited managed block rewritten idempotently in the repo's shared .git/info/exclude (resolved via `git rev-parse --git-path info/exclude`; common across all worktrees, never touches tracked files). cleanupWorktreeAssets(worktreePath) deletes owned files + manifest and prunes empty .claude dirs — called from performWorktreeRemoval (extension.ts) before removeWorktree. Both functions are best-effort and never throw (a failed injection must not block session launch). This REPLACED the user-scope agents auto-backfill: on activation, retireUserAgentBackfill (extension.ts, one-time via globalState key codeWorkbench.userAgentsBackfillRetired) calls removeUnmodifiedWorkbenchAgents(os.homedir()) (agentsBundle.ts) which silently deletes ~/.claude/agents copies byte-identical to the current bundle and prompts once about modified leftovers. Explicit user/project installs via commands and prefs panels remain available.",
+  "files": [
+    "packages/extension/src/worktreeAssets.ts",
+    "packages/extension/src/agentsBundle.ts",
+    "packages/extension/src/sessions.ts",
+    "packages/extension/src/extension.ts",
+    "packages/extension/test/worktreeAssets.test.ts"
+  ],
+  "guidelines": [],
+  "anti_patterns": [],
+  "decisions": [],
+  "tags": [
+    "worktree injection",
+    "skills",
+    "agents",
+    "per-worktree",
+    "gitignore",
+    "info/exclude",
+    "manifest",
+    "cleanup",
+    "session launch",
+    "backfill"
+  ],
+  "dependsOn": [],
+  "updatedAt": "2026-07-12T06:53:41.039Z",
+  "createdAt": "2026-07-12T06:53:41.039Z"
+}

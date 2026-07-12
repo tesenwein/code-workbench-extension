@@ -13,11 +13,8 @@ import {
   installWorkbenchSkills,
   skillsBundleSignature,
 } from './skillsBundle';
-import {
-  agentsBundleSignature,
-  checkWorkbenchAgents,
-  installWorkbenchAgents,
-} from './agentsBundle';
+import { installWorkbenchAgents, removeUnmodifiedWorkbenchAgents } from './agentsBundle';
+import { cleanupWorktreeAssets } from './worktreeAssets';
 import { installWorkbenchPermissions } from './settingsPermissions';
 import { registerWorkbenchMcpServers } from './mcpRegister';
 import { GlobalPrefsPanel } from './globalPrefsPanel';
@@ -124,6 +121,10 @@ async function performWorktreeRemoval(
   // Close any sessions we own inside the worktree first — terminal cwds and
   // file watchers there will otherwise hold handles that block the rmdir.
   await sessionMgr.cleanupWorktree(worktreePath);
+  // Delete workbench-injected skills/agents first — the worktree dir goes
+  // away anyway, but this keeps removal clean even when git balks and the
+  // checkout survives. Best-effort; never blocks removal.
+  await cleanupWorktreeAssets(worktreePath);
   await removeWorktree(repoRootArg, worktreePath, makePendingDeletionStore(ctx));
   try {
     await clearTaskWorktree(repoKeyArg, worktreePath);
@@ -564,38 +565,44 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     ),
   );
 
-  // ── Agents backfill ─ user scope is auto-injected on every activation:
-  // missing agent files are written to ~/.claude/agents without asking, but a
-  // user-MODIFIED copy is never clobbered — like the skills drift check, it
-  // prompts instead, and a dismissal is remembered until the bundle changes.
-  // Project scope is deliberately never written on activation (a repo's
-  // .claude/agents is usually tracked); reach it via the command or prefs.
-  const backfillUserAgents = async () => {
+  // ── Agents backfill retirement ─ agents are now injected per-worktree on
+  // every session launch (worktreeAssets.ts), so the old user-scope backfill
+  // into ~/.claude/agents is gone. One time, remove the copies that backfill
+  // left behind: byte-identical files are deleted silently; modified ones get
+  // a single prompt (they may carry user edits). Explicit user-scope installs
+  // via the command/prefs remain available and are not touched again after
+  // this runs once.
+  const retireUserAgentBackfill = async () => {
+    const doneKey = 'codeWorkbench.userAgentsBackfillRetired';
+    if (ctx.globalState.get<boolean>(doneKey)) return;
     try {
-      const home = os.homedir();
-      const drift = await checkWorkbenchAgents(home);
-      if (drift.missing.length) {
-        await installWorkbenchAgents(home, { only: drift.missing });
+      const { removed, kept } = await removeUnmodifiedWorkbenchAgents(os.homedir());
+      if (kept.length) {
+        const pick = await vscode.window.showInformationMessage(
+          `Code Workbench agents now install per-worktree. ${kept.length} modified cop${
+            kept.length === 1 ? 'y' : 'ies'
+          } remain in ~/.claude/agents (${kept.join(', ')}) — remove them too?`,
+          'Remove',
+          'Keep',
+        );
+        if (pick === 'Remove') {
+          const dir = path.join(os.homedir(), '.claude', 'agents');
+          for (const name of kept) {
+            await vscode.workspace.fs.delete(vscode.Uri.file(path.join(dir, `${name}.md`)));
+          }
+        } else if (pick === undefined) {
+          return; // dismissed without deciding — ask again next activation
+        }
+      } else if (removed.length) {
+        vscode.window.showInformationMessage(
+          `Code Workbench agents now install per-worktree; removed ${removed.length} auto-installed cop${
+            removed.length === 1 ? 'y' : 'ies'
+          } from ~/.claude/agents.`,
+        );
       }
-      if (!drift.stale.length && !drift.legacy.length) return;
-      const promptKey = 'codeWorkbench.agentsDriftDismissed.user';
-      const sig = agentsBundleSignature();
-      if (ctx.globalState.get<string>(promptKey) === sig) return;
-      const parts: string[] = [];
-      if (drift.stale.length) parts.push(`${drift.stale.length} outdated or modified`);
-      if (drift.legacy.length) parts.push(`${drift.legacy.length} legacy`);
-      const pick = await vscode.window.showInformationMessage(
-        `Code Workbench agents in ~/.claude are out of date (${parts.join(', ')}).`,
-        'Update agents',
-        'Not now',
-      );
-      if (pick === 'Update agents') {
-        await vscode.commands.executeCommand('codeWorkbench.installWorkbenchAgents', 'user');
-      } else {
-        await ctx.globalState.update(promptKey, sig);
-      }
+      await ctx.globalState.update(doneKey, true);
     } catch (e) {
-      console.error('Agents backfill failed', e);
+      console.error('User agents backfill retirement failed', e);
     }
   };
 
@@ -651,7 +658,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
   void (async () => {
     // Sequential so scopes/checks never stack notifications on one activation.
     await promptSkillsDrift('user', os.homedir());
-    await backfillUserAgents();
+    await retireUserAgentBackfill();
     await installUserPermissions();
     await registerUserMcpServers();
   })();
