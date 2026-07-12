@@ -242,13 +242,18 @@ export function registerUpdateCommand(
     known && compareVersions(known, current) > 0 ? known : undefined,
   );
 
+  const runCheck = async (): Promise<void> => {
+    await replayed;
+    await ctx.globalState.update(SKIPPED_VERSION_KEY, undefined);
+    await ctx.globalState.update(LAST_CHECK_KEY, Date.now());
+    await checkForUpdates(ctx, brandView, { silent: false });
+  };
   ctx.subscriptions.push(
-    vscode.commands.registerCommand('codeWorkbench.checkForUpdates', async () => {
-      await replayed;
-      await ctx.globalState.update(SKIPPED_VERSION_KEY, undefined);
-      await ctx.globalState.update(LAST_CHECK_KEY, Date.now());
-      await checkForUpdates(ctx, brandView, { silent: false });
-    }),
+    vscode.commands.registerCommand('codeWorkbench.checkForUpdates', runCheck),
+    // Same action, separate id: the brand view swaps to this command (blue
+    // icon) when an update is known — menu items can't restyle a command's
+    // icon, so the state change has to swap the command itself.
+    vscode.commands.registerCommand('codeWorkbench.checkForUpdatesAvailable', runCheck),
   );
 
   if (

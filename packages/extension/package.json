@@ -126,6 +126,12 @@
         "icon": "$(cloud-download)"
       },
       {
+        "command": "codeWorkbench.checkForUpdatesAvailable",
+        "category": "Code Workbench",
+        "title": "Update Available…",
+        "icon": "media/update-blue.svg"
+      },
+      {
         "command": "codeWorkbench.toggleOpenOnStartup",
         "category": "Code Workbench",
         "title": "Toggle Open on Startup"
@@ -361,6 +367,12 @@
       }
     ],
     "menus": {
+      "commandPalette": [
+        {
+          "command": "codeWorkbench.checkForUpdatesAvailable",
+          "when": "false"
+        }
+      ],
       "view/title": [
         {
           "command": "codeWorkbench.init",
@@ -373,10 +385,9 @@
           "group": "navigation@0"
         },
         {
-          "command": "codeWorkbench.checkForUpdates",
+          "command": "codeWorkbench.checkForUpdatesAvailable",
           "when": "view == codeWorkbench.brand && codeWorkbench.updateAvailable",
-          "group": "navigation@0",
-          "icon": "$(arrow-circle-up)"
+          "group": "navigation@0"
         },
         {
           "command": "codeWorkbench.openGlobalPrefs",
