@@ -19,13 +19,12 @@ async function exists(p: string): Promise<boolean> {
 
 /**
  * Install bundled workbench agents into <target>/.claude/agents/<name>.md.
- * Overwrites existing files and removes legacy-named agent files. Pass
- * `only` to write a subset (the user-scope backfill installs missing agents
- * without touching user-modified copies).
+ * Overwrites existing files and removes legacy-named agent files. Used by the
+ * explicit install command/prefs buttons; per-worktree session-launch
+ * injection goes through worktreeAssets.ts instead.
  */
 export async function installWorkbenchAgents(
   targetPath: string,
-  opts?: { only?: string[] },
 ): Promise<{ installed: string[]; removed: string[] }> {
   const installed: string[] = [];
   const removed: string[] = [];
@@ -42,12 +41,59 @@ export async function installWorkbenchAgents(
   }
 
   for (const agent of BUNDLED_AGENTS) {
-    if (opts?.only && !opts.only.includes(agent.name)) continue;
     await fs.writeFile(path.join(agentsDir, `${agent.name}.md`), agent.body);
     installed.push(agent.name);
   }
 
   return { installed, removed };
+}
+
+/**
+ * Remove auto-backfilled workbench agents from <target>/.claude/agents.
+ * Deletes files that byte-match a bundled body (plus legacy-named files) —
+ * i.e. copies the extension wrote and the user never touched. A file whose
+ * content differs is user-modified (or from an older release) and is left
+ * behind, reported in `kept` so the caller can prompt.
+ */
+export async function removeUnmodifiedWorkbenchAgents(
+  targetPath: string,
+): Promise<{ removed: string[]; kept: string[] }> {
+  const removed: string[] = [];
+  const kept: string[] = [];
+  const agentsDir = path.join(targetPath, '.claude', 'agents');
+
+  for (const legacy of LEGACY_AGENT_NAMES) {
+    const file = path.join(agentsDir, `${legacy}.md`);
+    if (await exists(file)) {
+      await fs.rm(file, { force: true });
+      removed.push(legacy);
+    }
+  }
+
+  for (const agent of BUNDLED_AGENTS) {
+    const file = path.join(agentsDir, `${agent.name}.md`);
+    try {
+      const current = await fs.readFile(file, 'utf8');
+      if (current === agent.body) {
+        await fs.rm(file, { force: true });
+        removed.push(agent.name);
+      } else {
+        kept.push(agent.name);
+      }
+    } catch {
+      /* not installed — nothing to remove */
+    }
+  }
+
+  if (removed.length) {
+    try {
+      await fs.rmdir(agentsDir); // only succeeds when empty
+    } catch {
+      /* non-empty or missing — leave it */
+    }
+  }
+
+  return { removed, kept };
 }
 
 export interface AgentsDrift {

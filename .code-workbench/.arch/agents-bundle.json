@@ -1,12 +1,13 @@
 {
   "slug": "agents-bundle",
   "name": "Agents Bundle",
-  "description": "Mirrors skills-bundle for Claude Code subagent definitions. Three phase agents (cw-implementer, cw-reviewer, cw-fixer) are GENERATED from the shared phase procedures in packages/mcp-core/phase-prompts.cjs by packages/mcp-core/agents.cjs (indexed as BUNDLED_AGENTS, exposed via the \"./agents\" package export with .mjs/.d.ts shims), so agents, /cw-<phase> skills, and Phase Board prompts can never drift apart. The reviewer agent is code-read-only via a restricted tools frontmatter list; implementer/fixer inherit all tools. The extension's packages/extension/src/agentsBundle.ts installs them as <target>/.claude/agents/<name>.md (installWorkbenchAgents supports an `only` subset), byte-compares for drift (checkWorkbenchAgents), and fingerprints the bundle (agentsBundleSignature). Unlike skills, USER scope is auto-injected on activation (backfillUserAgents in extension.ts): missing agents are written to ~/.claude/agents silently, but user-modified copies are never clobbered — a drift prompt offers the update, dismissal remembered per bundle signature. Project scope is only written explicitly via the codeWorkbench.installWorkbenchAgents command, the global prefs panel (Agents section), or the per-worktree prefs panel.",
+  "description": "Mirrors skills-bundle for Claude Code subagent definitions. Three phase agents (cw-implementer, cw-reviewer, cw-fixer) are GENERATED from the shared phase procedures in packages/mcp-core/phase-prompts.cjs by packages/mcp-core/agents.cjs (indexed as BUNDLED_AGENTS, exposed via the \"./agents\" package export with .mjs/.d.ts shims), so agents, /cw-<phase> skills, and Phase Board prompts can never drift apart. The reviewer agent is code-read-only via a restricted tools frontmatter list; implementer/fixer inherit all tools. The extension's packages/extension/src/agentsBundle.ts installs them as <target>/.claude/agents/<name>.md (installWorkbenchAgents — a full reset, no subset option), byte-compares for drift (checkWorkbenchAgents), fingerprints the bundle (agentsBundleSignature), and removes unmodified copies (removeUnmodifiedWorkbenchAgents, used to retire the old user-scope backfill). PRIMARY distribution is now per-worktree session-launch injection via worktreeAssets.ts (see worktree-assets card) — the former backfillUserAgents user-scope auto-inject was REMOVED and its ~/.claude/agents leftovers are cleaned up one-time on activation. User/project scope installs remain available explicitly via the codeWorkbench.installWorkbenchAgents command, the global prefs panel (Agents section), or the per-worktree prefs panel.",
   "files": [
     "packages/mcp-core/agents.cjs",
     "packages/extension/src/agentsBundle.ts",
     "packages/extension/src/extension.ts",
-    "packages/mcp-core/phase-prompts.cjs"
+    "packages/mcp-core/phase-prompts.cjs",
+    "packages/extension/src/worktreeAssets.ts"
   ],
   "guidelines": [],
   "anti_patterns": [],
@@ -17,11 +18,13 @@
     "claude-agents",
     "bundle",
     "drift",
-    "auto-inject",
     "phase-flow",
-    "backfill"
+    "backfill",
+    "per-worktree"
   ],
-  "dependsOn": [],
-  "updatedAt": "2026-07-11T04:52:24.866Z",
+  "dependsOn": [
+    "worktree-assets"
+  ],
+  "updatedAt": "2026-07-12T06:54:01.501Z",
   "createdAt": "2026-07-11T04:52:24.866Z"
 }

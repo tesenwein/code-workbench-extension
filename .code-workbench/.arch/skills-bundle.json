@@ -1,9 +1,10 @@
 {
   "slug": "skills-bundle",
   "name": "Skills Bundle",
-  "description": "Installs and manages Code Workbench skill files (slash-command scripts) into a target directory (either the active worktree's .claude/skills/ or ~/.claude/skills/ for user-scope installs). Skill definitions live in the shared @code-workbench/mcp-core skills module — one .cjs file per skill under skills/, assembled by the skills.cjs index — consumed by the VS Code extension, with each skill's SKILL.md content embedded as a string so skills work offline and version-lock with the release. Also detects drift: on activation the extension byte-compares installed copies against the bundle and prompts to update (never auto-writes).",
+  "description": "Installs and manages Code Workbench skill files (slash-command scripts). PRIMARY distribution is per-worktree session-launch injection (worktreeAssets.ts — see worktree-assets card): every Claude session launch refreshes <worktree>/.claude/skills from the bundle, manifest-guarded so foreign/tracked files are never clobbered, hidden from git via .git/info/exclude. Explicit installs into the active worktree's .claude/skills/ or ~/.claude/skills/ (user scope) remain via installWorkbenchSkills. Skill definitions live in the shared @code-workbench/mcp-core skills module — one .cjs file per skill under skills/, assembled by the skills.cjs index — with each skill's SKILL.md content embedded as a string so skills work offline and version-lock with the release. Drift detection (checkWorkbenchSkills) still guards EXPLICIT installs: user scope is byte-compared on activation and prompts to update (never auto-writes at user scope).",
   "files": [
     "packages/extension/src/skillsBundle.ts",
+    "packages/extension/src/worktreeAssets.ts",
     "packages/extension/src/extension.ts",
     "packages/extension/test/skillsBundle.test.ts",
     "packages/mcp-core/skills.cjs",
@@ -19,12 +20,12 @@
     "Skill body text must reference MCP tools by their cw- server name only (e.g. mcp__cw-ast__find_duplicates). There is exactly one ast server — do not offer a cwb-ast fallback.",
     "Keep skills repo-agnostic — the workbench is an IDE used across projects, so skill text must resolve paths against the active workspace and not assume the workbench's own codebase.",
     "Drift detection: checkWorkbenchSkills(targetPath) byte-compares each installed SKILL.md against the embedded bundled body and returns { installedAny, stale, missing, legacy }. It is READ-ONLY — never write from a check path; installation stays in installWorkbenchSkills.",
-    "On drift, prompt the user to update skills rather than auto-injecting — extension.ts promptSkillsDrift prompts per scope on activation; only locations with installedAny=true are prompted (never nag where the user never installed).",
+    "User-scope (~/.claude) is prompt-only: promptSkillsDrift prompts on activation, only where installedAny=true (never nag where the user never installed). Worktree scope is the opposite — silently refreshed each session launch through worktreeAssets.ts, which owns the never-clobber-foreign-files guarantee via its manifest.",
     "A 'Not now' dismissal is persisted in globalState keyed by skillsBundleSignature() (sha256 over all skill names+bodies) so the prompt only returns when the shipped skill set actually changes."
   ],
   "anti_patterns": [
-    "Do not silently overwrite customized skill files without versioning — check before clobber.",
-    "Do not auto-install/auto-inject skills on startup — detect drift and prompt via notification; only install on explicit user action.",
+    "Do not silently overwrite customized skill files without versioning — check before clobber. (Worktree injection satisfies this via its ownership manifest: it only rewrites files it wrote itself.)",
+    "Do not auto-write ~/.claude (user scope) — user scope is explicit-install + drift-prompt only; automatic refresh is reserved for per-worktree injection.",
     "Do not generate skill SKILL.md content inside arch-server.mjs — that responsibility was moved to the skills module (commit 556df47).",
     "Do not import skills from a relative built path — use the @code-workbench/mcp-core package specifier.",
     "Do not reference mcp__cwb-ast__ / mcp__cwb-tasks__ tools in skill text — the cwb- prefix is retired; only cw- servers are registered.",
@@ -34,13 +35,15 @@
     "Skills are bundled inside the extension rather than fetched remotely so they work offline and version-lock with the extension release.",
     "Each skill lives in its own packages/mcp-core/skills/<name>.cjs file; skills.cjs is a thin index assembling BUNDLED_SKILLS — chosen over a monolithic file (escaping pain) and over real .md files (would break build-time inlining).",
     "skills.mjs is a thin ESM re-export shim over the skills.cjs index, used by the VS Code extension.",
-    "BUNDLED_SKILLS ships cw-work, cw-plan, cw-arch, cw-arch-audit, cw-duplicate-cleanup, cw-dead-code and cw-type-safety; consumers iterate the array so no count is hardcoded. Legacy folder names are removed on reinstall via LEGACY_SKILL_NAMES.",
-    "2026-07-03: Added skills drift detection to the VS Code extension (it previously existed only in the Electron app): checkWorkbenchSkills + skillsBundleSignature in skillsBundle.ts; extension.ts prompts per scope (user + active project) on activation with an 'Update skills' action that runs codeWorkbench.installWorkbenchSkills. Chosen over auto-injecting (preserves 'never silently clobber') and over a version stamp (exact byte-compare also catches hand-edited skills). Dismissals are remembered per bundle signature to avoid nagging."
+    "BUNDLED_SKILLS ships cw-work, cw-plan, cw-implement, cw-review, cw-fix, cw-arch, cw-arch-audit, cw-duplicate-cleanup, cw-dead-code and cw-type-safety; consumers iterate the array so no count is hardcoded. Legacy folder names are removed on reinstall via LEGACY_SKILL_NAMES.",
+    "2026-07-03: Added skills drift detection to the VS Code extension: checkWorkbenchSkills + skillsBundleSignature in skillsBundle.ts; extension.ts prompts per scope on activation with an 'Update skills' action. Dismissals are remembered per bundle signature to avoid nagging.",
+    "2026-07-12: Switched primary distribution to per-worktree session-launch injection (worktreeAssets.ts), superseding the old 'never auto-inject' rule for WORKTREE scope only: skills/agents that name cw-code MCP tools should only be visible where that server is injected, and the manifest + git-exclude machinery preserves the never-clobber and clean-status guarantees. User scope stays prompt-only, and the old user-scope agents backfill was retired with one-time cleanup."
   ],
   "dependsOn": [
-    "mcp-core"
+    "mcp-core",
+    "worktree-assets"
   ],
-  "updatedAt": "2026-07-03T11:23:29.098Z",
+  "updatedAt": "2026-07-12T06:54:39.002Z",
   "createdAt": "2026-05-19T04:50:02.946Z",
   "tags": [
     "skills",
@@ -53,6 +56,7 @@
     "notification",
     "update skills",
     "skills up to date",
-    "checkWorkbenchSkills"
+    "checkWorkbenchSkills",
+    "per-worktree injection"
   ]
 }

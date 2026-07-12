@@ -74,20 +74,16 @@ describe('checkWorkbenchAgents', () => {
 });
 
 describe('installWorkbenchAgents', () => {
-  it('with `only` writes just the listed agents and leaves the rest alone', async () => {
+  it('installs every bundled agent and overwrites hand-edited copies', async () => {
     await installWorkbenchAgents(tmp);
     const first = BUNDLED_AGENTS[0].name;
-    const second = BUNDLED_AGENTS[1].name;
     const editedFile = path.join(tmp, '.claude', 'agents', `${first}.md`);
     await fs.writeFile(editedFile, 'hand-edited');
-    await fs.rm(path.join(tmp, '.claude', 'agents', `${second}.md`));
 
-    const { installed } = await installWorkbenchAgents(tmp, { only: [second] });
-    expect(installed).toEqual([second]);
-    // the backfill restored the missing agent but never clobbered the edit
-    expect(await fs.readFile(editedFile, 'utf8')).toBe('hand-edited');
-    const restored = path.join(tmp, '.claude', 'agents', `${second}.md`);
-    expect(await fs.readFile(restored, 'utf8')).toBe(BUNDLED_AGENTS[1].body);
+    const { installed } = await installWorkbenchAgents(tmp);
+    expect(installed).toEqual(BUNDLED_AGENTS.map((a) => a.name));
+    // the explicit install is a reset — it restores the bundled body
+    expect(await fs.readFile(editedFile, 'utf8')).toBe(BUNDLED_AGENTS[0].body);
   });
 });
 
