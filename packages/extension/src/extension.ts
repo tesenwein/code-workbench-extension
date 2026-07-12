@@ -693,7 +693,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
 
   registerLayoutCommands(ctx);
 
-  registerUpdateCommand(ctx, brandView);
+  registerUpdateCommand(ctx);
 
   registerCodeReviewCommand(ctx, { sessionMgr, ensureActiveWorktree });
 
