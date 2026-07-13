@@ -1,8 +1,9 @@
 /* "Code Review" code-health tool.
  *
  * Unlike the other Tools action bar entries (which run a static analyser and render
- * a page), this one spawns a dedicated Claude session — Opus, since it now acts as
- * an orchestrator — primed to run the bundled `cw-code-review` Workflow script.
+ * a page), this one spawns a dedicated Claude session — on the review-phase model
+ * from preferences, since it acts as an orchestrator — primed to run the bundled
+ * `cw-code-review` Workflow script.
  * That script fans a finder out per review dimension and adversarially verifies
  * each finding before it survives; the session files the returned findings on
  * the shared cw-tasks board and asks before touching any code. */
@@ -51,7 +52,9 @@ export function registerCodeReviewCommand(
       await deps.sessionMgr.create('claude', wt, undefined, {
         title: 'Code Review',
         icon: 'checklist',
-        model: 'opus',
+        // Honour the review-phase model from preferences (worktree override →
+        // global → built-in) rather than pinning Opus.
+        model: deps.sessionMgr.resolvePhaseModel(wt, 'review'),
         prompt: buildCodeReviewPrompt(scriptPath),
       });
     }),
