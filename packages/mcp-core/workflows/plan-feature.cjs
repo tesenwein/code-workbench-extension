@@ -56,9 +56,8 @@ const SUBTASK_SCHEMA = {
     title: { type: 'string' },
     description: { type: 'string' },
     order: { type: 'number' },
-    parallel: { type: 'boolean' },
   },
-  required: ['title', 'description', 'order', 'parallel'],
+  required: ['title', 'description', 'order'],
 }
 
 const PLAN_SCHEMA = {
@@ -210,7 +209,7 @@ let plan = await agent(
     'Context gathered about this repository:',
     contextBrief,
     '',
-    "Return summary (what will be built and why), openQuestions (anything that needs a human decision before implementation), and tasks: a hierarchical breakdown where each task has title, description, priority, and subtasks (each with title, description, order, parallel). Assign each subtask an 'order' (0, 1, 2, ...) reflecting the sequence it must be implemented in — lower runs first. Give two or more adjacent subtasks the SAME 'order' and set 'parallel: true' on each ONLY when they touch disjoint files with no dependency between them; steps that depend on each other or share a file get distinct 'order' values instead. Do not touch any code — this is planning only.",
+    "Return summary (what will be built and why), openQuestions (anything that needs a human decision before implementation), and tasks: a hierarchical breakdown where each task has title, description, priority, and subtasks (each with title, description, order). Assign each subtask an 'order' (0, 1, 2, ...) reflecting the sequence it must be implemented in — lower runs first. Do not touch any code — this is planning only.",
   ].join('\\n'),
   { model: 'opus', phase: 'Synthesize', schema: PLAN_SCHEMA },
 )
@@ -244,7 +243,7 @@ for (let round = 0; round < 2; round++) {
       '',
       \`Gaps to close: \${JSON.stringify(fresh)}\`,
       '',
-      'Return the full updated plan in the same shape: summary, openQuestions, tasks (with subtasks, each keeping/assigning order and parallel per the same rules as before). Do not touch any code — this is planning only.',
+      'Return the full updated plan in the same shape: summary, openQuestions, tasks (with subtasks, each keeping/assigning order per the same rules as before). Do not touch any code — this is planning only.',
     ].join('\\n'),
     { model: 'opus', phase: 'Synthesize', schema: PLAN_SCHEMA },
   )

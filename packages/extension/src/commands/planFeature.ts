@@ -35,14 +35,14 @@ export function buildPlanPrompt(scriptPath: string, request: string): string {
     '## 2. Design it',
     `Run the Workflow tool with scriptPath: ${scriptPath}, passing the finished feature request as its \`args\` parameter — an object \`{ "request": "<the text>" }\`. Never interpolate the text into a script.`,
     '',
-    'The workflow gathers context (repo map, architecture wiki, prior art), produces three independent designs, judges them, synthesizes a plan, and critiques it for completeness across a fleet of subagents. It returns { request, summary, openQuestions, tasks }, where tasks is a hierarchical breakdown: each entry has title, description, priority, and subtasks (each with title, description, order, parallel).',
+    'The workflow gathers context (repo map, architecture wiki, prior art), produces three independent designs, judges them, synthesizes a plan, and critiques it for completeness across a fleet of subagents. It returns { request, summary, openQuestions, tasks }, where tasks is a hierarchical breakdown: each entry has title, description, priority, and subtasks (each with title, description, order).',
     '',
     'If the Workflow tool is unavailable, design the feature yourself instead: gather context, weigh at least two approaches, and note risks and open questions.',
     '',
     '## 3. Resolve, approve, persist',
     '1. If openQuestions is non-empty, resolve them with the user — use AskUserQuestion where the answers are a small set of choices, plain prose otherwise.',
     '2. Present the plan (summary + the task/subtask breakdown) and explicitly ask the user to approve it. Persist nothing until they approve.',
-    '3. Once approved, persist the plan with the cw-tasks `task_create` tool: first create one task per entry in `tasks` with tags: ["plan"] and phase: "implement", writing the `summary` into that task\'s `memo` field. Then, for each of its subtasks, create a task with parentId set to the parent\'s id, tags: ["plan-step"], and pass through that subtask\'s `order` and `parallel` fields unchanged so the Implement phase gets the intended sequencing.',
+    '3. Once approved, persist the plan with the cw-tasks `task_create` tool: first create one task per entry in `tasks` with tags: ["plan"] and phase: "implement", writing the `summary` into that task\'s `memo` field. Then, for each of its subtasks, create a task with parentId set to the parent\'s id, tags: ["plan-step"], and pass through that subtask\'s `order` field unchanged so the Implement phase gets the intended sequencing.',
     '4. Print the ids of every task and subtask you created.',
   ].join('\n');
 }

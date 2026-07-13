@@ -104,9 +104,8 @@ export interface BulkStartResult {
   failed: { id: string; error: string }[];
 }
 
-/** Spawn ONE session that runs `phase` over `tasks` — sequentially, except that
- *  tasks sharing an `order` and all flagged `parallel` run as a concurrent
- *  subagent wave. All of them must live in `wt` — a phase edits the working
+/** Spawn ONE session that runs `phase` over `tasks`, strictly sequentially.
+ *  All of them must live in `wt` — a phase edits the working
  *  tree, so a batch can only span tasks that share one. */
 async function startTaskPhaseBatch(
   deps: TaskFlowDeps,
@@ -135,8 +134,7 @@ async function startTaskPhaseBatch(
 }
 
 /** Start `phase` for every id in as FEW sessions as possible: one chat per
- *  worktree, working its tasks one after another (parallel-flagged same-order
- *  tasks run as a concurrent subagent wave). "Start all" means one agent
+ *  worktree, working its tasks one after another. "Start all" means one agent
  *  with a queue, not N agents racing over the same working tree — sessions in a
  *  shared worktree would interleave edits and produce diffs nobody can review.
  *
