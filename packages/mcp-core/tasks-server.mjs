@@ -227,12 +227,12 @@ export const TOOLS = [
         parallel: {
           type: "boolean",
           description:
-            "Mark this subtask as safe to execute in parallel with its sibling parallel subtasks. cw-work will dispatch parallel-flagged subtasks of the same parent concurrently via subagents. Only meaningful on subtasks (parentId set).",
+            "Legacy metadata flag marking a subtask as safe to run alongside its siblings. Phases execute strictly sequentially and ignore it — do not set it on new subtasks.",
         },
         order: {
           type: "number",
           description:
-            "Sibling-group sort key (lower runs first). Use it to sequence subtasks under the same parent — adjacent subtasks that share the same order (and are both parallel) form a concurrent wave. Omit to sort last, after any ordered siblings.",
+            "Sibling-group sort key (lower runs first). Use it to sequence subtasks under the same parent. Omit to sort last, after any ordered siblings.",
         },
         epic: {
           type: "string",

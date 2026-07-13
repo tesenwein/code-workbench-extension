@@ -10,8 +10,12 @@
     "packages/extension/src/worktreeAssets.ts"
   ],
   "guidelines": [],
-  "anti_patterns": [],
-  "decisions": [],
+  "anti_patterns": [
+    "Do not reintroduce parallel-wave subagent dispatch into the phase procedures or agent bodies — each wave subagent re-explored the codebase from scratch and roughly doubled token usage. Phases run strictly sequentially in-session; phase agents must never spawn subagents."
+  ],
+  "decisions": [
+    "2026-07-13: Removed the order/parallel wave mechanic from all phase procedures (Plan no longer designs waves, Implement/Fix/Bulk no longer dispatch subagents) to cut token burn — ~50% of usage had come from wave subagents. The `parallel` task field remains in the data model as inert legacy metadata; `order` alone drives sequencing."
+  ],
   "tags": [
     "agents",
     "subagents",
@@ -20,11 +24,14 @@
     "drift",
     "phase-flow",
     "backfill",
-    "per-worktree"
+    "per-worktree",
+    "waves",
+    "parallel",
+    "token-burn"
   ],
   "dependsOn": [
     "worktree-assets"
   ],
-  "updatedAt": "2026-07-12T06:54:01.501Z",
+  "updatedAt": "2026-07-13T04:22:13.704Z",
   "createdAt": "2026-07-11T04:52:24.866Z"
 }

@@ -63,13 +63,13 @@ const PHASE_PROCEDURES = {
     STAY_IN_LANE,
     IF_BLOCKED,
     "",
-    "Explore the codebase enough to design a concrete implementation approach — do not guess at unfamiliar code. Consult the architecture wiki (`arch_list`, `arch_search`, `arch_get`) so the plan respects existing guidelines.",
+    "Explore the codebase enough to design a concrete implementation approach — do not guess at unfamiliar code. If the architecture wiki has cards for the area you touch (`arch_search`, `arch_get`), respect their guidelines.",
     "",
     'If the task ALREADY has "plan-step" subtasks (a previous Plan run), reconcile instead of duplicating: update or delete stale ones and only add what is missing — never file a second copy of an existing step.',
     "",
     "When you have an approach:",
     `1. Write it into the task's memo via task_update (id: "${TASK_ID}", memo: "...").`,
-    `2. Break it into concrete implementation subtasks via task_create (parentId: "${TASK_ID}", tags: ["plan-step"]). Set \`order\` on each (0, 1, 2, ...) to fix the sequence the Implement phase must follow — lower runs first, and subtasks with no \`order\` sort last. Give two or more adjacent steps the SAME \`order\` and set \`parallel: true\` on each only when they touch disjoint files and have no dependency between them — the Implement phase dispatches same-order parallel-flagged subtasks concurrently via subagents. Steps that depend on each other, or that touch the same file, must get distinct \`order\` values instead.`,
+    `2. Break it into concrete implementation subtasks via task_create (parentId: "${TASK_ID}", tags: ["plan-step"]). Set \`order\` on each (0, 1, 2, ...) to fix the sequence the Implement phase must follow — lower runs first, and subtasks with no \`order\` sort last.`,
     `3. Finally task_update the task itself: id: "${TASK_ID}", phase: "implement".`,
     "",
     "Stop once the plan and subtasks are filed. You may NOT implement: no code edits, no writing the change 'to prove the plan works'. Producing the plan IS the deliverable.",
@@ -80,7 +80,7 @@ const PHASE_PROCEDURES = {
     STAY_IN_LANE,
     IF_BLOCKED,
     "",
-    'Work its subtasks tagged "plan-step" in `order` (lower first, unordered last; ties break by creation time — if there are none, work the task\'s description directly). Subtasks that share the same `order` AND are ALL flagged `parallel` form one wave: dispatch that whole wave together via concurrent general-purpose subagents — one per subtask, each prompt containing ONLY that subtask\'s work, never the board task id and never a phase agent (cw-implementer/cw-reviewer/cw-fixer) — wait for all of them to finish, then move to the next order. Because wave subagents never see the board, YOU do their board writes: mark each wave member in-progress when you dispatch it and done when its subagent reports success. If you cannot spawn subagents (no Agent tool available), work the wave members yourself, one at a time, in order — a wave degrades to sequence, never to skipped work. Subtasks at the same `order` that are NOT all `parallel`, or any subtask at a distinct `order`, are worked strictly one at a time in sequence. Mark each subtask in-progress before you start it and done when it passes. Run whatever lint, typecheck, and test scripts the project has; treat a failure as unfinished work, not a separate finding.',
+    'Work its subtasks tagged "plan-step" strictly one at a time, in `order` (lower first, unordered last; ties break by creation time — if there are none, work the task\'s description directly). Do the work yourself in THIS session — do not delegate subtasks to subagents. Mark each subtask in-progress before you start it and done when it passes. Run whatever lint, typecheck, and test scripts the project has; treat a failure as unfinished work, not a separate finding.',
     "",
     'You may NOT review: do not audit the diff for findings, do not file "review-finding" subtasks, and do not clear `phase` or mark the task done. A failing check is yours to fix; a code smell you notice in passing is the Review phase\'s to find.',
     "",
@@ -96,7 +96,7 @@ const PHASE_PROCEDURES = {
     "",
     "You may NOT fix: change no code, not even a one-line typo or an obviously-correct rename. Every finding leaves this phase as a subtask, and the Fix phase applies it. A review that edits its own findings is a review nobody checked.",
     "",
-    `File each real finding as a subtask via task_create (parentId: "${TASK_ID}", tags: ["review-finding"], priority reflecting severity, description: "file:line, what is wrong, why it matters, suggested fix"). Set \`order\` on each (0, 1, 2, ...) to fix the sequence the Fix phase should follow. Give two or more findings the SAME \`order\` and set \`parallel: true\` on each only when their fixes touch disjoint files and have no dependency between them — the Fix phase dispatches same-order parallel-flagged findings concurrently via subagents. Fixes that depend on each other, or that touch the same file, must get distinct \`order\` values instead.`,
+    `File each real finding as a subtask via task_create (parentId: "${TASK_ID}", tags: ["review-finding"], priority reflecting severity, description: "file:line, what is wrong, why it matters, suggested fix"). Set \`order\` on each (0, 1, 2, ...) to fix the sequence the Fix phase should follow.`,
     "",
     `Then hand off via task_update on the task: if you filed any findings, id: "${TASK_ID}", phase: "fix". If you filed none and no other subtasks are still open, id: "${TASK_ID}", phase: "" (clear it), status: "done". If you filed none but other subtasks ARE still open, note in the memo what is left and set phase: "implement" so the remaining work gets picked up — never leave the task with no phase while it is unfinished.`,
   ].join("\n"),
@@ -106,7 +106,7 @@ const PHASE_PROCEDURES = {
     STAY_IN_LANE,
     IF_BLOCKED,
     "",
-    'List the subtasks tagged "review-finding" that were open when you started, and fix each one in `order` (lower first, unordered last; ties break by creation time). Findings that share the same `order` AND are ALL flagged `parallel` form one wave: dispatch that whole wave together via concurrent general-purpose subagents — one per finding, each prompt containing ONLY that finding\'s file, description, and suggested fix, never the board task id and never a phase agent (cw-implementer/cw-reviewer/cw-fixer) — wait for all of them to finish, then move to the next order. Because wave subagents never see the board, YOU do their board writes: mark each wave member in-progress when you dispatch it and done when its subagent reports success. If you cannot spawn subagents (no Agent tool available), fix the wave members yourself, one at a time, in order — a wave degrades to sequence, never to skipped work. Findings at the same `order` that are NOT all `parallel`, or at a distinct `order`, are fixed strictly one at a time in sequence. Mark each finding in-progress before you start it and done once fixed. Re-run lint, typecheck, and tests at the end.',
+    'List the subtasks tagged "review-finding" that were open when you started, and fix each one strictly one at a time, in `order` (lower first, unordered last; ties break by creation time). Do the work yourself in THIS session — do not delegate findings to subagents. Mark each finding in-progress before you start it and done once fixed. Re-run lint, typecheck, and tests at the end.',
     "",
     'You may NOT review: fix the findings already on the board and no more. If you spot a NEW problem while fixing, file it as another "review-finding" subtask but do NOT fix it — it belongs to the next Review/Fix round.',
     "",
@@ -144,19 +144,15 @@ function phasePrompt(phase, task) {
  * Full prompt for ONE session that runs `phase` across several tasks, one after
  * another. The per-task procedure is repeated verbatim with each task's id
  * substituted, so a batched task is instructed exactly as it would be in its own
- * session — including its own handoff `task_update`. Sequential by default:
+ * session — including its own handoff `task_update`. Strictly sequential:
  * the phases mutate the board and the working tree, and a batch that interleaves
- * them would produce diffs no Review phase can attribute to a task. The one
- * exception is tasks the planner explicitly marked safe to overlap — same
- * `order`, all flagged `parallel` — which form a wave dispatched via concurrent
- * subagents, mirroring the Implement procedure's plan-step wave semantics.
+ * them would produce diffs no Review phase can attribute to a task.
  */
 function phasePromptBulk(phase, tasks) {
   assertPhase(phase);
   if (tasks.length === 1) return phasePrompt(phase, tasks[0]);
-  // Stable-sort by `order` (nulls last) so wave members — same order, all
-  // parallel — end up consecutive in the prompt no matter how the caller
-  // ordered the batch.
+  // Stable-sort by `order` (nulls last) so the batch runs in the planner's
+  // intended sequence no matter how the caller ordered it.
   tasks = tasks
     .map((task, i) => ({ task, i }))
     .sort((a, b) => {
@@ -169,7 +165,7 @@ function phasePromptBulk(phase, tasks) {
   const header = [
     `${label.toUpperCase()} phase for ${tasks.length} tasks, run in THIS one session.`,
     "",
-    `Work them in the order below, STRICTLY ONE AT A TIME by default: finish a task's ${label} phase completely — including its handoff task_update — before you read the next one. Never batch the board writes. The ONLY exception: consecutive tasks below that share the same \`order\` AND are ALL flagged \`parallel: true\` form one wave — dispatch that whole wave concurrently via subagents (one per task, each running its full per-task procedure including its own handoff), wait for every subagent in the wave to finish, then continue sequentially. Tasks not in such a wave must never overlap.`,
+    `Work them in the order below, STRICTLY ONE AT A TIME: finish a task's ${label} phase completely — including its handoff task_update — before you read the next one. Never batch the board writes, and never delegate a task to a subagent.`,
     `If one task blocks you, record the blocker in its memo as its procedure says, then CONTINUE with the next task; one blocked task must not abandon the rest. When every task below is finished, report a one-line result per task.`,
   ].join("\n");
 
@@ -177,9 +173,8 @@ function phasePromptBulk(phase, tasks) {
     const context = [`Task ${task.id}: ${task.title}`];
     if (task.description) context.push("", task.description);
     if (phase === "implement" && task.memo) context.push("", `Plan memo:\n${task.memo}`);
-    const flags = `order: ${task.order ?? "none"}, parallel: ${task.parallel === true}`;
     return [
-      `--- Task ${i + 1} of ${tasks.length} — ${task.id} (${flags}) ---`,
+      `--- Task ${i + 1} of ${tasks.length} — ${task.id} ---`,
       "",
       ...context,
       "",
