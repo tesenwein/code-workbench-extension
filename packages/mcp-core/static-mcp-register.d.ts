@@ -9,6 +9,10 @@ export interface RegisterIntoOpts {
   wsl?: boolean;
   repoPath?: string | null;
   astGrammarsAvailable?: () => boolean;
+  /** Absolute Node interpreter; defaults to a bare `node` (and always inside WSL). */
+  nodeCommand?: string;
+  /** Extra env the interpreter needs, e.g. ELECTRON_RUN_AS_NODE. */
+  nodeEnv?: Record<string, string> | null;
 }
 
 export interface RegisterDualArgs extends RegisterIntoOpts {

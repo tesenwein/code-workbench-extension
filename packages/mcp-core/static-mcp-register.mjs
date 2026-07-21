@@ -63,11 +63,22 @@ export async function getWslHomeWinPath() {
  *   wsl?: boolean,
  *   repoPath?: string | null,
  *   astGrammarsAvailable?: () => boolean,
+ *   nodeCommand?: string,
+ *   nodeEnv?: Record<string, string> | null,
  * }} opts
  * @returns {Promise<{configPath: string, registered: string[], skipped: {name:string, reason:string}[]}>}
  */
 export async function registerStaticServersInto(configPath, opts) {
-  const { resolveScript, wsl = false, repoPath = null } = opts;
+  const {
+    resolveScript,
+    wsl = false,
+    repoPath = null,
+    nodeCommand,
+    nodeEnv = null,
+  } = opts;
+  // Inside WSL the caller's interpreter path is meaningless — `node` there
+  // resolves against the distro's own PATH.
+  const interpreter = (!wsl && nodeCommand) || "node";
   const registered = [];
   const skipped = [];
 
@@ -98,16 +109,16 @@ export async function registerStaticServersInto(configPath, opts) {
     }
     const entry = {
       type: "stdio",
-      command: "node",
+      command: interpreter,
       args: [pathForClaude(script, { wsl })],
     };
     // The unified server scopes its analysis tools to this repo when told to;
     // without it the server falls back to its spawn cwd.
+    const env = { ...(!wsl && nodeEnv ? nodeEnv : {}) };
     if (repoPath) {
-      entry.env = {
-        CODE_WORKBENCH_REPO_PATH: pathForClaude(repoPath, { wsl }),
-      };
+      env.CODE_WORKBENCH_REPO_PATH = pathForClaude(repoPath, { wsl });
     }
+    if (Object.keys(env).length) entry.env = env;
     mcpServers[key] = entry;
     registered.push(key);
   }
@@ -144,6 +155,8 @@ export async function registerStaticServersDual(args) {
     repoPath = null,
     astGrammarsAvailable,
     mirrorToWsl = false,
+    nodeCommand,
+    nodeEnv = null,
   } = args;
 
   const primary = await registerStaticServersInto(primaryConfigPath, {
@@ -151,6 +164,8 @@ export async function registerStaticServersDual(args) {
     wsl,
     repoPath,
     astGrammarsAvailable,
+    nodeCommand,
+    nodeEnv,
   });
 
   if (mirrorToWsl && !wsl && process.platform === "win32") {
