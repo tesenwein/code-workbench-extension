@@ -38,6 +38,7 @@ import { showSearchPanel } from './searchPanel';
 import { setAccentOverride } from './webviewTheme';
 import { showThemeTokensPanel } from './themeTokensPanel';
 import { WORKTREE_DOT } from './panelTheme';
+import { resetNodeRuntimeCache } from './nodeRuntime';
 
 let repoRoot: string | undefined;
 let repoKey: string | undefined;
@@ -168,6 +169,14 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
 
   const sessionMgr = new SessionManager(ctx);
   ctx.subscriptions.push({ dispose: () => sessionMgr.dispose() });
+
+  // The interpreter is resolved once and memoized; re-resolve when the user
+  // points us at a different Node.
+  ctx.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration('codeWorkbench.mcp.nodePath')) resetNodeRuntimeCache();
+    }),
+  );
   await sessionMgr.setRepoKey(repoKey);
   sessionMgr.setCurrentWorktreePath(repoRoot);
 

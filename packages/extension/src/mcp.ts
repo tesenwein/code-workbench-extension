@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { WORKBENCH_SYSTEM_PROMPT } from './workbenchPrompt';
+import { resolveNodeRuntime } from './nodeRuntime';
 
 const fsp = fs.promises;
 
@@ -95,7 +96,10 @@ export class McpConfigBuilder {
     const notifyEnabled = enableNotify && !!args.notifyPort && args.notifyPort > 0;
     const codeScript = await this.serverScript('code-server.mjs');
     if (codeScript) {
-      const env: Record<string, string> = {};
+      // Absolute interpreter: the chat terminal runs the CLI as its shell, so a
+      // bare `node` misses nvm/fnm/volta shims and the endpoint fails to spawn.
+      const node = await resolveNodeRuntime();
+      const env: Record<string, string> = { ...node.env };
       if (args.repoPath) env.CODE_WORKBENCH_REPO_PATH = args.repoPath;
       if (args.worktreePath) {
         // Analysis tools scan the working copy; tasks bucketing uses the key.
@@ -120,7 +124,7 @@ export class McpConfigBuilder {
 
       mcpServers[CODE_MCP_KEY] = {
         type: 'stdio',
-        command: 'node',
+        command: node.command,
         args: [codeScript],
         env,
         alwaysAllow: [

@@ -10,6 +10,7 @@ import {
   registerStaticServersDual,
   type RegisterResult,
 } from '@code-workbench/mcp-core/static-mcp-register';
+import { resolveNodeRuntime } from './nodeRuntime';
 
 export type McpRegisterResult = RegisterResult;
 
@@ -36,9 +37,12 @@ export async function registerWorkbenchMcpServers(
     process.platform === 'win32' &&
     !!process.env.USERPROFILE &&
     path.resolve(targetDir).toLowerCase() === path.resolve(process.env.USERPROFILE).toLowerCase();
+  const node = await resolveNodeRuntime();
   return registerStaticServersDual({
     primaryConfigPath: configPath,
     resolveScript,
     mirrorToWsl: sameAsWinHome,
+    nodeCommand: node.command,
+    nodeEnv: node.env,
   });
 }

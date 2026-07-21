@@ -524,6 +524,11 @@
           ],
           "description": "Where to open Claude/shell sessions."
         },
+        "codeWorkbench.mcp.nodePath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to the Node.js executable used to run the bundled MCP server. Leave empty to auto-detect (PATH, common install locations, nvm). Set this if your Node is managed by a version manager the workbench cannot find."
+        },
         "codeWorkbench.mcp.tasks.enabled": {
           "type": "boolean",
           "default": true,
