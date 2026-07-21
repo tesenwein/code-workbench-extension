@@ -533,10 +533,18 @@ export class SessionManager {
       ...(color ? { color } : {}),
     };
 
+    // Non-shell terminals run a chat CLI as their "shell". hideFromUser makes
+    // the ms-python extension skip its venv auto-activation (it would type
+    // `source .../activate` straight into the chat input); creationOptions are
+    // checked permanently, and the term.show() below reveals the terminal as
+    // normal. VS Code ignores a non-panel `location` on hidden terminals
+    // (microsoft/vscode#272656), so only opt out under panel placement.
+    const chatOpts = placement === 'panel' ? { hideFromUser: true } : {};
     let term: vscode.Terminal;
     if (session.profile) {
       term = vscode.window.createTerminal({
         ...baseOpts,
+        ...chatOpts,
         shellPath: session.profile.command,
         shellArgs: session.profile.args,
         ...(session.profile.env ? { env: session.profile.env } : {}),
@@ -547,6 +555,7 @@ export class SessionManager {
       const launch = await this.buildLaunch(session);
       term = vscode.window.createTerminal({
         ...baseOpts,
+        ...chatOpts,
         shellPath: launch.command,
         shellArgs: launch.args,
       });
