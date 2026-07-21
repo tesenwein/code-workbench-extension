@@ -1,7 +1,7 @@
 {
   "slug": "plan-feature-tool",
   "name": "Plan Feature Tool",
-  "description": "The \"Plan Feature\" entry in the Tools action bar — mirrors code-review-tool but designs rather than reviews. commands/planFeature.ts registers codeWorkbench.plan.start, which prompts for a feature request via showInputBox, writes the bundled `cw-plan-feature` Workflow script to `<globalStorage>/workflows/cw-plan-feature.workflow.js` via writeWorkflowScript(ctx, name), then spawns a normal Claude session (kind 'claude', so the full cw-* MCP wiring is present) in the active worktree, forced to opus (it acts as an orchestrator), titled \"Plan\", primed with buildPlanPrompt(scriptPath, request). The request text is embedded in the prompt between literal `<<<FEATURE_REQUEST_START>>>`/`<<<FEATURE_REQUEST_END>>>` markers and the prompt instructs the session to pass it to the Workflow tool's `args` as `{ request }` — never typed or interpolated into the script itself, since `export const meta` must stay a pure literal. The script runs five phases: Context (3 parallel sonnet agents — repo map/build+test commands, arch wiki via arch_list/arch_search/arch_get, prior art via task_find_similar(status:'done') + search_code — merged into one brief), Design (3 sonnet agents with distinct stances: mvp-first, risk-first, architecture-first, each returning {approach, keySteps, filesTouched, risks, tradeoffs}), Judge (3-lens scoring per design — architecture fit, risk/complexity, completeness vs the request — summed to pick a winner; Design→Judge runs as one pipeline() so judging overlaps remaining designs), Synthesize (opus, merges the winner + best runner-up ideas into {summary, openQuestions, tasks:[{title, description, priority, subtasks:[{title, description}]}]}), and Critique (opus completeness critic, loop-until-dry capped at 2 rounds, deduped against a seen-gaps set, re-synthesizing on each fresh round). It returns {request, summary, openQuestions, tasks} to the session, which resolves openQuestions with the user, presents the plan for explicit approval, and only then persists via cw-tasks task_create: one call per top-level task with tags:[\"plan\"] and phase:\"implement\" (so the Phase Board files it in Implement, not Plan) plus the workflow's summary written into that task's memo, then one call per subtask with parentId and tags:[\"plan-step\"]. The session never edits code. The action-bar entry it lives under REPLACED the old \"Plan Session\" entry (bare permissionMode:'plan' session) — codeWorkbench.sessions.newPlan itself stays registered as a palette-only command.",
+  "description": "The \"Plan Feature\" entry in the Tools action bar — mirrors code-review-tool but designs rather than reviews. commands/planFeature.ts registers codeWorkbench.plan.start, which writes the bundled `cw-plan-feature` Workflow script to `<globalStorage>/workflows/cw-plan-feature.workflow.js` via writeWorkflowScript(ctx, name), then spawns a normal Claude session (kind 'claude', so the full cw-* MCP wiring is present) in the active worktree, forced to opus, titled \"Plan\", primed with buildPlanPrompt(scriptPath, ''). The session first interviews the user via AskUserQuestion to sharpen the request, then passes the finished request to the Workflow tool's `args` as `{ request }` — never interpolated into the script, since `export const meta` must stay a pure literal. The script runs three phases (deliberately lean — an earlier 5-phase version with 3 stance designs + 9 judge agents + loop-until-dry critique was cut in 2026-07 because planning took far too long): Context (3 parallel sonnet agents — repo map/build+test commands, arch wiki via arch_list/arch_search/arch_get, prior art via task_find_similar(status:'done') + search_code — merged into one brief), Plan (single opus agent drafting {summary, openQuestions, tasks:[{title, description, priority, subtasks:[{title, description, order}]}]}, biased toward the smallest change reusing existing patterns), and Critique (one opus completeness pass; if gaps are found, exactly one revision agent closes them). It returns {request, summary, openQuestions, tasks} to the session, which resolves openQuestions with the user, presents the plan for explicit approval, and only then persists via cw-tasks task_create: one call per top-level task with tags:[\"plan\"] and phase:\"implement\" plus the workflow's summary written into that task's memo, then one call per subtask with parentId, tags:[\"plan-step\"], and the subtask's order passed through. The session never edits code.",
   "files": [
     "packages/extension/src/commands/planFeature.ts",
     "packages/extension/src/codeHealthView.ts",
@@ -16,14 +16,16 @@
     "Launch through SessionManager.create(kind, wt, undefined, CreateSessionOptions) with kind 'claude' (NOT permissionMode:'plan') — plan mode would block the task_create calls this session must make once the user approves.",
     "buildPlanPrompt() must say \"Run the Workflow tool with scriptPath: <abs>\" verbatim — the Workflow tool refuses to run otherwise (see code-review-tool).",
     "Hand the feature request through the Workflow tool's `args`, never string-interpolate it into the script — `export const meta` must stay a pure literal per workflows-bundle.",
-    "Root tasks a planning flow creates must set phase:\"implement\" (not leave phase unset) so the Phase Board (tasks-view) files them under Implement instead of inferring Plan from having no plan-step subtasks yet; subtasks get tags:[\"plan-step\"].",
-    "Write the workflow's summary into the created root task's memo — it's the only channel that carries design rationale forward to the Implement phase."
+    "Root tasks a planning flow creates must set phase:\"implement\" (not leave phase unset) so the Phase Board (tasks-view) files them under Implement instead of inferring Plan from having no plan-step subtasks yet; subtasks get tags:[\"plan-step\"] and pass through order.",
+    "Write the workflow's summary into the created root task's memo — it's the only channel that carries design rationale forward to the Implement phase.",
+    "Keep the workflow lean: one plan agent, one critique round. Do not reintroduce multi-design/judge fan-out — it roughly quintupled latency for marginal plan quality."
   ],
   "anti_patterns": [
     "Using permissionMode:'plan' for the orchestrator session — it would block the task_create persistence step entirely.",
     "Persisting tasks before the user has approved the plan or answered openQuestions.",
     "Letting the session design or edit code directly instead of delegating to the Workflow script.",
-    "Leaving phase unset on the created root tasks — that was the pre-fix behavior and sent freshly-planned work back into Plan/Unstarted instead of Implement."
+    "Leaving phase unset on the created root tasks — that sent freshly-planned work back into Plan/Unstarted instead of Implement.",
+    "Re-adding stance fan-out / judge panels / critique loops to the workflow — removed 2026-07 for latency; the single-pass pipeline is intentional."
   ],
   "decisions": [],
   "tags": [
@@ -34,7 +36,8 @@
     "workflow",
     "phase board",
     "phase flow",
-    "task_create"
+    "task_create",
+    "latency"
   ],
   "dependsOn": [
     "workflows-bundle",
@@ -44,6 +47,6 @@
     "tasks-view",
     "code-review-tool"
   ],
-  "updatedAt": "2026-07-09T14:21:38.528Z",
+  "updatedAt": "2026-07-21T03:47:10.415Z",
   "createdAt": "2026-07-09T14:21:38.528Z"
 }

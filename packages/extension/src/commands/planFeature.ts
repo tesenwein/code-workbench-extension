@@ -3,8 +3,8 @@
  * Opens a normal chat session primed with a planning prompt: the session
  * interviews the user with multiple-choice questions (AskUserQuestion) until
  * the feature request is sharp, then designs it — optionally via the bundled
- * `cw-plan-feature` Workflow script (context gathering, three competing
- * designs, judging, synthesis, completeness critique) — presents the plan for
+ * `cw-plan-feature` Workflow script (context gathering, one plan draft, one
+ * completeness critique) — presents the plan for
  * approval, and persists it to the shared cw-tasks board. It never edits
  * code. */
 
@@ -35,7 +35,7 @@ export function buildPlanPrompt(scriptPath: string, request: string): string {
     '## 2. Design it',
     `Run the Workflow tool with scriptPath: ${scriptPath}, passing the finished feature request as its \`args\` parameter — an object \`{ "request": "<the text>" }\`. Never interpolate the text into a script.`,
     '',
-    'The workflow gathers context (repo map, architecture wiki, prior art), produces three independent designs, judges them, synthesizes a plan, and critiques it for completeness across a fleet of subagents. It returns { request, summary, openQuestions, tasks }, where tasks is a hierarchical breakdown: each entry has title, description, priority, and subtasks (each with title, description, order).',
+    'The workflow gathers context (repo map, architecture wiki, prior art), drafts an implementation plan, and critiques it once for completeness. It returns { request, summary, openQuestions, tasks }, where tasks is a hierarchical breakdown: each entry has title, description, priority, and subtasks (each with title, description, order).',
     '',
     'If the Workflow tool is unavailable, design the feature yourself instead: gather context, weigh at least two approaches, and note risks and open questions.',
     '',
