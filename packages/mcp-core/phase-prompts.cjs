@@ -69,7 +69,7 @@ const PHASE_PROCEDURES = {
     "",
     "When you have an approach:",
     `1. Write it into the task's memo via task_update (id: "${TASK_ID}", memo: "...").`,
-    `2. Break it into concrete implementation subtasks via task_create (parentId: "${TASK_ID}", tags: ["plan-step"]). Set \`order\` on each (0, 1, 2, ...) to fix the sequence the Implement phase must follow — lower runs first, and subtasks with no \`order\` sort last.`,
+    `2. Break it into concrete implementation subtasks via task_create (parentId: "${TASK_ID}", tags: ["plan-step"]). Set \`order\` on each (0, 1, 2, ...) to fix the sequence the Implement phase must follow — lower runs first, and subtasks with no \`order\` sort last. Where several steps touch disjoint files and have no dependency between them, flag each \`parallel: true\` and give them a shared \`order\` so Implement runs them as one concurrent wave; leave dependent or file-overlapping steps unflagged.`,
     `3. Finally task_update the task itself: id: "${TASK_ID}", phase: "implement".`,
     "",
     "Stop once the plan and subtasks are filed. You may NOT implement: no code edits, no writing the change 'to prove the plan works'. Producing the plan IS the deliverable.",
@@ -80,7 +80,7 @@ const PHASE_PROCEDURES = {
     STAY_IN_LANE,
     IF_BLOCKED,
     "",
-    'Work its subtasks tagged "plan-step" strictly one at a time, in `order` (lower first, unordered last; ties break by creation time — if there are none, work the task\'s description directly). Do the work yourself in THIS session — do not delegate subtasks to subagents. Mark each subtask in-progress before you start it and done when it passes. Run whatever lint, typecheck, and test scripts the project has; treat a failure as unfinished work, not a separate finding.',
+    'Work its subtasks tagged "plan-step" in `order` (lower first, unordered last; ties break by creation time — if there are none, work the task\'s description directly). Do each yourself in THIS session, one at a time — EXCEPT a wave of subtasks flagged `parallel: true` that share an `order`, which you may dispatch as concurrent worker subagents (one per subtask, in one message; never a phase agent like cw-implementer, which would recurse). Wait for the whole wave to finish before moving on. Mark each subtask in-progress before you start it and done when it passes. Run whatever lint, typecheck, and test scripts the project has; treat a failure as unfinished work, not a separate finding.',
     "",
     'You may NOT review: do not audit the diff for findings, do not file "review-finding" subtasks, and do not clear `phase` or mark the task done. A failing check is yours to fix; a code smell you notice in passing is the Review phase\'s to find.',
     "",
@@ -106,7 +106,7 @@ const PHASE_PROCEDURES = {
     STAY_IN_LANE,
     IF_BLOCKED,
     "",
-    'List the subtasks tagged "review-finding" that were open when you started, and fix each one strictly one at a time, in `order` (lower first, unordered last; ties break by creation time). Do the work yourself in THIS session — do not delegate findings to subagents. Mark each finding in-progress before you start it and done once fixed. Re-run lint, typecheck, and tests at the end.',
+    'List the subtasks tagged "review-finding" that were open when you started and fix each in `order` (lower first, unordered last; ties break by creation time). Do each yourself in THIS session, one at a time — EXCEPT a wave of findings flagged `parallel: true` that share an `order`, which you may dispatch as concurrent worker subagents (one per finding, in one message; never a phase agent). Wait for the whole wave to finish before moving on. Mark each finding in-progress before you start it and done once fixed. Re-run lint, typecheck, and tests at the end.',
     "",
     'You may NOT review: fix the findings already on the board and no more. If you spot a NEW problem while fixing, file it as another "review-finding" subtask but do NOT fix it — it belongs to the next Review/Fix round.',
     "",
@@ -165,7 +165,7 @@ function phasePromptBulk(phase, tasks) {
   const header = [
     `${label.toUpperCase()} phase for ${tasks.length} tasks, run in THIS one session.`,
     "",
-    `Work them in the order below, STRICTLY ONE AT A TIME: finish a task's ${label} phase completely — including its handoff task_update — before you read the next one. Never batch the board writes, and never delegate a task to a subagent.`,
+    `Work them in the order below, STRICTLY ONE AT A TIME: finish a task's ${label} phase completely — including its handoff task_update — before you read the next one. Never batch the board writes, and never delegate a whole task to a subagent (a task's own `parallel`-flagged subtasks may still fan out per its procedure).`,
     `If one task blocks you, record the blocker in its memo as its procedure says, then CONTINUE with the next task; one blocked task must not abandon the rest. When every task below is finished, report a one-line result per task.`,
   ].join("\n");
 
