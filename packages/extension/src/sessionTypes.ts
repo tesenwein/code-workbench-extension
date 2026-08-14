@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import type { TaskPhase } from '@code-workbench/mcp-core/phase-prompts';
 
 export type SessionKind = 'claude' | 'claude-yolo' | 'shell';
-export type ClaudeModel = 'default' | 'opus' | 'opus-1m' | 'sonnet' | 'haiku' | 'fable';
+export type ClaudeModel = 'default' | 'opus' | 'sonnet' | 'haiku' | 'fable';
 /** 0=auto, 1=think, 2=think hard, 3=think harder, 4=ultrathink */
 export type ClaudeEffort = 0 | 1 | 2 | 3 | 4;
 /** `claude --permission-mode` values. 'plan' forces read-only planning
@@ -27,7 +27,6 @@ export interface ClaudeModelInfo {
 export const CLAUDE_MODELS: readonly ClaudeModelInfo[] = [
   { value: 'default', label: 'default', flag: '', thinking: true },
   { value: 'opus', label: 'opus', flag: 'opus', thinking: true },
-  { value: 'opus-1m', label: 'opus 1m', flag: 'opus[1m]', thinking: true },
   { value: 'sonnet', label: 'sonnet', flag: 'sonnet', thinking: true },
   { value: 'haiku', label: 'haiku', flag: 'haiku', thinking: false },
   { value: 'fable', label: 'fable', flag: 'fable', thinking: true },
