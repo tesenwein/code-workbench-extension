@@ -1,10 +1,12 @@
+import type { ClaudeModel } from './claude-models';
+
 export type TaskPhase = 'plan' | 'implement' | 'review' | 'fix';
 
 export interface PhaseMeta {
   label: string;
   /** VS Code codicon id for the spawned session's tab. */
   icon: string;
-  model: 'opus' | 'sonnet';
+  model: ClaudeModel;
   /** Overrides the worktree's effort pref for this phase's session. */
   effort?: 0 | 1 | 2 | 3 | 4;
 }

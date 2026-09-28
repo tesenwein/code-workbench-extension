@@ -2,6 +2,7 @@ import * as path from 'path';
 import { randomBytes } from 'crypto';
 import {
   CLAUDE_MODELS,
+  CLAUDE_PHASE_MODELS,
   ClaudeEffort,
   ClaudeModel,
   EFFORT_LABELS,
@@ -49,13 +50,13 @@ export function renderPrefsHtml(worktreePath: string, state: PrefsPanelState): s
   const nonce = randomBytes(16).toString('base64');
   const name = path.basename(worktreePath);
   const initial = safeJson(state);
-  const models = CLAUDE_MODELS.map(
+  const models = CLAUDE_MODELS.map((m) => `<option value="${m.value}">${m.label}</option>`).join(
+    '',
+  );
+  // 'default' is the phase selects' own "inherit" option — don't repeat it.
+  const phaseModelOptions = CLAUDE_PHASE_MODELS.map(
     (m) => `<option value="${m.value}">${m.label}</option>`,
   ).join('');
-  // 'default' is the phase selects' own "inherit" option — don't repeat it.
-  const phaseModelOptions = CLAUDE_MODELS.filter((m) => m.value !== 'default')
-    .map((m) => `<option value="${m.value}">${m.label}</option>`)
-    .join('');
   const effortLabels = safeJson(EFFORT_LABELS);
   const modelMeta = safeJson(CLAUDE_MODELS);
   const swatches = WORKTREE_COLORS.map((c) => {

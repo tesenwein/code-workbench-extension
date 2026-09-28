@@ -165,7 +165,7 @@ function phasePromptBulk(phase, tasks) {
   const header = [
     `${label.toUpperCase()} phase for ${tasks.length} tasks, run in THIS one session.`,
     "",
-    `Work them in the order below, STRICTLY ONE AT A TIME: finish a task's ${label} phase completely — including its handoff task_update — before you read the next one. Never batch the board writes, and never delegate a whole task to a subagent (a task's own `parallel`-flagged subtasks may still fan out per its procedure).`,
+    `Work them in the order below, STRICTLY ONE AT A TIME: finish a task's ${label} phase completely — including its handoff task_update — before you read the next one. Never batch the board writes, and never delegate a whole task to a subagent (a task's own \`parallel\`-flagged subtasks may still fan out per its procedure).`,
     `If one task blocks you, record the blocker in its memo as its procedure says, then CONTINUE with the next task; one blocked task must not abandon the rest. When every task below is finished, report a one-line result per task.`,
   ].join("\n");
 
