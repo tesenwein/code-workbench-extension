@@ -1,6 +1,11 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { CLAUDE_MODEL_VALUES, sessionIconId, type SavedSession } from './sessionTypes';
+import {
+  CLAUDE_MODEL_VALUES,
+  CLAUDE_QUICK_MODELS,
+  sessionIconId,
+  type SavedSession,
+} from './sessionTypes';
 import { claudeConversationExists } from './sessionLaunch';
 import type { SessionManager } from './sessions';
 import { makeNonce, panelHtml, WORKTREE_DOT } from './panelTheme';
@@ -99,7 +104,7 @@ function sessionRow(s,accent){
   row.appendChild(acts);
   root.appendChild(row);
 }
-var MODELS=[['sonnet','Sonnet'],['opus','Opus'],['fable','Fable']];
+var MODELS=${JSON.stringify(CLAUDE_QUICK_MODELS.map((m) => [m.value, m.label]))};
 function addButton(){
   var add=document.createElement('button'); add.className='add';
   add.innerHTML=svg('plus')+'<span>New terminal</span>';
@@ -110,8 +115,10 @@ function addButton(){
   var grp=document.createElement('div'); grp.className='addgrp';
   MODELS.forEach(function(m){
     var b=document.createElement('button'); b.className='add sm';
-    b.textContent=m[1];
-    b.title='New '+m[1]+' terminal';
+    // Central labels are lowercase; this row has always shown them title-cased.
+    var name=m[1].charAt(0).toUpperCase()+m[1].slice(1);
+    b.textContent=name;
+    b.title='New '+name+' terminal';
     b.addEventListener('click',function(){ vscode.postMessage({type:'new',model:m[0]}); });
     grp.appendChild(b);
   });
@@ -171,12 +178,7 @@ export class SessionsProvider implements vscode.WebviewViewProvider {
     const codiconUri = view.webview
       .asWebviewUri(vscode.Uri.joinPath(distUri, 'codicon', 'codicon.css'))
       .toString();
-    view.webview.html = panelHtml(
-      view.webview.cspSource,
-      makeNonce(),
-      SESSIONS_SCRIPT,
-      codiconUri,
-    );
+    view.webview.html = panelHtml(view.webview.cspSource, makeNonce(), SESSIONS_SCRIPT, codiconUri);
     view.webview.onDidReceiveMessage((m) => this.onMessage(m));
   }
 

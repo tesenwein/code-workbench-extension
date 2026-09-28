@@ -1,43 +1,32 @@
 import * as vscode from 'vscode';
 import type { TaskPhase } from '@code-workbench/mcp-core/phase-prompts';
+// Also imported locally: the re-export below publishes these names but does
+// not bind them in this module's own scope, and the types below use them.
+import type { ClaudeModel } from '@code-workbench/mcp-core/claude-models';
 
 export type SessionKind = 'claude' | 'claude-yolo' | 'shell';
-export type ClaudeModel = 'default' | 'opus' | 'sonnet' | 'haiku' | 'fable';
 /** 0=auto, 1=think, 2=think hard, 3=think harder, 4=ultrathink */
 export type ClaudeEffort = 0 | 1 | 2 | 3 | 4;
 /** `claude --permission-mode` values. 'plan' forces read-only planning
  *  (no edits/writes) regardless of the worktree's yolo pref. */
 export type ClaudePermissionMode = 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan';
 
-export interface ClaudeModelInfo {
-  value: ClaudeModel;
-  /** Human-facing label shown in pickers. */
-  label: string;
-  /** Value passed to `claude --model`; '' means no flag (inherit the CLI default). */
-  flag: string;
-  /** Whether the model supports extended thinking (the `--effort` flag applies). */
-  thinking: boolean;
-}
-
 /**
- * Single source of truth for the selectable Claude models. Every model picker,
- * validator, and launch-arg builder derives from this list — add a model here
- * and it appears everywhere.
+ * The selectable models live in `@code-workbench/mcp-core/claude-models` so the
+ * extension, the bundled skills, and the phase defaults all read one list.
+ * Re-exported here because every consumer in this package already imports its
+ * session types from this module.
  */
-export const CLAUDE_MODELS: readonly ClaudeModelInfo[] = [
-  { value: 'default', label: 'default', flag: '', thinking: true },
-  { value: 'opus', label: 'opus', flag: 'opus', thinking: true },
-  { value: 'sonnet', label: 'sonnet', flag: 'sonnet', thinking: true },
-  { value: 'haiku', label: 'haiku', flag: 'haiku', thinking: false },
-  { value: 'fable', label: 'fable', flag: 'fable', thinking: true },
-];
-
-export const CLAUDE_MODEL_VALUES: readonly ClaudeModel[] = CLAUDE_MODELS.map((m) => m.value);
-
-/** Metadata for a model value, falling back to 'default' for unknown input. */
-export function claudeModel(value: ClaudeModel): ClaudeModelInfo {
-  return CLAUDE_MODELS.find((m) => m.value === value) ?? CLAUDE_MODELS[0];
-}
+export {
+  CLAUDE_MODELS,
+  CLAUDE_MODEL_VALUES,
+  CLAUDE_QUICK_MODELS,
+  CLAUDE_PHASE_MODELS,
+  claudeModel,
+  isClaudeModel,
+  type ClaudeModel,
+  type ClaudeModelInfo,
+} from '@code-workbench/mcp-core/claude-models';
 
 export const EFFORT_LABELS: readonly string[] = [
   'auto',

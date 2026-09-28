@@ -69,6 +69,16 @@
         "default": "./workflows.mjs"
       }
     },
+    "./claude-models": {
+      "require": {
+        "types": "./claude-models.d.cts",
+        "default": "./claude-models.cjs"
+      },
+      "import": {
+        "types": "./claude-models.d.ts",
+        "default": "./claude-models.mjs"
+      }
+    },
     "./phase-prompts": {
       "require": {
         "types": "./phase-prompts.d.cts",

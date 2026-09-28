@@ -1,0 +1,54 @@
+{
+  "slug": "claude-models",
+  "name": "Claude Models",
+  "description": "Single source of truth for the selectable Claude models, in packages/mcp-core/claude-models.cjs (CommonJS impl + .mjs ESM shim + .d.ts/.d.cts, exposed via the \"@code-workbench/mcp-core/claude-models\" package export). Exports CLAUDE_MODELS (value/label/flag/thinking/quick per model), CLAUDE_MODEL_VALUES (pref validation), CLAUDE_QUICK_MODELS (the sessions-view one-click launch row), CLAUDE_PHASE_MODELS (everything but 'default', for phase-model dropdowns), claudeModel(value) and isClaudeModel(value). Entries come in two flavours: ALIASES (fable/opus/sonnet/haiku) that the Claude CLI resolves to the newest model of their tier, and PINNED snapshots (fable-5-1 -> claude-fable-5-1, opus-5-5 -> claude-opus-5-5, sonnet-5-5 -> claude-sonnet-5-5) for worktrees that must keep a fixed model. `flag` is passed verbatim to `claude --model`; '' means pass no flag and inherit the CLI default. `thinking: false` means skip the `--effort` flag (haiku has no effort support). packages/extension/src/sessionTypes.ts re-exports the whole surface so extension code keeps importing its session types from one place.",
+  "files": [
+    "packages/mcp-core/claude-models.cjs",
+    "packages/mcp-core/claude-models.mjs",
+    "packages/mcp-core/claude-models.d.ts",
+    "packages/mcp-core/claude-models.d.cts",
+    "packages/extension/src/sessionTypes.ts",
+    "packages/extension/src/sessionsView.ts",
+    "packages/extension/src/prefsPanelHtml.ts",
+    "packages/extension/src/globalPrefsPanelHtml.ts"
+  ],
+  "guidelines": [
+    "Add or change a selectable model ONLY in packages/mcp-core/claude-models.cjs, and update claude-models.d.ts + .d.cts (keep the two identical) so the ClaudeModel union matches. Every picker, validator and launch-arg builder derives from that list.",
+    "Keep the module CommonJS: both the extension (compiled to CJS) and the .mjs MCP servers/bundled skills consume it, and phase-prompts.cjs types its PHASE_META.model against the same union.",
+    "When adding a model, decide the two booleans deliberately: `quick` puts it in the sessions-view launch row (keep that row short), and `thinking: false` suppresses the `--effort` flag for models without effort support.",
+    "Prefer alias entries (opus/sonnet) as the defaults — they track the newest model of their tier and never go stale. Add a pinned `claude-<name>-<ver>` entry only when a worktree genuinely needs to freeze a snapshot.",
+    "Only ADD values; removing one strands prefs already persisted in ~/.code-workbench/settings.json and VS Code globalState. The validators fall back to 'default' for unknown values, so removals silently reset a user's choice."
+  ],
+  "anti_patterns": [
+    "Hardcoding a model list anywhere else. Two places had drifted before this card existed: a `var MODELS=[['sonnet','Sonnet'],...]` literal in the sessionsView webview script (which silently missed haiku), and `model: 'opus' | 'sonnet'` in phase-prompts.d.ts. Both now derive from the central list.",
+    "Hand-filtering the list at the call site (e.g. `CLAUDE_MODELS.filter((m) => m.value !== 'default')` in both prefs panels). Use the named CLAUDE_PHASE_MODELS / CLAUDE_QUICK_MODELS subsets so the intent lives with the data.",
+    "Writing a bare `export { type ClaudeModel } from './claude-models'` re-export in sessionTypes.ts and then using ClaudeModel in that same file — a re-export publishes the name but does not bind it in local scope. A separate `import type` is required alongside it.",
+    "Assuming the locally installed Claude CLI validates `--model`. It forwards the string to the API, so a pinned id that does not exist yet fails at request time, not at launch."
+  ],
+  "decisions": [
+    "The list lives in mcp-core rather than the extension because phase-prompts.cjs (PHASE_META.model) and the bundled skills need the same union, and mcp-core is the only package both the extension and the spawned .mjs servers already depend on.",
+    "Aliases and pinned snapshots coexist in one list rather than being separate concepts: both are just strings the CLI accepts for --model, and one list keeps the pref type, validator and every picker in sync.",
+    "Verified against platform.claude.com on 2026-09-28: the current lineup is Fable 5.1 (claude-fable-5-1), Opus 5.5 (claude-opus-5-5), Sonnet 5.5 (claude-sonnet-5-5) and Haiku 4.5 (claude-haiku-4-5). Haiku 5.5 was announced as upcoming but is not released, so no pinned haiku entry exists yet."
+  ],
+  "tags": [
+    "model",
+    "models",
+    "claude model",
+    "opus",
+    "sonnet",
+    "haiku",
+    "fable",
+    "model picker",
+    "--model",
+    "effort",
+    "CLAUDE_MODELS",
+    "model list",
+    "sonnet 5.5"
+  ],
+  "dependsOn": [
+    "session-manager",
+    "global-prefs"
+  ],
+  "updatedAt": "2026-09-28T18:33:44.090Z",
+  "createdAt": "2026-09-28T18:33:44.090Z"
+}

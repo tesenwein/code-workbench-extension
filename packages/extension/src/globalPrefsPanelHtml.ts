@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { randomBytes } from 'crypto';
-import { CLAUDE_MODELS, EFFORT_LABELS } from './sessions';
+import { CLAUDE_MODELS, CLAUDE_PHASE_MODELS, EFFORT_LABELS } from './sessions';
 import {
   PHASE_DESCRIPTIONS,
   PHASE_META,
@@ -18,14 +18,14 @@ function safeJson(value: unknown): string {
 export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
   const nonce = randomBytes(16).toString('base64');
   const initial = safeJson(state);
-  const models = CLAUDE_MODELS.map(
-    (m) => `<option value="${m.value}">${m.label}</option>`,
-  ).join('');
+  const models = CLAUDE_MODELS.map((m) => `<option value="${m.value}">${m.label}</option>`).join(
+    '',
+  );
   // The phase selects carry their own 'default' option ("inherit the phase's
   // built-in model"), so the concrete models must not repeat that value.
-  const phaseModelOptions = CLAUDE_MODELS.filter((m) => m.value !== 'default')
-    .map((m) => `<option value="${m.value}">${m.label}</option>`)
-    .join('');
+  const phaseModelOptions = CLAUDE_PHASE_MODELS.map(
+    (m) => `<option value="${m.value}">${m.label}</option>`,
+  ).join('');
   const effortLabels = safeJson(EFFORT_LABELS);
   const modelMeta = safeJson(CLAUDE_MODELS);
   const languageOptions = LANGUAGES.map(
