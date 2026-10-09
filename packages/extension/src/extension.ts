@@ -4,8 +4,7 @@ import * as os from 'os';
 import { findRepoKey, findRepoRoot, removeWorktree } from './git';
 import { WorktreeItem, WorktreesProvider } from './worktreesView';
 import { TasksProvider, watchTasks } from './tasksView';
-import { SessionItem, SessionManager, SessionsProvider, SessionKind } from './sessions';
-import { CLAUDE_MODEL_VALUES, type ClaudeModel } from './sessionTypes';
+import { SessionManager, SessionsProvider } from './sessions';
 import { clearTaskWorktree } from './tasks';
 import { initProjectWorkspace } from './workspaceInit';
 import {
@@ -20,8 +19,10 @@ import { registerWorkbenchMcpServers } from './mcpRegister';
 import { GlobalPrefsPanel } from './globalPrefsPanel';
 import { loadGlobalPrefs, loadGlobalPrefsSync, saveGlobalPrefs } from './globalPrefs';
 import { BrandViewProvider } from './brandView';
-import { pickSessionLaunch, pickWorktreeAndActivate } from './workspaceFolder';
+import { pickWorktreeAndActivate } from './workspaceFolder';
 import { registerLayoutCommands } from './commands/layoutCommands';
+import { registerPageCommands } from './commands/pageCommands';
+import { registerSessionCommands } from './commands/sessionCommands';
 import { registerTaskCommands } from './commands/taskCommands';
 import { registerWorktreeCommands } from './commands/worktreeCommands';
 import { registerScanPageCommands } from './scanPages';
@@ -30,15 +31,14 @@ import { registerCodeReviewCommand } from './commands/codeReview';
 import { registerPlanFeatureCommand } from './commands/planFeature';
 import { registerTaskFlowCommand } from './commands/taskFlow';
 import { registerUpdateCommand } from './update';
-import { showTasksPage, refreshTasksPage, isTasksPageOpen } from './tasksPage';
-import { showPhaseBoardPage, refreshPhaseBoardPage, isPhaseBoardPageOpen } from './phaseBoardPage';
+import { refreshTasksPage, isTasksPageOpen } from './tasksPage';
+import { refreshPhaseBoardPage, isPhaseBoardPageOpen } from './phaseBoardPage';
 import { ArchViewProvider } from './archView';
-import { showArchPage, refreshArchPage } from './archPage';
-import { showSearchPanel } from './searchPanel';
+import { refreshArchPage } from './archPage';
 import { setAccentOverride } from './webviewTheme';
-import { showThemeTokensPanel } from './themeTokensPanel';
 import { WORKTREE_DOT } from './panelTheme';
 import { resetNodeRuntimeCache } from './nodeRuntime';
+import { errorMessage } from './errors';
 
 let repoRoot: string | undefined;
 let repoKey: string | undefined;
@@ -134,27 +134,6 @@ async function performWorktreeRemoval(
   }
 }
 
-/** Hybrid AST + symbol code search — the QuickBar `search-code` command,
- *  surfaced in the VS Code command palette. Prompts for a query, then opens
- *  the results page (editor-tab webview) showing every match with its code
- *  snippet; clicking a card opens the file at that line. */
-async function runSearchCodeCommand(
-  ctx: vscode.ExtensionContext,
-  repoRoot: string | undefined,
-): Promise<void> {
-  if (!repoRoot) {
-    vscode.window.showWarningMessage('Open a git repository first.');
-    return;
-  }
-  const query = await vscode.window.showInputBox({
-    title: 'Search Code',
-    prompt: 'Search code by fragment or description',
-    placeHolder: 'e.g. debounce git polling, parse markdown frontmatter',
-  });
-  if (!query) return;
-  showSearchPanel(ctx, repoRoot, query);
-}
-
 export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
   await detectRepoRoot();
 
@@ -204,7 +183,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
         pending.worktreePath,
       );
     } catch (err) {
-      vscode.window.showErrorMessage(`Deferred worktree removal failed: ${(err as Error).message}`);
+      vscode.window.showErrorMessage(`Deferred worktree removal failed: ${errorMessage(err)}`);
     }
   }
   // Retry deletion of worktree directories that were locked at removal time —
@@ -290,6 +269,14 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
 
   const archProvider = new ArchViewProvider(ctx, () => repoRoot, refreshArchPage);
 
+  registerPageCommands(ctx, {
+    sessionMgr,
+    archProvider,
+    getRepoRoot: () => repoRoot,
+    getRepoKey: () => repoKey,
+    refreshTaskSurfaces,
+  });
+
   ctx.subscriptions.push(
     statusBar,
     // Code-health scans open full editor-tab pages (the old sidebar scan
@@ -300,64 +287,6 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
       () => repoKey,
     ),
     registerCodeHealthView(),
-    vscode.commands.registerCommand('codeWorkbench.tasks.openAsPage', () =>
-      showTasksPage(
-        ctx,
-        () => repoKey,
-        () => repoRoot,
-        () => sessionMgr.getActiveWorktree() ?? undefined,
-        {},
-        refreshTaskSurfaces,
-      ),
-    ),
-    // Opening a task from the sidebar reveals the full-width board with that
-    // task selected in its detail editor — editing lives in the main panel,
-    // never squeezed into the narrow side view.
-    vscode.commands.registerCommand('codeWorkbench.tasks.openTaskInPage', (id?: string) =>
-      showTasksPage(
-        ctx,
-        () => repoKey,
-        () => repoRoot,
-        () => sessionMgr.getActiveWorktree() ?? undefined,
-        { selectTaskId: typeof id === 'string' ? id : undefined },
-        refreshTaskSurfaces,
-      ),
-    ),
-    // Creating a task opens the board with a blank editor in the detail
-    // column — no more input-box chain.
-    vscode.commands.registerCommand('codeWorkbench.tasks.newInPage', () =>
-      showTasksPage(
-        ctx,
-        () => repoKey,
-        () => repoRoot,
-        () => sessionMgr.getActiveWorktree() ?? undefined,
-        { create: true },
-        refreshTaskSurfaces,
-      ),
-    ),
-    // The phase-flow counterpart to the Task Board: columns are phases, and
-    // each card's Start button spawns that phase's bound Claude session.
-    vscode.commands.registerCommand('codeWorkbench.tasks.openPhaseBoard', () =>
-      showPhaseBoardPage(ctx, {
-        sessionMgr,
-        getRepoKey: () => repoKey,
-        getRepoRoot: () => repoRoot,
-        getActiveWorktree: () => sessionMgr.getActiveWorktree() ?? undefined,
-        afterMutation: refreshTaskSurfaces,
-      }),
-    ),
-    vscode.commands.registerCommand('codeWorkbench.arch.refresh', () => archProvider.refresh()),
-    // Open the full-width Architecture board in the main editor area, with
-    // semantic card search — the sidebar view's "open as page" counterpart.
-    vscode.commands.registerCommand('codeWorkbench.arch.openAsPage', (slug?: string) =>
-      showArchPage(ctx, () => repoRoot, {
-        focusSlug: typeof slug === 'string' ? slug : undefined,
-      }),
-    ),
-    vscode.commands.registerCommand('codeWorkbench.searchCode', () =>
-      runSearchCodeCommand(ctx, repoRoot),
-    ),
-    vscode.commands.registerCommand('codeWorkbench.themeTokens', () => showThemeTokensPanel()),
     vscode.commands.registerCommand(
       'codeWorkbench.worktrees.editNote',
       async (item?: WorktreeItem) => {
@@ -510,7 +439,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
             `Workbench skills: ${parts.join('; ') || 'nothing to do'} at ${where}.`,
           );
         } catch (e) {
-          vscode.window.showErrorMessage(`Install skills failed: ${(e as Error).message}`);
+          vscode.window.showErrorMessage(`Install skills failed: ${errorMessage(e)}`);
         }
       },
     ),
@@ -568,7 +497,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
             `Workbench agents: ${parts.join('; ') || 'nothing to do'} at ${where}.`,
           );
         } catch (e) {
-          vscode.window.showErrorMessage(`Install agents failed: ${(e as Error).message}`);
+          vscode.window.showErrorMessage(`Install agents failed: ${errorMessage(e)}`);
         }
       },
     ),
@@ -633,7 +562,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
             `Workbench permissions: ${added.length ? `added ${added.join(', ')}` : 'nothing to do'} at ${where}.`,
           );
         } catch (e) {
-          vscode.window.showErrorMessage(`Install permissions failed: ${(e as Error).message}`);
+          vscode.window.showErrorMessage(`Install permissions failed: ${errorMessage(e)}`);
         }
       },
     ),
@@ -694,7 +623,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
             `Workbench MCP: ${lines.join('  ') || 'nothing to do'} at ${where}.`,
           );
         } catch (e) {
-          vscode.window.showErrorMessage(`Register MCP servers failed: ${(e as Error).message}`);
+          vscode.window.showErrorMessage(`Register MCP servers failed: ${errorMessage(e)}`);
         }
       },
     ),
@@ -717,134 +646,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
 
   registerTaskCommands(ctx, { tasksProvider });
 
-  // ── Session commands ──────────────────────────────────────────────────
-  const newSession = async (kind: SessionKind, model?: ClaudeModel) => {
-    const wt = await ensureActiveWorktree();
-    if (!wt) return;
-    await sessionMgr.create(kind, wt, undefined, model ? { model } : undefined);
-  };
-
-  ctx.subscriptions.push(
-    vscode.commands.registerCommand('codeWorkbench.sessions.new', (model?: ClaudeModel) =>
-      newSession('claude', CLAUDE_MODEL_VALUES.includes(model!) ? model : undefined),
-    ),
-    vscode.commands.registerCommand('codeWorkbench.sessions.newYolo', () =>
-      newSession('claude-yolo'),
-    ),
-    vscode.commands.registerCommand('codeWorkbench.sessions.newShell', () => newSession('shell')),
-    vscode.commands.registerCommand('codeWorkbench.sessions.newPlan', async () => {
-      const wt = await ensureActiveWorktree();
-      if (!wt) return;
-      await sessionMgr.create('claude', wt, undefined, { permissionMode: 'plan' });
-    }),
-
-    vscode.commands.registerCommand('codeWorkbench.sessions.newFromEditor', async () => {
-      const launch = await pickSessionLaunch();
-      if (!launch) return;
-      const wt = await ensureActiveWorktree();
-      if (!wt) return;
-      if (launch.kind === 'profile') {
-        await sessionMgr.create('shell', wt, launch.profile);
-      } else {
-        await sessionMgr.create(launch.kind, wt);
-      }
-    }),
-
-    vscode.commands.registerCommand('codeWorkbench.sessions.open', (item: SessionItem) => {
-      if (!item) return;
-      void sessionMgr.open(item.session);
-    }),
-
-    vscode.commands.registerCommand('codeWorkbench.sessions.rename', async (item: SessionItem) => {
-      if (!item) return;
-      const next = await vscode.window.showInputBox({
-        prompt: 'Rename session',
-        value: item.session.title,
-      });
-      if (!next) return;
-      await sessionMgr.rename(item.session.id, next);
-    }),
-
-    vscode.commands.registerCommand('codeWorkbench.sessions.close', async (item: SessionItem) => {
-      if (!item) return;
-      await sessionMgr.close(item.session.id);
-    }),
-
-    vscode.commands.registerCommand('codeWorkbench.sessions.closeInactive', async () => {
-      const worktree = sessionMgr.getActiveWorktree();
-      const removed = await sessionMgr.closeInactive(worktree);
-      if (removed === 0) {
-        void vscode.window.showInformationMessage('No inactive sessions to remove.');
-      } else {
-        void vscode.window.showInformationMessage(
-          `Removed ${removed} inactive session${removed === 1 ? '' : 's'}.`,
-        );
-      }
-    }),
-
-    vscode.commands.registerCommand('codeWorkbench.sessions.setIcon', async (item: SessionItem) => {
-      if (!item) return;
-      const presets: Array<{
-        label: string;
-        description?: string;
-        id: string | undefined;
-      }> = [
-        {
-          label: '$(sparkle) sparkle',
-          description: 'default (Claude)',
-          id: 'sparkle',
-        },
-        {
-          label: '$(terminal) terminal',
-          description: 'default (Shell)',
-          id: 'terminal',
-        },
-        { label: '$(rocket) rocket', id: 'rocket' },
-        { label: '$(beaker) beaker', id: 'beaker' },
-        { label: '$(bug) bug', id: 'bug' },
-        { label: '$(zap) zap', id: 'zap' },
-        { label: '$(flame) flame', id: 'flame' },
-        { label: '$(star-full) star-full', id: 'star-full' },
-        { label: '$(heart) heart', id: 'heart' },
-        { label: '$(robot) robot', id: 'robot' },
-        { label: '$(tools) tools', id: 'tools' },
-        { label: '$(gear) gear', id: 'gear' },
-        { label: '$(flask) flask', id: 'flask' },
-        { label: '$(lightbulb) lightbulb', id: 'lightbulb' },
-        { label: '$(eye) eye', id: 'eye' },
-        { label: '$(pulse) pulse', id: 'pulse' },
-        {
-          label: '$(symbol-misc) Other…',
-          description: 'enter a codicon name',
-          id: undefined,
-        },
-        { label: '$(discard) Reset to default', id: '' },
-      ];
-      const pick = await vscode.window.showQuickPick(presets, {
-        placeHolder: 'Choose a tab icon (codicon)',
-      });
-      if (!pick) return;
-      let next: string | undefined;
-      if (pick.id === '') {
-        next = undefined;
-      } else if (pick.id === undefined) {
-        const typed = await vscode.window.showInputBox({
-          prompt: 'Codicon id (see https://microsoft.github.io/vscode-codicons/dist/codicon.html)',
-          placeHolder: 'e.g. rocket',
-        });
-        if (typed === undefined) return;
-        next = typed.trim() || undefined;
-      } else {
-        next = pick.id;
-      }
-      const stillLive = await sessionMgr.setIcon(item.session.id, next);
-      if (stillLive) {
-        void vscode.window.showInformationMessage(
-          'Icon saved. Reopen the session to see the new tab icon.',
-        );
-      }
-    }),
-  );
+  registerSessionCommands(ctx, { sessionMgr, ensureActiveWorktree });
 }
 
 export function deactivate(): void {}

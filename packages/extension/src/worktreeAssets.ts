@@ -117,8 +117,7 @@ async function ensureExcludeBlock(worktreePath: string): Promise<void> {
   const end = current.indexOf(EXCLUDE_END);
   let next: string;
   if (begin !== -1 && end !== -1 && end > begin) {
-    next =
-      current.slice(0, begin) + block + current.slice(end + EXCLUDE_END.length);
+    next = current.slice(0, begin) + block + current.slice(end + EXCLUDE_END.length);
   } else {
     next = current + (current && !current.endsWith('\n') ? '\n' : '') + block + '\n';
   }

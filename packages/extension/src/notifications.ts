@@ -99,9 +99,7 @@ export class NotifyServer {
     const parts = [title, message].filter(Boolean);
     // Fall back to a kind-appropriate default so we never show a bare "Claude:".
     const body =
-      parts.length > 0
-        ? parts.join(' — ')
-        : DEFAULT_BODY_BY_KIND[msg.kind] ?? 'Notification';
+      parts.length > 0 ? parts.join(' — ') : (DEFAULT_BODY_BY_KIND[msg.kind] ?? 'Notification');
     if (msg.kind === 'needs_input') {
       void vscode.window.showWarningMessage(`Claude: ${body}`);
     } else {

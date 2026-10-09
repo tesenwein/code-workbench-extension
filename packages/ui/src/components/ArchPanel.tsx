@@ -176,10 +176,18 @@ function ArchDetail({ card, cards, onOpenFile, onSelect, onDelete }: ArchDetailP
       <div className="arch-detail-header">
         <span className="arch-detail-title">{decodeEntities(card.name)}</span>
         <span className="arch-detail-id">{card.slug}</span>
-        <button onClick={() => onOpenFile(card.slug)} style={btnStyle('secondary')} title="Edit the card's .json file">
+        <button
+          onClick={() => onOpenFile(card.slug)}
+          style={btnStyle('secondary')}
+          title="Edit the card's .json file"
+        >
           Open .json
         </button>
-        <button onClick={() => onDelete(card.slug)} style={btnStyle('danger')} title="Delete this card">
+        <button
+          onClick={() => onDelete(card.slug)}
+          style={btnStyle('danger')}
+          title="Delete this card"
+        >
           Delete
         </button>
       </div>
@@ -634,7 +642,9 @@ export function ArchPanel({
             </div>
           )}
           {!loading && filteredCards.length === 0 && query.trim() ? (
-            <div style={{ padding: 16, color: 'var(--vscode-descriptionForeground)', fontSize: 12 }}>
+            <div
+              style={{ padding: 16, color: 'var(--vscode-descriptionForeground)', fontSize: 12 }}
+            >
               No components match “{query.trim()}”.
             </div>
           ) : (

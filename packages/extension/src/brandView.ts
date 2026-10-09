@@ -2,15 +2,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { SessionManager } from './sessions';
 import { themeTokenDecls, hcOverrideCss } from './webviewTheme';
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+import { escapeHtml } from './html';
 
 export class BrandViewProvider implements vscode.WebviewViewProvider {
   static readonly viewId = 'codeWorkbench.brand';

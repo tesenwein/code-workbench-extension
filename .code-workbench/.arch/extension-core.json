@@ -1,25 +1,38 @@
 {
   "slug": "extension-core",
   "name": "Extension Core",
-  "description": "The VS Code extension entry point. Activates the workbench, detects the git repo root, wires up all sidebar views, registers every command, and owns the lifecycle of the SessionManager and all VS Code disposables.",
+  "description": "The VS Code extension entry point. Activates the workbench, detects the git repo root, wires up all sidebar views, registers commands (grouped in commands/*.ts via register*Commands(ctx, deps)), and owns the lifecycle of the SessionManager and all VS Code disposables. Also hosts small shared helpers: errors.ts (errorMessage), html.ts (escapeHtml/safeJson/makeNonce), sidebarMessages.ts (runItemCommand), statePanelBase.ts (StatePanelBase for prefs panels).",
   "files": [
     "packages/extension/src/extension.ts",
+    "packages/extension/src/commands/sessionCommands.ts",
+    "packages/extension/src/commands/pageCommands.ts",
+    "packages/extension/src/commands/worktreeCommands.ts",
+    "packages/extension/src/commands/taskCommands.ts",
+    "packages/extension/src/commands/layoutCommands.ts",
+    "packages/extension/src/errors.ts",
+    "packages/extension/src/html.ts",
+    "packages/extension/src/sidebarMessages.ts",
+    "packages/extension/src/statePanelBase.ts",
     "packages/extension/package.json",
     "packages/extension/tsconfig.json"
   ],
   "guidelines": [
-    "Register all commands and providers inside activate() and push them to ctx.subscriptions so they are torn down on deactivate.",
+    "Register all commands and providers inside activate() (or a register*Commands(ctx, deps) in commands/) and push them to ctx.subscriptions so they are torn down on deactivate. activate() should read as wiring only — put new command groups in commands/*.ts.",
     "Every registered command needs a matching contributes.commands entry in package.json.",
     "Detect repoRoot via findRepoRoot/findRepoKey and propagate it to SessionManager and providers whenever workspace folders change.",
     "Defer any worktree removal that requires a folder switch by persisting intent to globalState under PENDING_REMOVAL_KEY and completing it on the next activate().",
-    "When workspace folders change, notify every provider that caches repoRoot (e.g. archProvider.onRepoChanged()) so watchers re-point and panels reload."
+    "When workspace folders change, notify every provider that caches repoRoot (e.g. archProvider.onRepoChanged()) so watchers re-point and panels reload.",
+    "Use errorMessage(e) from errors.ts instead of `(e as Error).message`; escapeHtml/safeJson/makeNonce come from html.ts; clampEffort from sessionTypes.",
+    "Prefs-style webview panels extend StatePanelBase and call start() at the end of their constructor; sidebar item actions dispatch through runItemCommand with a typed command map."
   ],
   "anti_patterns": [
     "Do not store per-session or per-worktree state directly in extension.ts — route it through SessionManager.",
-    "Do not call removeWorktree directly; always go through performWorktreeRemoval so terminal/task cleanup runs atomically."
+    "Do not call removeWorktree directly; always go through performWorktreeRemoval so terminal/task cleanup runs atomically.",
+    "Do not copy escapeHtml/safeJson/makeNonce or `(e as Error).message` into a new file — import the shared helpers."
   ],
   "decisions": [
-    "Worktree removal of the active worktree is deferred across a window reload (switch folder first, persist removal intent, finish on next activate) because the VS Code extension host is killed when the workspace folder changes."
+    "Worktree removal of the active worktree is deferred across a window reload (switch folder first, persist removal intent, finish on next activate) because the VS Code extension host is killed when the workspace folder changes.",
+    "Session and page-opening commands were moved out of activate() into commands/sessionCommands.ts and commands/pageCommands.ts; pin/unpinSidebar stay inline since they use activate-local state."
   ],
   "dependsOn": [
     "session-manager",
@@ -33,7 +46,18 @@
     "global-prefs",
     "shared-scan-service"
   ],
-  "updatedAt": "2026-06-30T04:19:48.712Z",
+  "updatedAt": "2026-10-09T06:51:45.245Z",
   "createdAt": "2026-05-19T04:49:08.809Z",
-  "tags": []
+  "tags": [
+    "extension",
+    "activate",
+    "commands",
+    "errors",
+    "html helpers",
+    "escapeHtml",
+    "StatePanelBase",
+    "errorMessage",
+    "sessionCommands",
+    "pageCommands"
+  ]
 }

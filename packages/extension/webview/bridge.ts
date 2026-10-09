@@ -4,6 +4,9 @@
  * The provider can also push `event` messages (e.g. a repo-root change or a
  * task-file change) which the panel subscribes to via `rpc.onEvent`. */
 
+import type { ReactElement } from 'react';
+import { createRoot } from 'react-dom/client';
+
 interface VsCodeApi {
   postMessage(msg: unknown): void;
   getState(): unknown;
@@ -12,9 +15,15 @@ interface VsCodeApi {
 
 declare function acquireVsCodeApi(): VsCodeApi;
 
+/** Per-entry event map: event name → payload type. */
+export type EventHandlers<E> = { [K in keyof E]?: (payload: E[K]) => void };
+
 export interface Bridge {
   call<T = unknown>(method: string, ...args: unknown[]): Promise<T>;
   onEvent(handler: (name: string, payload: unknown) => void): void;
+  /** Subscribe with one handler per event name; `E` maps each name to the
+   *  payload type the host posts for it (see the `postEvent` call sites). */
+  onEvents<E extends object>(handlers: EventHandlers<E>): void;
   /** Tell the provider the webview has mounted and wants its initial state. */
   ready(): void;
 }
@@ -62,8 +71,23 @@ export function createBridge(): Bridge {
     onEvent(handler) {
       eventHandlers.push(handler);
     },
+    onEvents<E extends object>(handlers: EventHandlers<E>) {
+      eventHandlers.push((name, payload) => {
+        if (!Object.hasOwn(handlers, name)) return;
+        // The wire payload is untyped; `E` is the entry's declared contract.
+        const handler = handlers[name as keyof E] as ((p: unknown) => void) | undefined;
+        handler?.(payload);
+      });
+    },
     ready() {
       vscode.postMessage({ kind: 'ready' });
     },
   };
+}
+
+/** Render `element` into the page's `#root` container. */
+export function mountApp(element: ReactElement): void {
+  const root = document.getElementById('root');
+  if (!root) throw new Error('Webview entry is missing its #root element');
+  createRoot(root).render(element);
 }

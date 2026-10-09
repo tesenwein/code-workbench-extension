@@ -9,6 +9,7 @@ import {
 import { claudeConversationExists } from './sessionLaunch';
 import type { SessionManager } from './sessions';
 import { makeNonce, panelHtml, WORKTREE_DOT } from './panelTheme';
+import { runItemCommand, type ItemCommands } from './sidebarMessages';
 
 /** Plain data carrier passed to session commands. The commands only read
  *  `.session`, so this stays compatible with the old TreeItem-based callers. */
@@ -247,17 +248,17 @@ export class SessionsProvider implements vscode.WebviewViewProvider {
     }
     const session = this.cache.find((s) => s.id === m?.id);
     if (!session) return;
-    const cmd = (
-      {
-        open: 'codeWorkbench.sessions.open',
-        rename: 'codeWorkbench.sessions.rename',
-        setIcon: 'codeWorkbench.sessions.setIcon',
-        close: 'codeWorkbench.sessions.close',
-      } as Record<string, string>
-    )[m?.type ?? ''];
-    if (cmd) void vscode.commands.executeCommand(cmd, { session });
+    runItemCommand(SESSION_ITEM_COMMANDS, m?.type, { session });
   }
 }
+
+/** Per-session message type → command id. */
+const SESSION_ITEM_COMMANDS: ItemCommands = {
+  open: 'codeWorkbench.sessions.open',
+  rename: 'codeWorkbench.sessions.rename',
+  setIcon: 'codeWorkbench.sessions.setIcon',
+  close: 'codeWorkbench.sessions.close',
+};
 
 /** A saved Claude session is "orphaned" once it has been launched but its
  *  on-disk transcript at ~/.claude/projects/<cwd>/<id>.jsonl has been deleted.

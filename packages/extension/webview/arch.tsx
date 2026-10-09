@@ -1,21 +1,26 @@
 import { useState, useEffect } from 'react';
-import { createRoot } from 'react-dom/client';
 import { ArchPanel } from '@code-workbench/ui';
 import type { ArchApi } from '@code-workbench/ui';
 import '@code-workbench/ui/styles.css';
-import { createBridge } from './bridge';
+import { createBridge, mountApp } from './bridge';
 
 const bridge = createBridge();
 
 const api: ArchApi = {
   list: () => bridge.call('list'),
   upsert: (card) => bridge.call('upsert', card),
-  remove: (slug) => bridge.call('remove', slug) as Promise<void>,
-  openCard: (slug) => bridge.call('openCard', slug) as Promise<void>,
-  openInPage: (slug) => bridge.call('openInPage', slug) as Promise<void>,
-  search: (query) =>
-    bridge.call('search', query) as Promise<Array<{ slug: string; score: number }>>,
+  remove: (slug) => bridge.call('remove', slug),
+  openCard: (slug) => bridge.call('openCard', slug),
+  openInPage: (slug) => bridge.call('openInPage', slug),
+  search: (query) => bridge.call('search', query),
 };
+
+interface ArchEvents {
+  'repo-root': string | null;
+  'arch-changed': null;
+  'focus-card': string | null;
+  context: { surface?: string } | null;
+}
 
 function App() {
   const [repoPath, setRepoPath] = useState<string | null>(null);
@@ -26,12 +31,11 @@ function App() {
   const [pageMode, setPageMode] = useState(false);
 
   useEffect(() => {
-    bridge.onEvent((name, payload) => {
-      if (name === 'repo-root') setRepoPath((payload as string | null) ?? null);
-      else if (name === 'arch-changed') setReloadKey((k) => k + 1);
-      else if (name === 'focus-card') setFocusSlug((payload as string | null) ?? null);
-      else if (name === 'context')
-        setPageMode((payload as { surface?: string } | null)?.surface === 'page');
+    bridge.onEvents<ArchEvents>({
+      'repo-root': (p) => setRepoPath(p ?? null),
+      'arch-changed': () => setReloadKey((k) => k + 1),
+      'focus-card': (p) => setFocusSlug(p ?? null),
+      context: (p) => setPageMode(p?.surface === 'page'),
     });
     bridge.ready();
   }, []);
@@ -49,4 +53,4 @@ function App() {
   );
 }
 
-createRoot(document.getElementById('root')!).render(<App />);
+mountApp(<App />);

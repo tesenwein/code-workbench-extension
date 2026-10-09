@@ -4,6 +4,7 @@ import * as os from 'os';
 import { promises as fs } from 'fs';
 import { listWorktrees, Worktree } from './git';
 import { SessionKind, SessionManager, SessionProfile } from './sessions';
+import { errorMessage } from './errors';
 
 export async function pickWorktreeAndActivate(
   repoRoot: string,
@@ -13,7 +14,7 @@ export async function pickWorktreeAndActivate(
   try {
     trees = await listWorktrees(repoRoot);
   } catch (err) {
-    vscode.window.showErrorMessage(`Worktrees: ${(err as Error).message}`);
+    vscode.window.showErrorMessage(`Worktrees: ${errorMessage(err)}`);
     return undefined;
   }
   const active = sessionMgr.getActiveWorktree();

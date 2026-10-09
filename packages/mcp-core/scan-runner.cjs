@@ -69,29 +69,44 @@ function spawnDetector(nodeBin, cliArgs, label, env) {
 }
 
 /**
- * Run dead-code-detect.mjs and return validated DeadCodeItem[].
+ * Feature table for the item-shaped scans (flat `items` arrays sharing the
+ * kind/file/name/startLine/detail/fingerprint shape). `extraFields` maps extra
+ * string fields (defaulting to "") onto the validated item.
+ */
+const ITEM_SCANS = {
+  "dead-code": { label: "dead-code-detect", extraFields: [] },
+  "type-escapes": { label: "type-escape-detect", extraFields: ["content"] },
+};
+
+/**
+ * Run an item-shaped detector (see ITEM_SCANS) and return validated items.
  *
  * When `persistTo` is set, the unfiltered result is written to
- * `<persistTo>/.code-workbench/dead-code-findings.json` after a successful
+ * `<persistTo>/.code-workbench/<feature>-findings.json` after a successful
  * scan. Acks are NOT applied at write time — they are applied at read time
  * so toggling an ack does not invalidate the findings.
  *
+ * @param {"dead-code" | "type-escapes"} feature
  * @param {{ nodeBin: string; scriptPath: string; root: string; excludeDirs?: string[]; categories?: string[]; env?: NodeJS.ProcessEnv; persistTo?: string }} opts
  */
-async function runDeadCodeScan({
-  nodeBin,
-  scriptPath,
-  root,
-  excludeDirs = [],
-  categories = [],
-  env,
-  persistTo,
-}) {
+async function runItemScan(
+  feature,
+  {
+    nodeBin,
+    scriptPath,
+    root,
+    excludeDirs = [],
+    categories = [],
+    env,
+    persistTo,
+  },
+) {
+  const { label, extraFields } = ITEM_SCANS[feature];
   const cliArgs = [scriptPath, "--root", root];
   if (excludeDirs.length) cliArgs.push("--exclude-dirs", excludeDirs.join(","));
   if (categories.length) cliArgs.push("--categories", categories.join(","));
 
-  const raw = await spawnDetector(nodeBin, cliArgs, "dead-code-detect", env);
+  const raw = await spawnDetector(nodeBin, cliArgs, label, env);
   const items = raw
     .filter(
       (i) =>
@@ -101,19 +116,33 @@ async function runDeadCodeScan({
         typeof i.startLine === "number" &&
         typeof i.fingerprint === "string",
     )
-    .map((i) => ({
-      kind: i.kind,
-      file: i.file,
-      name: i.name,
-      startLine: i.startLine,
-      detail: i.detail ?? "",
-      fingerprint: i.fingerprint,
-    }));
+    .map((i) => {
+      const item = {
+        kind: i.kind,
+        file: i.file,
+        name: i.name,
+        startLine: i.startLine,
+        detail: i.detail ?? "",
+      };
+      for (const f of extraFields) item[f] = i[f] ?? "";
+      item.fingerprint = i.fingerprint;
+      return item;
+    });
 
   if (persistTo) {
-    await writeFindings(persistTo, "dead-code", { root, items });
+    await writeFindings(persistTo, feature, { root, items });
   }
   return items;
+}
+
+/** Run dead-code-detect.mjs and return validated DeadCodeItem[]. */
+function runDeadCodeScan(opts) {
+  return runItemScan("dead-code", opts);
+}
+
+/** Run type-escape-detect.mjs and return validated TypeEscapeItem[]. */
+function runTypeEscapeScan(opts) {
+  return runItemScan("type-escapes", opts);
 }
 
 /**
@@ -158,55 +187,6 @@ async function runDuplicateScan({
     await writeFindings(persistTo, "duplicates", { root, groups });
   }
   return groups;
-}
-
-/**
- * Run type-escape-detect.mjs and return validated TypeEscapeItem[].
- *
- * When `persistTo` is set, the unfiltered result is written to
- * `<persistTo>/.code-workbench/type-escapes-findings.json` after a successful
- * scan. Acks are NOT applied at write time — they are applied at read time
- * so toggling an ack does not invalidate the findings.
- *
- * @param {{ nodeBin: string; scriptPath: string; root: string; excludeDirs?: string[]; categories?: string[]; env?: NodeJS.ProcessEnv; persistTo?: string }} opts
- */
-async function runTypeEscapeScan({
-  nodeBin,
-  scriptPath,
-  root,
-  excludeDirs = [],
-  categories = [],
-  env,
-  persistTo,
-}) {
-  const cliArgs = [scriptPath, "--root", root];
-  if (excludeDirs.length) cliArgs.push("--exclude-dirs", excludeDirs.join(","));
-  if (categories.length) cliArgs.push("--categories", categories.join(","));
-
-  const raw = await spawnDetector(nodeBin, cliArgs, "type-escape-detect", env);
-  const items = raw
-    .filter(
-      (i) =>
-        typeof i.kind === "string" &&
-        typeof i.file === "string" &&
-        typeof i.name === "string" &&
-        typeof i.startLine === "number" &&
-        typeof i.fingerprint === "string",
-    )
-    .map((i) => ({
-      kind: i.kind,
-      file: i.file,
-      name: i.name,
-      startLine: i.startLine,
-      detail: i.detail ?? "",
-      content: i.content ?? "",
-      fingerprint: i.fingerprint,
-    }));
-
-  if (persistTo) {
-    await writeFindings(persistTo, "type-escapes", { root, items });
-  }
-  return items;
 }
 
 /**

@@ -96,14 +96,10 @@ export class ArchViewProvider implements vscode.WebviewViewProvider {
     };
     view.webview.html = reactWebviewHtml(view.webview, this.ctx.extensionUri, 'arch');
 
-    attachRpc(
-      view.webview,
-      buildArchRpcHandlers(this.ctx, this.getRepoRoot),
-      (rpc: RpcContext) => {
-        this.rpc = rpc;
-        rpc.postEvent('repo-root', this.getRepoRoot() ?? null);
-      },
-    );
+    attachRpc(view.webview, buildArchRpcHandlers(this.ctx, this.getRepoRoot), (rpc: RpcContext) => {
+      this.rpc = rpc;
+      rpc.postEvent('repo-root', this.getRepoRoot() ?? null);
+    });
 
     view.onDidDispose(() => {
       this.rpc = undefined;

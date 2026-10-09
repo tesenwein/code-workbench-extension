@@ -1,33 +1,35 @@
 import { useState, useEffect } from 'react';
-import { createRoot } from 'react-dom/client';
 import { PhaseBoard } from '@code-workbench/ui';
 import type { PhaseModelMap, TasksApi } from '@code-workbench/ui';
 import '@code-workbench/ui/styles.css';
-import { createBridge } from './bridge';
+import { createBridge, mountApp } from './bridge';
 
 const bridge = createBridge();
 
 const api: TasksApi = {
   list: () => bridge.call('list'),
   create: (task) => bridge.call('create', task),
-  update: (id, patch) => bridge.call('update', id, patch) as Promise<void>,
-  remove: (id) => bridge.call('remove', id) as Promise<void>,
-  openInEditor: (id) => bridge.call('openInEditor', id) as Promise<void>,
-  startPhase: (id, phase) => bridge.call('startPhase', id, phase) as Promise<void>,
+  update: (id, patch) => bridge.call('update', id, patch),
+  remove: (id) => bridge.call('remove', id),
+  openInEditor: (id) => bridge.call('openInEditor', id),
+  startPhase: (id, phase) => bridge.call('startPhase', id, phase),
   confirmBulkStart: (phase, startableIds, inProgressIds) =>
-    bridge.call('confirmBulkStart', phase, startableIds, inProgressIds) as ReturnType<
-      NonNullable<TasksApi['confirmBulkStart']>
-    >,
+    bridge.call('confirmBulkStart', phase, startableIds, inProgressIds),
 };
+
+interface PhaseBoardEvents {
+  'tasks-changed': null;
+  'phase-models': PhaseModelMap;
+}
 
 function App() {
   const [reloadKey, setReloadKey] = useState(0);
   const [phaseModels, setPhaseModels] = useState<PhaseModelMap | undefined>(undefined);
 
   useEffect(() => {
-    bridge.onEvent((name, payload) => {
-      if (name === 'tasks-changed') setReloadKey((k) => k + 1);
-      else if (name === 'phase-models') setPhaseModels(payload as PhaseModelMap);
+    bridge.onEvents<PhaseBoardEvents>({
+      'tasks-changed': () => setReloadKey((k) => k + 1),
+      'phase-models': setPhaseModels,
     });
     bridge.ready();
   }, []);
@@ -42,4 +44,4 @@ function App() {
   );
 }
 
-createRoot(document.getElementById('root')!).render(<App />);
+mountApp(<App />);

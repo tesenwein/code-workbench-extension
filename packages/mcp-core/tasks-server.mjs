@@ -6,7 +6,6 @@
 // and the active worktree via CODE_WORKBENCH_WORKTREE_PATH when Claude is
 // spawned.
 
-import fsSync from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { recordToolUse } from "./usage-log.mjs";
@@ -18,6 +17,8 @@ import {
   worktreeKey,
 } from "./task-format.mjs";
 import { tokenize, bm25Rank } from "./text-rank.mjs";
+import { createKeyedLock } from "./keyed-lock.mjs";
+import { findRepoRootFromCwd, findWorktreeRootFromCwd } from "./server-env.mjs";
 import { buildRepoKey, repoNameFromCommonDir } from "./repo-key.mjs";
 import {
   readTasks,
@@ -31,8 +32,6 @@ import {
 const VALID_PRIORITIES = new Set(VALID_PRIORITY_LIST);
 const VALID_STATUSES = new Set(VALID_STATUS_LIST);
 const VALID_PHASES = new Set(VALID_PHASE_LIST);
-
-const DOT_DIR = ".code-workbench";
 
 function git(repoPath, args) {
   try {
@@ -68,66 +67,6 @@ function findRepoKeyFromCwd(repoPath) {
   return null;
 }
 
-function hasDotDir(dir) {
-  try {
-    return fsSync.statSync(path.join(dir, DOT_DIR)).isDirectory();
-  } catch {
-    return false;
-  }
-}
-
-// Worktrees have a `.git` *file* (not directory) whose contents are
-// `gitdir: /path/to/main/.git/worktrees/<name>`. Following that back two
-// levels yields the main repo's `.git`, and one more its working tree —
-// which is where `.code-workbench/` lives.
-function resolveMainRepoFromWorktree(dir) {
-  try {
-    const gitPath = path.join(dir, ".git");
-    const stat = fsSync.statSync(gitPath);
-    if (!stat.isFile()) return "";
-    const contents = fsSync.readFileSync(gitPath, "utf8");
-    const match = /^gitdir:\s*(.+?)\s*$/m.exec(contents);
-    if (!match) return "";
-    const gitdir = path.resolve(dir, match[1]);
-    // .../main/.git/worktrees/<name> -> .../main
-    const mainGitDir = path.dirname(path.dirname(gitdir));
-    if (path.basename(mainGitDir) !== ".git") return "";
-    return path.dirname(mainGitDir);
-  } catch {
-    return "";
-  }
-}
-
-function findRepoRootFromCwd() {
-  let dir = process.cwd();
-  const root = path.parse(dir).root;
-  while (dir && dir !== root) {
-    if (hasDotDir(dir)) return dir;
-    const mainRepo = resolveMainRepoFromWorktree(dir);
-    if (mainRepo && hasDotDir(mainRepo)) return mainRepo;
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  return "";
-}
-
-// The *worktree* root for the cwd — the nearest ancestor with a `.git` entry
-// (a directory for the main repo, a file for a linked worktree). Unlike
-// `findRepoRootFromCwd`, this does NOT resolve a worktree back to the main
-// repo, so its basename is the key of the worktree the session runs in.
-function findWorktreeRootFromCwd() {
-  let dir = process.cwd();
-  const root = path.parse(dir).root;
-  while (dir && dir !== root) {
-    if (fsSync.existsSync(path.join(dir, ".git"))) return dir;
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  return "";
-}
-
 const REPO_PATH = process.env.CODE_WORKBENCH_REPO_PATH || findRepoRootFromCwd();
 
 const REPO_KEY =
@@ -154,18 +93,7 @@ function requireRepoKey() {
 
 // --- BM25 similar-task scoring (tokenize + bm25Rank imported from text-rank.mjs) ---
 
-const locks = new Map();
-function withLock(key, fn) {
-  const prev = locks.get(key) ?? Promise.resolve();
-  const next = prev
-    .catch(() => {})
-    .then(() => fn())
-    .finally(() => {
-      if (locks.get(key) === next) locks.delete(key);
-    });
-  locks.set(key, next);
-  return next;
-}
+const withLock = createKeyedLock();
 
 export const TOOLS = [
   {

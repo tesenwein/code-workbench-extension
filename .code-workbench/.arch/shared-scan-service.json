@@ -1,10 +1,11 @@
 {
   "slug": "shared-scan-service",
   "name": "Shared Scan Service",
-  "description": "Shared scan execution, persisted findings, and ack/exclude state for dead-code, duplicate detection, type-escape detection, and hybrid code search, centralized in @code-workbench/mcp-core. The VS Code extension host runs the scans and persists results; MCP tools read those results and apply current acks at read time.",
+  "description": "Shared scan execution, persisted findings, and ack/exclude state for dead-code, duplicate detection, type-escape detection, and hybrid code search, centralized in @code-workbench/mcp-core. The VS Code extension host runs the scans and persists results; MCP tools read those results and apply current acks at read time. Each layer is feature-table-driven: ITEM_SCANS/runItemScan (scan-runner.cjs), SCAN_FEATURES/runScan (scanHost.ts), makeDetectTool (scan-server-kit.mjs), toggleListEntry (scanPages.ts), createScanApp (webview/scanEntry.tsx) — a new scan is a table row, not a new copy.",
   "files": [
     "packages/mcp-core/scan-runner.cjs",
     "packages/mcp-core/scan-runner.mjs",
+    "packages/mcp-core/scan-server-kit.mjs",
     "packages/mcp-core/scan-state.cjs",
     "packages/mcp-core/scan-state.mjs",
     "packages/mcp-core/findings-store.cjs",
@@ -13,19 +14,21 @@
     "packages/mcp-core/scan-types.d.ts",
     "packages/mcp-core/scan-types.d.cts",
     "packages/extension/src/scanHost.ts",
-    "packages/extension/src/scanViewProvider.ts"
+    "packages/extension/src/scanPages.ts",
+    "packages/extension/webview/scanEntry.tsx"
   ],
   "guidelines": [
-    "scan-runner owns spawning logic + groupFingerprint; callers supply nodeBin + scriptPath",
-    "scan-runner spawns four detectors: dead-code-detect, clone-detect, type-escape-detect (runTypeEscapeScan), and code-search (runCodeSearch)",
+    "scan-runner owns spawning logic + groupFingerprint; callers supply nodeBin + scriptPath. Item-shaped scans (dead-code, type-escapes) go through runItemScan(feature, opts) driven by the ITEM_SCANS table; runDeadCodeScan/runTypeEscapeScan are thin wrappers",
+    "scan-runner spawns four detectors: dead-code-detect, clone-detect, type-escape-detect, and code-search (runCodeSearch)",
     "groupFingerprint hashes members' normHash (normalized-token content), not line positions — acks survive edits; file:name is the legacy fallback only",
     "scan-state owns ack/exclude JSON r/w keyed by ScanFeature ('dead-code'|'duplicates'|'type-escapes')",
     "findings-store owns the persisted-findings r/w keyed by the same ScanFeature: <repo>/.code-workbench/<feature>-findings.json. Schema v1 = { schemaVersion, generatedAt, root, items|groups }. Atomic write via tmp+rename.",
-    "Host-writes / MCP-reads contract: only the host (VS Code extension) calls runDeadCodeScan/runDuplicateScan/runTypeEscapeScan with persistTo: repoPath. MCP servers read the file with readFindings.",
+    "Host-writes / MCP-reads contract: only the host (VS Code extension) calls the scans via scanHost.ts runScan with persistTo: repoPath. MCP servers read the file with readFindings.",
+    "MCP detect tools are built with makeDetectTool in scan-server-kit.mjs (force_scan / read-persisted / category+ack filtering); per-server differences are categoryOf and extraShape. type-safety keeps diff_only as a pre-dispatch wrapper",
     "Findings are stored UNFILTERED by acks — acks are applied at read time so toggling an ack does not invalidate the persisted file",
     "Host-specific path resolution stays with the caller (the extension), not in shared modules",
     "Import DeadCodeItem/DuplicateGroup/TypeEscapeItem/CodeSearchResult from scan-types",
-    "Extension scan panels extend the generic ScanViewProvider<T>; per-feature views only supply a webview script + ScanViewConfig",
+    "Editor-tab scan pages come from the SCAN_PAGES table in scanPages.ts; ack/exclude handlers are built with toggleListEntry; webview entries are 3-line createScanApp(Panel) files",
     "scan-types is type-only: dual .d.ts/.d.cts declarations, no runtime export"
   ],
   "anti_patterns": [
@@ -33,18 +36,19 @@
     "Do not define groupFingerprint in multiple places — it lives in scan-runner.cjs",
     "Do not make a fingerprint depend on line numbers or OS path separators — acks then break on edits or diverge between surfaces",
     "Do not add Electron or vscode imports to mcp-core modules",
-    "Do not reimplement the scan/ack/error-handling loop per view — use ScanViewProvider",
+    "Do not copy the scan/ack/error-handling loop per feature — add a row to the feature tables instead",
     "Do not write acks into the findings file — acks are applied at read time so toggling them never invalidates findings",
-    "Do not make MCP tools call runDeadCodeScan/runDuplicateScan/runTypeEscapeScan inline by default — they should read the host-written findings file; force_scan: true is the explicit escape hatch"
+    "Do not make MCP tools run scans inline by default — they should read the host-written findings file; force_scan: true is the explicit escape hatch"
   ],
   "decisions": [
     "CJS implementation + MJS shim pattern (same as task-store) so CJS extension host and ESM MCP servers share one copy",
     "groupFingerprint centralized here (previously duplicated across ast-server.mjs and host code) to eliminate the duplication",
-    "ScanViewProvider<T> is the single WebviewView implementation; DeadCode/Duplicates/TypeEscape views are thin subclasses",
+    "The old ScanViewProvider<T> sidebar views were replaced by editor-tab pages (scanPages.ts); see [[editor-tab-pages]]",
     "code-search.mjs is bundled with @xenova/transformers external — the extension's code search degrades to BM25-only since the optional model dep is not shipped in the .vsix",
     "Findings persistence introduced so MCP tool calls are O(read JSON) instead of triggering full scans. UI Rescan is the canonical scan trigger; MCP tools expose force_scan: true as an escape hatch for headless workflows.",
     "Findings stored unfiltered + acks applied at read time, so toggling an ack never invalidates the persisted scan.",
-    "type-escapes added as a third scan feature (2026-05); see [[type-escape-detection]]. Categories ARE the kinds (no remap), and TypeEscapeItem carries an extra content snippet field."
+    "type-escapes added as a third scan feature (2026-05); see [[type-escape-detection]]. Categories ARE the kinds (no remap), and TypeEscapeItem carries an extra content snippet field.",
+    "Dead-code/type-escape pipeline unified onto feature tables (runItemScan, runScan, makeDetectTool, toggleListEntry, createScanApp) so a fourth scan is a table row"
   ],
   "tags": [
     "scan",
@@ -56,9 +60,17 @@
     "scan-runner",
     "findings-store",
     "persistTo",
-    "force_scan"
+    "force_scan",
+    "scan-server-kit",
+    "makeDetectTool",
+    "runItemScan",
+    "runScan",
+    "createScanApp",
+    "feature table"
   ],
-  "dependsOn": ["mcp-core"],
-  "updatedAt": "2026-05-28T04:33:47.818Z",
+  "dependsOn": [
+    "mcp-core"
+  ],
+  "updatedAt": "2026-10-09T06:51:15.029Z",
   "createdAt": "2026-05-20T04:01:37.487Z"
 }

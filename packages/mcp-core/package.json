@@ -19,6 +19,16 @@
         "default": "./repo-key.mjs"
       }
     },
+    "./keyed-lock": {
+      "require": {
+        "types": "./keyed-lock.d.cts",
+        "default": "./keyed-lock.cjs"
+      },
+      "import": {
+        "types": "./keyed-lock.d.ts",
+        "default": "./keyed-lock.mjs"
+      }
+    },
     "./task-format": {
       "require": {
         "types": "./task-format.d.cts",

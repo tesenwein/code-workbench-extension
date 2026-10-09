@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import { randomBytes } from 'crypto';
 import { CLAUDE_MODELS, CLAUDE_PHASE_MODELS, EFFORT_LABELS } from './sessions';
 import {
   PHASE_DESCRIPTIONS,
@@ -9,14 +8,10 @@ import {
 import { LANGUAGES } from './language';
 import type { GlobalPrefs } from './globalPrefs';
 import { themeTokenDecls, hcOverrideCss } from './webviewTheme';
-
-/** Serialize to JSON and escape characters that could break an inline script context. */
-function safeJson(value: unknown): string {
-  return JSON.stringify(value).replace(/</g, '\\u003c').replace(/-->/g, '\\u002d\\u002d>');
-}
+import { makeNonce, safeJson } from './html';
 
 export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
-  const nonce = randomBytes(16).toString('base64');
+  const nonce = makeNonce();
   const initial = safeJson(state);
   const models = CLAUDE_MODELS.map((m) => `<option value="${m.value}">${m.label}</option>`).join(
     '',

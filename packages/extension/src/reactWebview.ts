@@ -9,6 +9,7 @@
 
 import * as vscode from 'vscode';
 import { themeTokenDecls, hcOverrideCss, type ThemeSurface } from './webviewTheme';
+import { makeNonce } from './html';
 
 export type WebviewEntry =
   | 'tasks'
@@ -18,13 +19,6 @@ export type WebviewEntry =
   | 'typeescapes'
   | 'arch'
   | 'search';
-
-function makeNonce(): string {
-  const cs = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let t = '';
-  for (let i = 0; i < 24; i++) t += cs[Math.floor(Math.random() * cs.length)];
-  return t;
-}
 
 /* Design tokens consumed by @code-workbench/ui/styles.css — derived from the
  * active VS Code theme's --vscode-* variables (webviewTheme.ts). */

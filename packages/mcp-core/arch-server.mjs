@@ -9,42 +9,21 @@ import path from "node:path";
 import { randomBytes } from "node:crypto";
 import { recordToolUse } from "./usage-log.mjs";
 import { archCardsDir, readArchCards } from "./arch-cards.mjs";
+import { tokenize, bm25Rank } from "./text-rank.mjs";
+import { createKeyedLock } from "./keyed-lock.mjs";
+import { findWorktreeRootFromCwd } from "./server-env.mjs";
 
 // ---------------------------------------------------------------------------
 // Write serialization
 // ---------------------------------------------------------------------------
 
-const archLocks = new Map();
-function withArchLock(key, fn) {
-  const prev = archLocks.get(key) ?? Promise.resolve();
-  const next = prev
-    .catch(() => {})
-    .then(() => fn())
-    .finally(() => {
-      if (archLocks.get(key) === next) archLocks.delete(key);
-    });
-  archLocks.set(key, next);
-  return next;
-}
-import { tokenize, bm25Rank } from "./text-rank.mjs";
+const withArchLock = createKeyedLock();
 
 // ---------------------------------------------------------------------------
 // Repo-path resolution
 // ---------------------------------------------------------------------------
 
-function findRepoRootFromCwd() {
-  let dir = process.cwd();
-  const root = path.parse(dir).root;
-  while (dir && dir !== root) {
-    if (fsSync.existsSync(path.join(dir, ".git"))) return dir;
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  return "";
-}
-
-const REPO_PATH = process.env.CODE_WORKBENCH_REPO_PATH || findRepoRootFromCwd();
+const REPO_PATH = process.env.CODE_WORKBENCH_REPO_PATH || findWorktreeRootFromCwd();
 
 function requireRepoPath() {
   if (!REPO_PATH) {

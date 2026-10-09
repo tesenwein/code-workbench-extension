@@ -122,7 +122,11 @@ function GroupRow({
                 onClick={
                   clickable
                     ? () =>
-                        onOpenFile!(`${repoPath}/${m.file}`, m.file.split('/').pop() ?? m.file, m.startLine)
+                        onOpenFile!(
+                          `${repoPath}/${m.file}`,
+                          m.file.split('/').pop() ?? m.file,
+                          m.startLine,
+                        )
                     : undefined
                 }
               >

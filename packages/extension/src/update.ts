@@ -78,7 +78,10 @@ export type UpdateStateHost = Pick<vscode.ExtensionContext, 'globalState'>;
  * view badge — a badge bubbles up onto the activity-bar icon, which is not
  * where the indicator belongs. Pass `undefined` to clear both.
  */
-export async function applyUpdateState(ctx: UpdateStateHost, tag: string | undefined): Promise<void> {
+export async function applyUpdateState(
+  ctx: UpdateStateHost,
+  tag: string | undefined,
+): Promise<void> {
   await ctx.globalState.update(AVAILABLE_VERSION_KEY, tag);
   await vscode.commands.executeCommand('setContext', 'codeWorkbench.updateAvailable', Boolean(tag));
 }

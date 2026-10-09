@@ -11,11 +11,10 @@
 
 import path from "node:path";
 import { execSync } from "node:child_process";
-import { readFindings, writeFindings } from "./findings-store.mjs";
 import {
-  STALE_MS,
   resolveRoots,
-  readJsonArray,
+  mergeExcludeDirs,
+  makeDetectTool,
   makeAcknowledgeTool,
   makeExcludeDirTool,
   makeHandle,
@@ -91,23 +90,6 @@ function byKindCounts(items) {
   return counts;
 }
 
-function filterAndShape(allItems, cats, ackedSet, generatedAt) {
-  const wanted = new Set(cats);
-  const filteredByCategory = allItems.filter((i) => wanted.has(i.kind));
-  const visible = filteredByCategory.filter(
-    (i) => !ackedSet.has(i.fingerprint),
-  );
-  return {
-    root: ROOT,
-    generatedAt,
-    stale: generatedAt > 0 ? Date.now() - generatedAt > STALE_MS : false,
-    total: visible.length,
-    byKind: byKindCounts(visible),
-    acknowledgedHidden: filteredByCategory.length - visible.length,
-    items: visible,
-  };
-}
-
 // Branch-scoped, info-only view: scans inline, filters to the current branch's
 // changed files, and returns directly. Deliberately does NOT persist a findings
 // file (it would be the partial branch slice, not the canonical full scan) and
@@ -123,13 +105,9 @@ async function diffOnlyReport(cats, baseRef, exclude_dirs) {
     };
   }
 
-  const storedExcludes = readJsonArray(excludeFilePath());
-  const extraExcludes = Array.isArray(exclude_dirs) ? exclude_dirs : [];
-  const excludeDirs = [...new Set([...storedExcludes, ...extraExcludes])];
-
   const detectTypeEscapes = await loadDetector();
   const all = await detectTypeEscapes(ROOT, {
-    excludeDirs,
+    excludeDirs: mergeExcludeDirs(excludeFilePath, exclude_dirs),
     categories: CATEGORIES,
   });
   const wanted = new Set(cats);
@@ -146,51 +124,33 @@ async function diffOnlyReport(cats, baseRef, exclude_dirs) {
   };
 }
 
-async function toolDetectTypeEscapes({
-  categories,
-  exclude_dirs,
-  force_scan,
-  diff_only,
-  base_ref,
-}) {
-  const cats =
-    Array.isArray(categories) && categories.length ? categories : CATEGORIES;
+const detectPersisted = makeDetectTool({
+  root: ROOT,
+  feature: "type-escapes",
+  allCategories: CATEGORIES,
+  categoryOf: (i) => i.kind,
+  ackFilePath,
+  excludeFilePath,
+  loadDetector,
+  extraShape: (visible) => ({ byKind: byKindCounts(visible) }),
+  noScanMessage:
+    "No type-escape scan yet. Open the Type Safety panel in the workbench and click Rescan, " +
+    "or call detect_type_escapes with force_scan: true.",
+});
 
+// diff_only is type-safety-only: it short-circuits before the shared flow.
+function toolDetectTypeEscapes(args) {
+  const { categories, exclude_dirs, diff_only, base_ref } = args;
   if (diff_only) {
+    const cats =
+      Array.isArray(categories) && categories.length ? categories : CATEGORIES;
     const baseRef =
       typeof base_ref === "string" && base_ref.trim()
         ? base_ref.trim()
         : "develop";
     return diffOnlyReport(cats, baseRef, exclude_dirs);
   }
-
-  const acked = new Set(readJsonArray(ackFilePath()));
-
-  if (force_scan) {
-    const storedExcludes = readJsonArray(excludeFilePath());
-    const extraExcludes = Array.isArray(exclude_dirs) ? exclude_dirs : [];
-    const excludeDirs = [...new Set([...storedExcludes, ...extraExcludes])];
-
-    const detectTypeEscapes = await loadDetector();
-    // Run unfiltered (all categories) so the persisted file is the full set;
-    // filtering happens below at the read step.
-    const items = await detectTypeEscapes(ROOT, {
-      excludeDirs,
-      categories: CATEGORIES,
-    });
-    await writeFindings(ROOT, "type-escapes", { root: ROOT, items });
-    return filterAndShape(items, cats, acked, Date.now());
-  }
-
-  const findings = await readFindings(ROOT, "type-escapes");
-  if (!findings || !Array.isArray(findings.items)) {
-    return {
-      error:
-        "No type-escape scan yet. Open the Type Safety panel in the workbench and click Rescan, " +
-        "or call detect_type_escapes with force_scan: true.",
-    };
-  }
-  return filterAndShape(findings.items, cats, acked, findings.generatedAt);
+  return detectPersisted(args);
 }
 
 const toolAcknowledgeTypeEscape = makeAcknowledgeTool(ackFilePath);

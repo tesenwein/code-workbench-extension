@@ -7,6 +7,14 @@ import type { ClaudeModel } from '@code-workbench/mcp-core/claude-models';
 export type SessionKind = 'claude' | 'claude-yolo' | 'shell';
 /** 0=auto, 1=think, 2=think hard, 3=think harder, 4=ultrathink */
 export type ClaudeEffort = 0 | 1 | 2 | 3 | 4;
+
+const EFFORT_LEVELS: readonly ClaudeEffort[] = [0, 1, 2, 3, 4];
+
+/** Clamp an arbitrary number to a valid effort level (floored, 0..4). */
+export function clampEffort(n: number): ClaudeEffort {
+  if (Number.isNaN(n)) return 0;
+  return EFFORT_LEVELS[Math.max(0, Math.min(4, Math.floor(n)))] ?? 0;
+}
 /** `claude --permission-mode` values. 'plan' forces read-only planning
  *  (no edits/writes) regardless of the worktree's yolo pref. */
 export type ClaudePermissionMode = 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan';

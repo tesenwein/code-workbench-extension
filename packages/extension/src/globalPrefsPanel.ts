@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ClaudeEffort, ClaudeModel, SessionManager } from './sessions';
+import { clampEffort, ClaudeModel, SessionManager } from './sessions';
 import {
   GlobalPrefs,
   GlobalPrompt,
@@ -9,10 +9,11 @@ import {
   saveGlobalPrefs,
 } from './globalPrefs';
 import { renderGlobalPrefsHtml } from './globalPrefsPanelHtml';
+import { errorMessage } from './errors';
+import { StatePanelBase } from './statePanelBase';
 
-export class GlobalPrefsPanel {
+export class GlobalPrefsPanel extends StatePanelBase<GlobalPrefs> {
   private static current: GlobalPrefsPanel | undefined;
-  private disposables: vscode.Disposable[] = [];
 
   static async show(_ctx: vscode.ExtensionContext, mgr: SessionManager): Promise<void> {
     if (GlobalPrefsPanel.current) {
@@ -30,21 +31,16 @@ export class GlobalPrefsPanel {
     GlobalPrefsPanel.current = new GlobalPrefsPanel(panel, mgr);
   }
 
-  private constructor(
-    private panel: vscode.WebviewPanel,
-    private mgr: SessionManager,
-  ) {
-    panel.webview.html = renderGlobalPrefsHtml(this.state());
-    panel.webview.onDidReceiveMessage((m) => this.onMessage(m), undefined, this.disposables);
-    this.disposables.push(
-      mgr.onDidChange(() => {
-        panel.webview.postMessage({ type: 'state', state: this.state() });
-      }),
-    );
-    panel.onDidDispose(() => this.dispose(), null, this.disposables);
+  private constructor(panel: vscode.WebviewPanel, mgr: SessionManager) {
+    super(panel, mgr);
+    this.start();
   }
 
-  private state(): GlobalPrefs {
+  protected renderHtml(): string {
+    return renderGlobalPrefsHtml(this.state());
+  }
+
+  protected state(): GlobalPrefs {
     return this.mgr.getGlobalPrefs();
   }
 
@@ -53,14 +49,14 @@ export class GlobalPrefsPanel {
     try {
       await saveGlobalPrefs(next);
     } catch (e) {
-      vscode.window.showErrorMessage(`Could not save Workbench settings: ${(e as Error).message}`);
+      vscode.window.showErrorMessage(`Could not save Workbench settings: ${errorMessage(e)}`);
     }
   }
 
-  private async onMessage(msg: { type: string; value?: unknown }): Promise<void> {
+  protected async onMessage(msg: { type: string; value?: unknown }): Promise<void> {
     const cur = this.state();
     if (msg.type === 'ready') {
-      this.panel.webview.postMessage({ type: 'state', state: cur });
+      this.postState();
       return;
     }
     if (msg.type === 'setModel' && typeof msg.value === 'string') {
@@ -69,7 +65,7 @@ export class GlobalPrefsPanel {
         defaults: { ...cur.defaults, model: msg.value as ClaudeModel },
       });
     } else if (msg.type === 'setEffort' && typeof msg.value === 'number') {
-      const e = Math.max(0, Math.min(4, Math.floor(msg.value))) as ClaudeEffort;
+      const e = clampEffort(msg.value);
       await this.patch({ ...cur, defaults: { ...cur.defaults, effort: e } });
     } else if (msg.type === 'setYolo' && typeof msg.value === 'boolean') {
       await this.patch({
@@ -134,8 +130,7 @@ export class GlobalPrefsPanel {
     }
   }
 
-  private dispose(): void {
+  protected onDisposed(): void {
     GlobalPrefsPanel.current = undefined;
-    while (this.disposables.length) this.disposables.pop()?.dispose();
   }
 }

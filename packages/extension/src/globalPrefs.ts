@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 import { DOT_DIR } from './tasks';
 import {
   CLAUDE_MODEL_VALUES,
+  clampEffort,
   type ClaudeEffort,
   type ClaudeModel,
   type PhaseModels,
@@ -71,11 +72,9 @@ function normalize(raw: unknown): GlobalPrefs {
   const model = CLAUDE_MODEL_VALUES.includes(d.model as ClaudeModel)
     ? (d.model as ClaudeModel)
     : DEFAULT_GLOBAL_PREFS.defaults.model;
-  const effort = (
-    Number.isFinite(effortNum)
-      ? Math.max(0, Math.min(4, Math.floor(effortNum)))
-      : DEFAULT_GLOBAL_PREFS.defaults.effort
-  ) as ClaudeEffort;
+  const effort = Number.isFinite(effortNum)
+    ? clampEffort(effortNum)
+    : DEFAULT_GLOBAL_PREFS.defaults.effort;
   const yolo = typeof d.yolo === 'boolean' ? d.yolo : false;
 
   const prompts: GlobalPrompt[] = Array.isArray(r.prompts)
