@@ -240,15 +240,7 @@ export async function addWorktree(
       const slash = opts.remoteRef.indexOf('/');
       const remoteName = slash > 0 ? opts.remoteRef.slice(0, slash) : 'origin';
       await gitRaw(repoPath, ['fetch', remoteName, branch]).catch(() => {});
-      await gitRaw(repoPath, [
-        'worktree',
-        'add',
-        '--track',
-        '-b',
-        branch,
-        newPath,
-        opts.remoteRef,
-      ]);
+      await gitRaw(repoPath, ['worktree', 'add', '--track', '-b', branch, newPath, opts.remoteRef]);
       break;
     }
     case 'create': {

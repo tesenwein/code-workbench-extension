@@ -394,7 +394,9 @@ export function ScanPanel<T extends ScanItem>({
               {scanning && !hasResults && <div className="cw-empty">Scanning…</div>}
 
               {!hasResults && !scanning && (
-                <div className="cw-empty">{scanned ? 'No results found — all clean.' : scanHint}</div>
+                <div className="cw-empty">
+                  {scanned ? 'No results found — all clean.' : scanHint}
+                </div>
               )}
 
               {displayItems.length === 0 && hasResults && (

@@ -54,7 +54,9 @@ async function fromNvm(): Promise<string | undefined> {
   const bin = (v: string) => path.join(root, v, 'bin', exeName());
 
   try {
-    const alias = (await fsp.readFile(path.join(root, '..', '..', 'alias', 'default'), 'utf8')).trim();
+    const alias = (
+      await fsp.readFile(path.join(root, '..', '..', 'alias', 'default'), 'utf8')
+    ).trim();
     if (alias) {
       const versioned = alias.startsWith('v') ? alias : `v${alias}`;
       if (await isExecutable(bin(versioned))) return bin(versioned);
@@ -102,7 +104,16 @@ async function fromWellKnown(): Promise<string | undefined> {
           '/usr/bin/node',
           path.join(home, '.volta', 'bin', 'node'),
           path.join(home, '.local', 'share', 'fnm', 'aliases', 'default', 'bin', 'node'),
-          path.join(home, 'Library', 'Application Support', 'fnm', 'aliases', 'default', 'bin', 'node'),
+          path.join(
+            home,
+            'Library',
+            'Application Support',
+            'fnm',
+            'aliases',
+            'default',
+            'bin',
+            'node',
+          ),
         ];
   for (const c of candidates) {
     if (c && (await isExecutable(c))) return c;

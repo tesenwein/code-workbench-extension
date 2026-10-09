@@ -3,6 +3,9 @@
  *  active VS Code theme (see webviewTheme.ts). */
 
 import { themeTokenDecls, hcOverrideCss } from './webviewTheme';
+import { makeNonce } from './html';
+
+export { makeNonce };
 
 /** Worktree accent colors for the webview panels. Brighter and more saturated
  *  than the terminal ANSI palette so they read clearly on the dark panel
@@ -16,13 +19,6 @@ export const WORKTREE_DOT: Record<string, string> = {
   magenta: '#d488bc',
   cyan: '#6fc6cd',
 };
-
-export function makeNonce(): string {
-  const cs = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let t = '';
-  for (let i = 0; i < 24; i++) t += cs[Math.floor(Math.random() * cs.length)];
-  return t;
-}
 
 /* Built per call, not at module load — the token block depends on the
  * worktree accent override, which is set during activation. */

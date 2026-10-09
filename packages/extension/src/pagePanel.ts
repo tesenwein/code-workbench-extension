@@ -75,6 +75,8 @@ export function showPage(opts: PageOptions): void {
 }
 
 /** The live page for a viewType, if its tab is open. */
-export function getPage(viewType: string): { rpc?: RpcContext; panel: vscode.WebviewPanel } | undefined {
+export function getPage(
+  viewType: string,
+): { rpc?: RpcContext; panel: vscode.WebviewPanel } | undefined {
   return pages.get(viewType);
 }

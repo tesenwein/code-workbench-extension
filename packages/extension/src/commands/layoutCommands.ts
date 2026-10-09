@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { patchUserSettingsJson } from '../workspaceFolder';
+import { errorMessage } from '../errors';
 
 export function registerLayoutCommands(ctx: vscode.ExtensionContext): void {
   ctx.subscriptions.push(
@@ -21,7 +22,7 @@ export function registerLayoutCommands(ctx: vscode.ExtensionContext): void {
         try {
           await vscode.workspace.getConfiguration(section).update(rest.join('.'), value, G);
         } catch (e) {
-          failed.push(`${key}: ${(e as Error).message}`);
+          failed.push(`${key}: ${errorMessage(e)}`);
         }
       }
       if (failed.length) {
@@ -56,7 +57,7 @@ export function registerLayoutCommands(ctx: vscode.ExtensionContext): void {
         try {
           await vscode.workspace.getConfiguration(section).update(rest.join('.'), value, G);
         } catch (e) {
-          failed.push(`${key}: ${(e as Error).message}`);
+          failed.push(`${key}: ${errorMessage(e)}`);
         }
       }
 
@@ -80,7 +81,7 @@ export function registerLayoutCommands(ctx: vscode.ExtensionContext): void {
           };
         });
       } catch (e) {
-        failed.push(`workbench.views.customizations: ${(e as Error).message}`);
+        failed.push(`workbench.views.customizations: ${errorMessage(e)}`);
       }
 
       if (failed.length) {

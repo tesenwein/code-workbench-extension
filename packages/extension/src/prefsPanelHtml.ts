@@ -12,6 +12,7 @@ import {
 } from './sessions';
 import { PHASE_META, PHASE_ORDER, type TaskPhase } from '@code-workbench/mcp-core/phase-prompts';
 import { themeTokenDecls, hcOverrideCss } from './webviewTheme';
+import { escapeHtml, safeJson } from './html';
 
 const COLOR_SWATCH: Record<WorktreeColor, string> = {
   default: 'transparent',
@@ -34,16 +35,6 @@ export interface PrefsPanelState {
    *  the global setting, else the phase's built-in model. Shown as the
    *  "inherit" option's label so the effect of inheriting is visible. */
   inheritedPhaseModels: Record<TaskPhase, ClaudeModel>;
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) =>
-    c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '"' ? '&quot;' : '&#39;',
-  );
-}
-
-function safeJson(value: unknown): string {
-  return JSON.stringify(value).replace(/</g, '\\u003c').replace(/-->/g, '\\u002d\\u002d>');
 }
 
 export function renderPrefsHtml(worktreePath: string, state: PrefsPanelState): string {

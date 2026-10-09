@@ -68,7 +68,9 @@ export function DeadCodePanel({
         <SnippetCard
           name={item.name}
           kind={
-            <span className={`dc-kind-badge ${KIND_CLASS[item.kind]}`}>{KIND_LABEL[item.kind]}</span>
+            <span className={`dc-kind-badge ${KIND_CLASS[item.kind]}`}>
+              {KIND_LABEL[item.kind]}
+            </span>
           }
           file={item.file}
           startLine={item.startLine}

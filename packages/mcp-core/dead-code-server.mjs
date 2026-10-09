@@ -9,11 +9,9 @@
  */
 
 import path from "node:path";
-import { readFindings, writeFindings } from "./findings-store.mjs";
 import {
-  STALE_MS,
   resolveRoots,
-  readJsonArray,
+  makeDetectTool,
   makeAcknowledgeTool,
   makeExcludeDirTool,
   makeHandle,
@@ -51,58 +49,18 @@ const KIND_TO_CATEGORY = {
   "commented-code": "comments",
 };
 
-function filterAndShape(allItems, cats, ackedSet, generatedAt) {
-  const wanted = new Set(cats);
-  const filteredByCategory = allItems.filter((i) => {
-    const cat = KIND_TO_CATEGORY[i.kind];
-    return cat ? wanted.has(cat) : true;
-  });
-  const visible = filteredByCategory.filter(
-    (i) => !ackedSet.has(i.fingerprint),
-  );
-  return {
-    root: ROOT,
-    generatedAt,
-    stale: generatedAt > 0 ? Date.now() - generatedAt > STALE_MS : false,
-    total: visible.length,
-    acknowledgedHidden: filteredByCategory.length - visible.length,
-    items: visible,
-  };
-}
-
-async function toolDetectDeadCode({ categories, exclude_dirs, force_scan }) {
-  const cats =
-    Array.isArray(categories) && categories.length
-      ? categories
-      : ["exports", "locals", "comments"];
-  const acked = new Set(readJsonArray(ackFilePath()));
-
-  if (force_scan) {
-    const storedExcludes = readJsonArray(excludeFilePath());
-    const extraExcludes = Array.isArray(exclude_dirs) ? exclude_dirs : [];
-    const excludeDirs = [...new Set([...storedExcludes, ...extraExcludes])];
-
-    const detectDeadCode = await loadDetector();
-    // Run unfiltered (all categories) so the persisted file is the full set;
-    // filtering happens below at the read step.
-    const items = await detectDeadCode(ROOT, {
-      excludeDirs,
-      categories: ["exports", "locals", "comments"],
-    });
-    await writeFindings(ROOT, "dead-code", { root: ROOT, items });
-    return filterAndShape(items, cats, acked, Date.now());
-  }
-
-  const findings = await readFindings(ROOT, "dead-code");
-  if (!findings || !Array.isArray(findings.items)) {
-    return {
-      error:
-        "No dead-code scan yet. Open the Dead Code panel in the workbench and click Rescan, " +
-        "or call detect_dead_code with force_scan: true.",
-    };
-  }
-  return filterAndShape(findings.items, cats, acked, findings.generatedAt);
-}
+const toolDetectDeadCode = makeDetectTool({
+  root: ROOT,
+  feature: "dead-code",
+  allCategories: ["exports", "locals", "comments"],
+  categoryOf: (i) => KIND_TO_CATEGORY[i.kind],
+  ackFilePath,
+  excludeFilePath,
+  loadDetector,
+  noScanMessage:
+    "No dead-code scan yet. Open the Dead Code panel in the workbench and click Rescan, " +
+    "or call detect_dead_code with force_scan: true.",
+});
 
 const toolAcknowledgeDeadCode = makeAcknowledgeTool(ackFilePath);
 const toolExcludeDeadCodeDir = makeExcludeDirTool(excludeFilePath);

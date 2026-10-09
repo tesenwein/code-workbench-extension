@@ -40,16 +40,34 @@ function detectorPath(ctx: vscode.ExtensionContext, name: string): string {
   return path.join(ctx.extensionPath, 'dist', 'mcp-server', name);
 }
 
-export async function scanDeadCode(
+interface ScanResults {
+  'dead-code': DeadCodeItem[];
+  duplicates: DuplicateGroup[];
+  'type-escapes': TypeEscapeItem[];
+}
+type ScanFeature = keyof ScanResults;
+type ScanOpts = Parameters<typeof runDeadCodeScan>[0];
+
+const SCAN_FEATURES: {
+  [F in ScanFeature]: { script: string; run: (opts: ScanOpts) => Promise<ScanResults[F]> };
+} = {
+  'dead-code': { script: 'dead-code-detect.mjs', run: runDeadCodeScan },
+  duplicates: { script: 'clone-detect.mjs', run: runDuplicateScan },
+  'type-escapes': { script: 'type-escape-detect.mjs', run: runTypeEscapeScan },
+};
+
+async function runScan<F extends ScanFeature>(
   ctx: vscode.ExtensionContext,
   repoPath: string,
+  feature: F,
   categories?: string[],
-): Promise<DeadCodeItem[]> {
-  const excludeDirs = await readExcludeDirs(repoPath, 'dead-code');
-  return runDeadCodeScan({
+): Promise<ScanResults[F]> {
+  const { script, run } = SCAN_FEATURES[feature];
+  const excludeDirs = await readExcludeDirs(repoPath, feature);
+  return run({
     nodeBin,
     env: detectorEnv,
-    scriptPath: detectorPath(ctx, 'dead-code-detect.mjs'),
+    scriptPath: detectorPath(ctx, script),
     root: repoPath,
     excludeDirs,
     categories,
@@ -57,37 +75,22 @@ export async function scanDeadCode(
   });
 }
 
-export async function scanDuplicates(
-  ctx: vscode.ExtensionContext,
-  repoPath: string,
-): Promise<DuplicateGroup[]> {
-  const excludeDirs = await readExcludeDirs(repoPath, 'duplicates');
-  return runDuplicateScan({
-    nodeBin,
-    env: detectorEnv,
-    scriptPath: detectorPath(ctx, 'clone-detect.mjs'),
-    root: repoPath,
-    excludeDirs,
-    persistTo: repoPath,
-  });
-}
-
-export async function scanTypeEscapes(
+export const scanDeadCode = (
   ctx: vscode.ExtensionContext,
   repoPath: string,
   categories?: string[],
-): Promise<TypeEscapeItem[]> {
-  const excludeDirs = await readExcludeDirs(repoPath, 'type-escapes');
-  return runTypeEscapeScan({
-    nodeBin,
-    env: detectorEnv,
-    scriptPath: detectorPath(ctx, 'type-escape-detect.mjs'),
-    root: repoPath,
-    excludeDirs,
-    categories,
-    persistTo: repoPath,
-  });
-}
+): Promise<DeadCodeItem[]> => runScan(ctx, repoPath, 'dead-code', categories);
+
+export const scanDuplicates = (
+  ctx: vscode.ExtensionContext,
+  repoPath: string,
+): Promise<DuplicateGroup[]> => runScan(ctx, repoPath, 'duplicates');
+
+export const scanTypeEscapes = (
+  ctx: vscode.ExtensionContext,
+  repoPath: string,
+  categories?: string[],
+): Promise<TypeEscapeItem[]> => runScan(ctx, repoPath, 'type-escapes', categories);
 
 /**
  * Hybrid code search over AST-extracted symbols — the AST half of the

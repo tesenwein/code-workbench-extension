@@ -40,9 +40,7 @@ async function promptWorktreePath(repoRoot: string, branch: string): Promise<str
 async function pickBaseBranch(repoRoot: string): Promise<string | undefined> {
   const { local, remote } = await listBranches(repoRoot);
   type Item = vscode.QuickPickItem & { base?: string };
-  const items: Item[] = [
-    { label: '$(git-commit) Current HEAD', description: 'default', base: '' },
-  ];
+  const items: Item[] = [{ label: '$(git-commit) Current HEAD', description: 'default', base: '' }];
   if (local.length) {
     items.push({ label: 'Local branches', kind: vscode.QuickPickItemKind.Separator });
     items.push(...local.map((b) => ({ label: `$(git-branch) ${b}`, base: b })));

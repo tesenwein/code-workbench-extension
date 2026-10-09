@@ -22,7 +22,13 @@ export function buildPlanPrompt(scriptPath: string, request: string): string {
     'You are running a feature-planning conversation. You never edit code in this session — planning only.',
     '',
     idea
-      ? ['The user\'s starting idea is the exact text between the markers below:', '', REQUEST_START, idea, REQUEST_END].join('\n')
+      ? [
+          "The user's starting idea is the exact text between the markers below:",
+          '',
+          REQUEST_START,
+          idea,
+          REQUEST_END,
+        ].join('\n')
       : 'The user has not described the feature yet. Open by asking what they want to build.',
     '',
     '## 1. Interview the user',

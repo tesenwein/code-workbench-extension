@@ -18,7 +18,7 @@ export async function writeWorkflowScript(
   ctx: vscode.ExtensionContext,
   name: string,
 ): Promise<string> {
-  const workflow = BUNDLED_WORKFLOWS.find(w => w.name === name);
+  const workflow = BUNDLED_WORKFLOWS.find((w) => w.name === name);
   if (!workflow) {
     throw new Error(`Unknown bundled workflow: ${name}`);
   }

@@ -52,6 +52,7 @@ import {
   pickSessionLaunch,
   pickWorktreeAndActivate,
 } from '../workspaceFolder';
+import { errorMessage } from '../errors';
 
 export interface PendingRemoval {
   repoKey: string;
@@ -107,7 +108,7 @@ export function registerWorktreeCommands(
         worktreesProvider.refresh();
         await offerOpen(`Worktree created at ${spec.target}`, spec.target);
       } catch (err) {
-        vscode.window.showErrorMessage(`Add worktree failed: ${(err as Error).message}`);
+        vscode.window.showErrorMessage(`Add worktree failed: ${errorMessage(err)}`);
       }
     }),
 
@@ -186,7 +187,7 @@ export function registerWorktreeCommands(
           spec.target,
         );
       } catch (err) {
-        vscode.window.showErrorMessage(`Add worktree with task failed: ${(err as Error).message}`);
+        vscode.window.showErrorMessage(`Add worktree with task failed: ${errorMessage(err)}`);
       }
     }),
 
@@ -226,7 +227,7 @@ export function registerWorktreeCommands(
           try {
             trees = await listWorktrees(repoRoot);
           } catch (err) {
-            vscode.window.showErrorMessage(`Remove failed: ${(err as Error).message}`);
+            vscode.window.showErrorMessage(`Remove failed: ${errorMessage(err)}`);
             return;
           }
           const main = trees.find((w) => w.isMain && w.path !== item.wt.path);
@@ -274,7 +275,7 @@ export function registerWorktreeCommands(
           worktreesProvider.refresh();
           tasksProvider.refresh();
         } catch (err) {
-          vscode.window.showErrorMessage(`Remove failed: ${(err as Error).message}`);
+          vscode.window.showErrorMessage(`Remove failed: ${errorMessage(err)}`);
         }
       },
     ),
@@ -292,7 +293,7 @@ export function registerWorktreeCommands(
       try {
         merged = await mergedWorktrees(repoRoot);
       } catch (err) {
-        vscode.window.showErrorMessage(`Cleanup failed: ${(err as Error).message}`);
+        vscode.window.showErrorMessage(`Cleanup failed: ${errorMessage(err)}`);
         return;
       }
       // The worktree open in this window can't be removed in-place (it needs
@@ -340,7 +341,7 @@ export function registerWorktreeCommands(
           await performWorktreeRemoval(ctx, sessionMgr, repoRoot, repoKey, p.wt.path);
           removed++;
         } catch (err) {
-          failures.push(`${path.basename(p.wt.path)}: ${(err as Error).message}`);
+          failures.push(`${path.basename(p.wt.path)}: ${errorMessage(err)}`);
         }
       }
       const newActive = await sessionMgr.reassignActiveAfterRemoval(repoRoot);
@@ -436,7 +437,7 @@ export function registerWorktreeCommands(
             });
             return;
           } catch (err) {
-            vscode.window.showErrorMessage(`gh pr create failed: ${(err as Error).message}`);
+            vscode.window.showErrorMessage(`gh pr create failed: ${errorMessage(err)}`);
             return;
           }
         }
@@ -476,7 +477,7 @@ export function registerWorktreeCommands(
         );
         issues = JSON.parse(stdout);
       } catch (err) {
-        vscode.window.showErrorMessage(`Failed to list issues: ${(err as Error).message}`);
+        vscode.window.showErrorMessage(`Failed to list issues: ${errorMessage(err)}`);
         return;
       }
       if (issues.length === 0) {
@@ -503,7 +504,7 @@ export function registerWorktreeCommands(
           spec.target,
         );
       } catch (err) {
-        vscode.window.showErrorMessage(`Add worktree from issue failed: ${(err as Error).message}`);
+        vscode.window.showErrorMessage(`Add worktree from issue failed: ${errorMessage(err)}`);
       }
     }),
   );

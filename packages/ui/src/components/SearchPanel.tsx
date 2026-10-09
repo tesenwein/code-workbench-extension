@@ -8,12 +8,18 @@ import type { CodeSearchResult, SearchApi } from '../types';
 // this replaces could only show one detail line per result.
 // ---------------------------------------------------------------------------
 
-const mono =
-  'var(--vscode-editor-font-family, "JetBrains Mono", Menlo, Consolas, monospace)';
+const mono = 'var(--vscode-editor-font-family, "JetBrains Mono", Menlo, Consolas, monospace)';
 
 /** Split the query into highlightable tokens (identifiers ≥ 3 chars). */
 function queryTokens(query: string): string[] {
-  return [...new Set(query.toLowerCase().split(/[^a-zA-Z0-9_]+/).filter((t) => t.length >= 3))];
+  return [
+    ...new Set(
+      query
+        .toLowerCase()
+        .split(/[^a-zA-Z0-9_]+/)
+        .filter((t) => t.length >= 3),
+    ),
+  ];
 }
 
 /** Render text with query tokens wrapped in a highlight span. */

@@ -330,7 +330,10 @@ export class SessionManager {
         initCommand: s.initCommand,
         created: s.created,
       }));
-    const prefs = this.ctx.workspaceState.get<Record<string, Partial<WorktreePrefs>>>(PREFS_KEY, {});
+    const prefs = this.ctx.workspaceState.get<Record<string, Partial<WorktreePrefs>>>(
+      PREFS_KEY,
+      {},
+    );
     const activeWorktree = this.ctx.workspaceState.get<string>(ACTIVE_WT_KEY);
     if (sessions.length === 0 && Object.keys(prefs).length === 0 && !activeWorktree) return;
     all[key] = { sessions, prefs, activeWorktree };

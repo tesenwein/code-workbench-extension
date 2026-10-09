@@ -9,11 +9,7 @@ import {
 import { LANGUAGES } from './language';
 import type { GlobalPrefs } from './globalPrefs';
 import { themeTokenDecls, hcOverrideCss } from './webviewTheme';
-
-/** Serialize to JSON and escape characters that could break an inline script context. */
-function safeJson(value: unknown): string {
-  return JSON.stringify(value).replace(/</g, '\\u003c').replace(/-->/g, '\\u002d\\u002d>');
-}
+import { safeJson } from './html';
 
 export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
   const nonce = randomBytes(16).toString('base64');

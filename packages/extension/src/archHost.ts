@@ -8,6 +8,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { randomBytes } from 'crypto';
+import { createKeyedLock } from '@code-workbench/mcp-core/keyed-lock';
 
 const fsp = fs.promises;
 
@@ -77,18 +78,7 @@ function safeArchCardPath(repoRoot: string, slug: string): string {
 
 // Serialize writes per-file so a panel edit and a concurrent MCP write of the
 // same card can't interleave their tmp-file rename dance.
-const archWriteLocks = new Map<string, Promise<void>>();
-function withArchLock(key: string, fn: () => Promise<void>): Promise<void> {
-  const prev = archWriteLocks.get(key) ?? Promise.resolve();
-  const next = prev
-    .catch(() => {})
-    .then(() => fn())
-    .finally(() => {
-      if (archWriteLocks.get(key) === next) archWriteLocks.delete(key);
-    }) as Promise<void>;
-  archWriteLocks.set(key, next);
-  return next;
-}
+const withArchLock = createKeyedLock();
 
 export async function readAllArchCards(repoRoot: string): Promise<ArchCard[]> {
   const dir = archDirPath(repoRoot);

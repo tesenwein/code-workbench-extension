@@ -3,7 +3,7 @@ import * as path from 'path';
 import {
   SessionManager,
   ClaudeModel,
-  ClaudeEffort,
+  clampEffort,
   WorktreeColor,
   WORKTREE_COLORS,
 } from './sessions';
@@ -14,10 +14,11 @@ import { installWorkbenchSkills } from './skillsBundle';
 import { installWorkbenchAgents } from './agentsBundle';
 import { registerWorkbenchMcpServers } from './mcpRegister';
 import { installWorkbenchPermissions } from './settingsPermissions';
+import { errorMessage } from './errors';
+import { StatePanelBase } from './statePanelBase';
 
-export class PrefsPanel {
+export class PrefsPanel extends StatePanelBase<PrefsPanelState> {
   private static panels = new Map<string, PrefsPanel>();
-  private disposables: vscode.Disposable[] = [];
 
   static show(ctx: vscode.ExtensionContext, mgr: SessionManager, worktreePath: string): void {
     const existing = PrefsPanel.panels.get(worktreePath);
@@ -35,22 +36,20 @@ export class PrefsPanel {
   }
 
   private constructor(
-    private panel: vscode.WebviewPanel,
+    panel: vscode.WebviewPanel,
     private ctx: vscode.ExtensionContext,
-    private mgr: SessionManager,
+    mgr: SessionManager,
     private worktreePath: string,
   ) {
-    panel.webview.html = renderPrefsHtml(this.worktreePath, this.state());
-    panel.webview.onDidReceiveMessage((msg) => this.onMessage(msg), undefined, this.disposables);
-    this.disposables.push(
-      mgr.onDidChange(() => {
-        panel.webview.postMessage({ type: 'state', state: this.state() });
-      }),
-    );
-    panel.onDidDispose(() => this.dispose(), null, this.disposables);
+    super(panel, mgr);
+    this.start();
   }
 
-  private state(): PrefsPanelState {
+  protected renderHtml(): string {
+    return renderPrefsHtml(this.worktreePath, this.state());
+  }
+
+  protected state(): PrefsPanelState {
     const p = this.mgr.getPrefs(this.worktreePath);
     const global = this.mgr.getGlobalPrefs().phaseModels ?? {};
     // What each phase resolves to WITHOUT this worktree's override — global
@@ -71,13 +70,13 @@ export class PrefsPanel {
     };
   }
 
-  private async onMessage(msg: { type: string; value?: unknown }): Promise<void> {
+  protected async onMessage(msg: { type: string; value?: unknown }): Promise<void> {
     if (msg.type === 'setModel' && typeof msg.value === 'string') {
       await this.mgr.setPrefs(this.worktreePath, {
         model: msg.value as ClaudeModel,
       });
     } else if (msg.type === 'setEffort' && typeof msg.value === 'number') {
-      const e = Math.max(0, Math.min(4, Math.floor(msg.value))) as ClaudeEffort;
+      const e = clampEffort(msg.value);
       await this.mgr.setPrefs(this.worktreePath, { effort: e });
     } else if (msg.type === 'setYolo' && typeof msg.value === 'boolean') {
       await this.mgr.setPrefs(this.worktreePath, { yolo: msg.value });
@@ -88,7 +87,7 @@ export class PrefsPanel {
         await this.mgr.setPrefs(this.worktreePath, {
           phaseModels: normalizePhaseModels({ ...cur, [phase]: model }),
         });
-        this.panel.webview.postMessage({ type: 'state', state: this.state() });
+        this.postState();
       }
     } else if (msg.type === 'setColor' && typeof msg.value === 'string') {
       if ((WORKTREE_COLORS as readonly string[]).includes(msg.value)) {
@@ -105,7 +104,7 @@ export class PrefsPanel {
     } else if (msg.type === 'installPermissions') {
       await this.installPermissions();
     } else if (msg.type === 'ready') {
-      this.panel.webview.postMessage({ type: 'state', state: this.state() });
+      this.postState();
     }
   }
 
@@ -123,7 +122,7 @@ export class PrefsPanel {
         text,
       });
     } catch (e) {
-      const text = (e as Error).message;
+      const text = errorMessage(e);
       this.panel.webview.postMessage({
         type: 'result',
         target: 'skills',
@@ -148,7 +147,7 @@ export class PrefsPanel {
         text,
       });
     } catch (e) {
-      const text = (e as Error).message;
+      const text = errorMessage(e);
       this.panel.webview.postMessage({
         type: 'result',
         target: 'agents',
@@ -170,7 +169,7 @@ export class PrefsPanel {
         text,
       });
     } catch (e) {
-      const text = (e as Error).message;
+      const text = errorMessage(e);
       this.panel.webview.postMessage({
         type: 'result',
         target: 'permissions',
@@ -196,7 +195,7 @@ export class PrefsPanel {
         text,
       });
     } catch (e) {
-      const text = (e as Error).message;
+      const text = errorMessage(e);
       this.panel.webview.postMessage({
         type: 'result',
         target: 'mcp',
@@ -207,8 +206,7 @@ export class PrefsPanel {
     }
   }
 
-  private dispose(): void {
+  protected onDisposed(): void {
     PrefsPanel.panels.delete(this.worktreePath);
-    while (this.disposables.length) this.disposables.pop()?.dispose();
   }
 }

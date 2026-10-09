@@ -1,7 +1,7 @@
 {
   "slug": "editor-tab-pages",
   "name": "Editor-Tab Pages",
-  "description": "Full editor-tab webview pages + the \"Tools\" sidebar action bar. pagePanel.ts is the generic singleton WebviewPanel host (showPage/getPage, one reusable tab per viewType; re-invoking reveals + fires onReveal). Pages: search results (searchPanel.ts), the three code-health scans (scanPages.ts — same scan/ack/exclude RPC set the old sidebar scan views had, auto-scan on open, re-scan on reveal; duplicates scan attaches per-member snippets via snippets.ts widenSnippet), and the tasks board (tasksPage.ts — reuses buildTaskRpcHandlers/taskPanelContext from tasksView.ts; refreshed by the same watchTasks watcher as the sidebar). The old Dead Code / Duplicates / Type Safety sidebar WebviewViews were REMOVED; codeHealthView.ts is a native TreeView action bar (Search Code, Duplicate Code, Dead Code, Type Safety) whose items run the unchanged command ids (codeWorkbench.deadCode.scan etc.), which now open pages. Tasks keeps its sidebar view AND gains codeWorkbench.tasks.openAsPage (view/title icon).",
+  "description": "Full editor-tab webview pages + the \"Tools\" sidebar action bar. pagePanel.ts is the generic singleton WebviewPanel host (showPage/getPage, one reusable tab per viewType; re-invoking reveals + fires onReveal). Pages: search results (searchPanel.ts), the three code-health scans (scanPages.ts — SCAN_PAGES feature table, same scan/ack/exclude RPC set the old sidebar scan views had, auto-scan on open, re-scan on reveal; duplicates scan attaches per-member snippets via snippets.ts widenSnippet), and the tasks board (tasksPage.ts — reuses buildTaskRpcHandlers/taskPanelContext from tasksView.ts). The old Dead Code / Duplicates / Type Safety sidebar WebviewViews were REMOVED (scanViewProvider.ts, deadCodeView.ts, duplicatesView.ts, typeEscapeView.ts are gone); codeHealthView.ts is a native TreeView action bar whose items run the unchanged command ids (codeWorkbench.deadCode.scan etc.), which now open pages. The page-opening commands are registered in commands/pageCommands.ts. Webview side: webview/bridge.ts has a generic call<T>, a typed per-entry event map (onEvents<E>) and mountApp(); the three scan entries are 3-line createScanApp(Panel) files (webview/scanEntry.tsx).",
   "files": [
     "packages/extension/src/pagePanel.ts",
     "packages/extension/src/scanPages.ts",
@@ -9,16 +9,26 @@
     "packages/extension/src/tasksPage.ts",
     "packages/extension/src/codeHealthView.ts",
     "packages/extension/src/snippets.ts",
-    "packages/extension/src/tasksView.ts"
+    "packages/extension/src/tasksView.ts",
+    "packages/extension/src/commands/pageCommands.ts",
+    "packages/extension/webview/bridge.ts",
+    "packages/extension/webview/scanEntry.tsx"
   ],
   "guidelines": [
     "New full-page views go through pagePanel.showPage — never hand-roll a createWebviewPanel singleton.",
     "Pages reuse the existing dist/webview/<entry> bundles; sidebar and page surfaces must answer the same RPC set so the shared ui components stay host-agnostic.",
     "Snippet widening is best-effort file reads (snippets.ts) — keep the ranking/compact data as fallback.",
-    "Command ids for the scans are unchanged (codeWorkbench.*.scan) — they now open pages; don't add parallel command ids."
+    "Command ids for the scans are unchanged (codeWorkbench.*.scan) — they now open pages; don't add parallel command ids.",
+    "Webview entries: declare a per-entry event map and use bridge.onEvents<E>(...) (no payload casts), let bridge.call<T> infer from the API type (no `as Promise<…>`), and mount with mountApp(<App />) instead of getElementById('root')!."
   ],
-  "anti_patterns": [],
-  "decisions": [],
+  "anti_patterns": [
+    "Do not cast bridge.call results or event payloads in entries — type the event map / generic instead.",
+    "Do not copy the scan entry boilerplate — new scan pages use createScanApp."
+  ],
+  "decisions": [
+    "Sidebar scan views were replaced by editor-tab pages driven by a single feature table (SCAN_PAGES in scanPages.ts).",
+    "Webview bridge got typed events + mountApp (2026-10) to remove ~20 type-escape casts."
+  ],
   "tags": [
     "page",
     "webview panel",
@@ -28,7 +38,12 @@
     "action bar",
     "sidebar",
     "task board",
-    "scan page"
+    "scan page",
+    "webview bridge",
+    "mountApp",
+    "onEvents",
+    "createScanApp",
+    "bridge.call"
   ],
   "dependsOn": [
     "shared-scan-service",
@@ -36,6 +51,6 @@
     "tasks-view",
     "search-results-panel"
   ],
-  "updatedAt": "2026-07-09T13:11:58.813Z",
+  "updatedAt": "2026-10-09T06:52:01.814Z",
   "createdAt": "2026-07-03T04:36:31.727Z"
 }

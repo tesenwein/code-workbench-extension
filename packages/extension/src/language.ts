@@ -42,10 +42,7 @@ export function languageLabel(code: string): string {
 /** Build the system-prompt clause(s) for the given language preferences, or
  *  `undefined` when nothing should be injected (prose `auto` and comments
  *  resolving to `auto`). */
-export function languagePromptBody(
-  language: string,
-  commentLanguage: string,
-): string | undefined {
+export function languagePromptBody(language: string, commentLanguage: string): string | undefined {
   const resolvedComment = commentLanguage === INHERIT ? language : commentLanguage;
 
   const proseClause =

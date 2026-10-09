@@ -3,6 +3,7 @@ import * as path from 'path';
 import { listWorktrees, Worktree } from './git';
 import { WorktreeColor, worktreeIconColor } from './sessions';
 import { makeNonce, panelHtml, WORKTREE_DOT } from './panelTheme';
+import { runItemCommand, type ItemCommands } from './sidebarMessages';
 
 /** Plain data carrier passed to worktree commands. The commands only read
  *  `.wt`, so this stays compatible with the old TreeItem-based callers. */
@@ -200,16 +201,16 @@ export class WorktreesProvider implements vscode.WebviewViewProvider {
     }
     const wt = this.cache.find((w) => w.path === m?.path);
     if (!wt) return;
-    const cmd = (
-      {
-        open: 'codeWorkbench.worktrees.open',
-        spawn: 'codeWorkbench.worktrees.spawnHere',
-        configure: 'codeWorkbench.worktrees.configure',
-        openPR: 'codeWorkbench.worktrees.openPR',
-        remove: 'codeWorkbench.worktrees.remove',
-        note: 'codeWorkbench.worktrees.editNote',
-      } as Record<string, string>
-    )[m?.type ?? ''];
-    if (cmd) void vscode.commands.executeCommand(cmd, { wt });
+    runItemCommand(WORKTREE_ITEM_COMMANDS, m?.type, { wt });
   }
 }
+
+/** Per-worktree message type → command id. */
+const WORKTREE_ITEM_COMMANDS: ItemCommands = {
+  open: 'codeWorkbench.worktrees.open',
+  spawn: 'codeWorkbench.worktrees.spawnHere',
+  configure: 'codeWorkbench.worktrees.configure',
+  openPR: 'codeWorkbench.worktrees.openPR',
+  remove: 'codeWorkbench.worktrees.remove',
+  note: 'codeWorkbench.worktrees.editNote',
+};

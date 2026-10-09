@@ -10,6 +10,7 @@
 
 import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { readFindings, writeFindings } from "./findings-store.mjs";
 import { recordToolUse } from "./usage-log.mjs";
 
 export const STALE_MS = 24 * 60 * 60 * 1000;
@@ -95,6 +96,74 @@ export function makeExcludeDirTool(excludeFilePath) {
         : [...current, name];
     writeJsonArray(excludeFilePath(), updated);
     return { excludeDirs: updated, count: updated.length };
+  };
+}
+
+/** Stored exclude dirs merged with any extra dirs passed by the caller. */
+export function mergeExcludeDirs(excludeFilePath, extra) {
+  const extraExcludes = Array.isArray(extra) ? extra : [];
+  return [...new Set([...readJsonArray(excludeFilePath()), ...extraExcludes])];
+}
+
+// The "detect <findings>" tool: force_scan runs the detector inline (always with
+// every category, so the persisted file is the full set) and persists it;
+// otherwise the persisted findings are read. Category filtering and ack hiding
+// happen at read time so toggling either never requires a rescan.
+//   categoryOf(item)  – category an item belongs to; undefined keeps the item
+//   extraShape(items) – extra fields spliced into the response after `total`
+export function makeDetectTool({
+  root,
+  feature,
+  allCategories,
+  categoryOf,
+  ackFilePath,
+  excludeFilePath,
+  loadDetector,
+  extraShape = () => ({}),
+  noScanMessage,
+}) {
+  function filterAndShape(allItems, cats, ackedSet, generatedAt) {
+    const wanted = new Set(cats);
+    const filteredByCategory = allItems.filter((i) => {
+      const cat = categoryOf(i);
+      return cat ? wanted.has(cat) : true;
+    });
+    const visible = filteredByCategory.filter(
+      (i) => !ackedSet.has(i.fingerprint),
+    );
+    return {
+      root,
+      generatedAt,
+      stale: generatedAt > 0 ? Date.now() - generatedAt > STALE_MS : false,
+      total: visible.length,
+      ...extraShape(visible),
+      acknowledgedHidden: filteredByCategory.length - visible.length,
+      items: visible,
+    };
+  }
+
+  return async function detect({ categories, exclude_dirs, force_scan }) {
+    const cats =
+      Array.isArray(categories) && categories.length
+        ? categories
+        : allCategories;
+    const acked = new Set(readJsonArray(ackFilePath()));
+
+    if (force_scan) {
+      const detector = await loadDetector();
+      const items = await detector(root, {
+        excludeDirs: mergeExcludeDirs(excludeFilePath, exclude_dirs),
+        categories: allCategories,
+      });
+      await writeFindings(root, feature, { root, items });
+      return filterAndShape(items, cats, acked, Date.now());
+    }
+
+    const findings = await readFindings(root, feature);
+    if (!findings || !Array.isArray(findings.items)) {
+      return { error: noScanMessage };
+    }
+    return filterAndShape(findings.items, cats, acked, findings.generatedAt);
   };
 }
 

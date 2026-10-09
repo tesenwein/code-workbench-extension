@@ -25,6 +25,7 @@ import { widenSnippet } from './snippets';
 import { createTask } from './tasks';
 import { appendTrendPoint } from './scanTrends';
 import type { ScanFeature } from '@code-workbench/mcp-core/scan-state';
+import { errorMessage } from './errors';
 
 /** Max code lines shown per duplicate-group member on the page. */
 const MEMBER_SNIPPET_LINES = 30;
@@ -33,13 +34,17 @@ const MEMBER_SNIPPET_LINES = 30;
  *  fixed window from the start line gives the reader enough to judge it). */
 const DEAD_CODE_SNIPPET_LINES = 8;
 
+interface Fingerprinted {
+  fingerprint: string;
+}
+
 interface ScanPage {
   feature: ScanFeature;
   entry: WebviewEntry;
   command: string;
   title: string;
   scanErrorLabel: string;
-  scan: (ctx: vscode.ExtensionContext, root: string) => Promise<unknown[]>;
+  scan: (ctx: vscode.ExtensionContext, root: string) => Promise<Fingerprinted[]>;
 }
 
 /** Attach the source snippet to every clone-group member — the page renders
@@ -49,7 +54,7 @@ interface ScanPage {
 async function scanDuplicatesWithSnippets(
   ctx: vscode.ExtensionContext,
   root: string,
-): Promise<unknown[]> {
+): Promise<Fingerprinted[]> {
   const groups = await scanDuplicates(ctx, root);
   const cache = new Map<string, Promise<string[] | undefined>>();
   return Promise.all(
@@ -75,7 +80,7 @@ async function scanDuplicatesWithSnippets(
 async function scanDeadCodeWithSnippets(
   ctx: vscode.ExtensionContext,
   root: string,
-): Promise<unknown[]> {
+): Promise<Fingerprinted[]> {
   const items = await scanDeadCode(ctx, root);
   const cache = new Map<string, Promise<string[] | undefined>>();
   return Promise.all(
@@ -122,6 +127,30 @@ const SCAN_PAGES: ScanPage[] = [
   },
 ];
 
+/** RPC handler that adds (or, with `remove`, drops) one entry of a persisted
+ *  per-repo list — the ack and exclude-dir handlers differ only in the
+ *  read/write pair. Returns the updated list. */
+function toggleListEntry(
+  getRepoRoot: () => string | undefined,
+  feature: ScanFeature,
+  read: (root: string, feature: ScanFeature) => Promise<string[]>,
+  write: (root: string, feature: ScanFeature, list: string[]) => Promise<unknown>,
+) {
+  return async (_repoPath: unknown, entry: unknown, remove: unknown): Promise<string[]> => {
+    const root = getRepoRoot();
+    if (!root) return [];
+    const value = String(entry);
+    const list = await read(root, feature);
+    const updated = remove
+      ? list.filter((e) => e !== value)
+      : list.includes(value)
+        ? list
+        : [...list, value];
+    await write(root, feature, updated);
+    return updated;
+  };
+}
+
 function openScanPage(
   ctx: vscode.ExtensionContext,
   page: ScanPage,
@@ -147,9 +176,7 @@ function openScanPage(
           // active-count series as a sparkline. Best-effort — a trend write
           // failure must not fail the scan.
           const acked = new Set(ackedFingerprints);
-          const active = (items as Array<{ fingerprint: string }>).filter(
-            (i) => !acked.has(i.fingerprint),
-          ).length;
+          const active = items.filter((i) => !acked.has(i.fingerprint)).length;
           const trend = await appendTrendPoint(root, feature, {
             t: new Date().toISOString(),
             total: items.length,
@@ -160,7 +187,7 @@ function openScanPage(
           );
           return { items, ackedFingerprints, trend };
         } catch (e) {
-          vscode.window.showErrorMessage(`${page.scanErrorLabel}: ${(e as Error).message}`);
+          vscode.window.showErrorMessage(`${page.scanErrorLabel}: ${errorMessage(e)}`);
           throw e;
         }
       },
@@ -172,32 +199,8 @@ function openScanPage(
         const root = getRepoRoot();
         return root ? readExcludeDirs(root, feature) : [];
       },
-      ack: async (_repoPath, fingerprint, remove) => {
-        const root = getRepoRoot();
-        if (!root) return [];
-        const fp = String(fingerprint);
-        const acks = await readAcks(root, feature);
-        const updated = remove
-          ? acks.filter((f) => f !== fp)
-          : acks.includes(fp)
-            ? acks
-            : [...acks, fp];
-        await writeAcks(root, feature, updated);
-        return updated;
-      },
-      excludeDir: async (_repoPath, dir, remove) => {
-        const root = getRepoRoot();
-        if (!root) return [];
-        const name = String(dir);
-        const dirs = await readExcludeDirs(root, feature);
-        const updated = remove
-          ? dirs.filter((d) => d !== name)
-          : dirs.includes(name)
-            ? dirs
-            : [...dirs, name];
-        await writeExcludeDirs(root, feature, updated);
-        return updated;
-      },
+      ack: toggleListEntry(getRepoRoot, feature, readAcks, writeAcks),
+      excludeDir: toggleListEntry(getRepoRoot, feature, readExcludeDirs, writeExcludeDirs),
       createTask: async (title) => {
         const repoKey = getRepoKey();
         if (!repoKey) return;

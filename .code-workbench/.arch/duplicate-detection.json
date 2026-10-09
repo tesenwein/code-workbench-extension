@@ -11,9 +11,9 @@
     "packages/mcp-core/findings-store.cjs",
     "packages/ui/src/components/DuplicatesPanel.tsx",
     "packages/ui/src/components/ScanPanel.tsx",
-    "packages/extension/src/duplicatesView.ts",
-    "packages/extension/src/scanViewProvider.ts",
+    "packages/extension/src/scanPages.ts",
     "packages/extension/src/scanHost.ts",
+    "packages/extension/webview/duplicates.tsx",
     "packages/extension/esbuild.mjs"
   ],
   "guidelines": [
@@ -23,7 +23,7 @@
     "Scan execution, ack, exclude, and findings persistence delegate to shared-scan-service; the extension host keeps only path/binary resolution",
     "Host scan callsites pass persistTo: repoPath so the Rescan button is the canonical entry point that produces the findings file the MCP tool reads",
     "Directory exclusion is basename-match; --exclude-dirs comma-list passed to clone-detect CLI",
-    "The pane UI is the shared ui DuplicatesPanel/ScanPanel — the extension wraps it with its own ScanPaneApi adapter",
+    "The pane UI is the shared ui DuplicatesPanel/ScanPanel — the extension wraps it with createScanApp (webview/scanEntry.tsx)",
     "Import DuplicateGroup from @code-workbench/ui (or mcp-core/scan-types)",
     "ast-core.mjs resolves tree-sitter wasm relative to the bundled detector — esbuild.mjs must copy grammar + web-tree-sitter wasm into dist/mcp-server/grammars/ or the extension scan silently returns []",
     "ast-core.locateFile checks WEB_TREE_SITTER_DIR, GRAMMARS_DIR, then the detector dir — covers both source-tree and bundled .vsix layouts",
@@ -49,7 +49,7 @@
     "shared-scan-service",
     "ui-shared-panels"
   ],
-  "updatedAt": "2026-07-03T04:36:34.876Z",
+  "updatedAt": "2026-10-09T06:51:04.630Z",
   "createdAt": "2026-05-19T09:42:22.279Z",
   "tags": [
     "duplicate",
