@@ -657,7 +657,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
 
   registerPlanFeatureCommand(ctx, { sessionMgr, ensureActiveWorktree });
 
-  // The gate guards phases that change code; Plan/Review/Ship leave it alone.
+  // The gate guards phases that change code; Plan/Review leave it alone.
   const healthGateOn = (phase: string): boolean =>
     (phase === 'implement' || phase === 'fix') &&
     vscode.workspace

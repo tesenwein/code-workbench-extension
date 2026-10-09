@@ -175,14 +175,14 @@ export const TOOLS = [
         },
         phase: {
           type: "string",
-          enum: ["plan", "implement", "review", "fix", "ship"],
+          enum: ["plan", "implement", "review", "fix"],
           description:
-            "Workflow phase to start this task in, if it's driven by the Code Workbench phase flow (Plan → Implement → Review → Fix → Ship). Root tasks created by a planning skill or workflow should set this — e.g. 'implement' once a plan is approved — so the Phase Board files it correctly.",
+            "Workflow phase to start this task in, if it's driven by the Code Workbench phase flow (Plan → Implement → Review → Fix). Root tasks created by a planning skill or workflow should set this — e.g. 'implement' once a plan is approved — so the Phase Board files it correctly.",
         },
         prUrl: {
           type: "string",
           description:
-            "URL of the pull request opened for this task (set by the Ship phase).",
+            "URL of the pull request opened for this task, if any.",
         },
         issueNumber: {
           type: "number",
@@ -229,9 +229,9 @@ export const TOOLS = [
           type: "string",
           // "" is a legal value: the Review/Fix procedures clear the phase with
           // it, so it must pass schema validation, not just the handler.
-          enum: ["plan", "implement", "review", "fix", "ship", ""],
+          enum: ["plan", "implement", "review", "fix", ""],
           description:
-            'Workflow phase this task is in (set by the Code Workbench phase flow — Plan → Implement → Review → Fix → Ship). Advance it when your phase\'s work is handed off to the next one. Pass an empty string to clear it.',
+            'Workflow phase this task is in (set by the Code Workbench phase flow — Plan → Implement → Review → Fix). Advance it when your phase\'s work is handed off to the next one. Pass an empty string to clear it.',
         },
         worktree: {
           type: "string",
@@ -576,7 +576,7 @@ export async function handle(req) {
             content: [
               {
                 type: "text",
-                text: `Error: invalid phase "${args.phase}". Use plan, implement, review, fix, or ship.`,
+                text: `Error: invalid phase "${args.phase}". Use plan, implement, review, or fix.`,
               },
             ],
           };

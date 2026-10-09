@@ -14,8 +14,7 @@ export type AutopilotStopReason =
   | 'needs-input'
   | 'task-done'
   | 'blocked'
-  | 'high-priority-findings'
-  | 'ship-needs-confirmation';
+  | 'high-priority-findings';
 
 export type AutopilotDecision = { start: TaskPhase } | { stop: AutopilotStopReason };
 
@@ -46,8 +45,6 @@ export function decideNextPhase({
     );
     if (urgent) return { stop: 'high-priority-findings' };
   }
-  // Ship pushes a branch and opens a PR — never unattended.
-  if (task.phase === 'ship') return { stop: 'ship-needs-confirmation' };
   return { start: task.phase };
 }
 
@@ -57,7 +54,6 @@ const STOP_TEXT: Record<AutopilotStopReason, string> = {
   'task-done': 'the task is done',
   blocked: 'the phase finished without handing off (blocked)',
   'high-priority-findings': 'Review filed high-priority findings',
-  'ship-needs-confirmation': 'Ship pushes and opens a PR — start it yourself from the board',
 };
 
 export function describeStop(reason: AutopilotStopReason): string {

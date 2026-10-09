@@ -15,6 +15,7 @@ import {
   sessionIconId,
   worktreeTerminalColor,
   type BoundTask,
+  type BoundBatch,
   type ClaudeEffort,
   type ClaudeModel,
   type ClaudePermissionMode,
@@ -56,6 +57,7 @@ export interface CreateSessionOptions {
   effort?: ClaudeEffort;
   /** Task + phase this session runs; recorded so notify events map to the task. */
   boundTask?: BoundTask;
+  boundBatch?: BoundBatch;
 }
 
 // Legacy workspaceState keys — read only, for one-shot migration into the
@@ -352,6 +354,7 @@ export class SessionManager {
     await this.updateRepoState((st) => {
       const cur = st.sessions.find((x) => x.id === id);
       if (cur?.boundTask) cur.boundTask = { ...cur.boundTask, autopilotHandled: true };
+      if (cur?.boundBatch) cur.boundBatch = { ...cur.boundBatch, autopilotHandled: true };
     });
   }
 
@@ -497,6 +500,7 @@ export class SessionManager {
       ...(opts?.permissionMode ? { permissionMode: opts.permissionMode } : {}),
       ...(opts?.effort != null ? { effortOverride: opts.effort } : {}),
       ...(opts?.boundTask ? { boundTask: opts.boundTask } : {}),
+      ...(opts?.boundBatch ? { boundBatch: opts.boundBatch } : {}),
     };
     await this.updateRepoState((st) => {
       st.sessions.push(session);

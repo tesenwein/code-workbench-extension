@@ -49,18 +49,15 @@ describe("phasePrompt", () => {
     expect(phasePrompt("review", TASK)).toContain('phase: "fix"');
   });
 
-  it("hands Fix and a clean Review off to Ship, and Ship closes the task out", () => {
-    expect(phasePrompt("fix", TASK)).toContain('phase: "ship"');
-    expect(phasePrompt("review", TASK)).toContain('phase: "ship"');
-    const ship = phasePrompt("ship", TASK);
-    expect(ship).toContain("gh pr create");
-    expect(ship).toContain("gh pr checks");
-    expect(ship).toContain("prUrl");
-    expect(ship).toContain('phase: "" (clear it), status: "done"');
-  });
-
   it("routes Fix back to Review when new findings were filed", () => {
     expect(phasePrompt("fix", TASK)).toContain('phase: "review"');
+  });
+
+  it("closes the task out from Fix and from a clean Review — Fix is the last phase", () => {
+    expect(PHASE_ORDER[PHASE_ORDER.length - 1]).toBe("fix");
+    expect(phasePrompt("fix", TASK)).toContain('phase: "" (clear it), status: "done"');
+    expect(phasePrompt("review", TASK)).toContain('phase: "" (clear it), status: "done"');
+    expect(phasePrompt("fix", TASK)).not.toContain("ship");
   });
 
   it("gives every phase a blocked escape hatch that never advances the phase", () => {
@@ -96,13 +93,6 @@ describe("PHASE_META", () => {
   });
 });
 
-describe("Ship phase wiring", () => {
-  it("is the last phase and generates a cw-ship skill", () => {
-    expect(PHASE_ORDER[PHASE_ORDER.length - 1]).toBe("ship");
-    expect(phaseSkill("ship").name).toBe("cw-ship");
-  });
-});
-
 describe("prefetched context", () => {
   it("adds a Context section before the procedure only when given", () => {
     const withCtx = phasePrompt("implement", TASK, "- card-a — A");
@@ -126,11 +116,5 @@ describe("code-health gate", () => {
     expect(review).toContain('"Code health:"');
     expect(review).toContain("one \"review-finding\" subtask per regression");
     expect(phasePrompt("fix", TASK)).not.toContain('"Code health:"');
-  });
-});
-
-describe("ship batching", () => {
-  it("refuses a multi-task Ship prompt", () => {
-    expect(() => phasePromptBulk("ship", [TASK, { ...TASK, id: "other" }])).toThrow(/one task/i);
   });
 });

@@ -249,21 +249,3 @@ describe('codeHealthLine', () => {
     expect(codeHealthLine(undefined)).toBeNull();
   });
 });
-
-describe('columnFor shipped tasks', () => {
-  const shipped = (updated: string): WorkspaceTask =>
-    ({
-      id: 's',
-      title: 'S',
-      status: 'done',
-      prUrl: 'https://example.com/pr/1',
-      updated,
-      tags: [],
-    }) as unknown as WorkspaceTask;
-  const now = Date.parse('2026-02-01T00:00:00Z');
-
-  it('keeps a recently shipped task in Ship and drops it after a week', () => {
-    expect(columnFor(shipped('2026-01-30T00:00:00Z'), [], now)).toBe('ship');
-    expect(columnFor(shipped('2026-01-01T00:00:00Z'), [], now)).toBeNull();
-  });
-});

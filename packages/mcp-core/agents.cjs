@@ -47,7 +47,7 @@ function phaseAgent(phase, agentName, description, { tools, extra = [] } = {}) {
     "",
     `The task id is given in your prompt. Wherever the procedure below says \`${TASK_ID}\`, substitute that id. If your prompt names no task id, stop and report that you need one — never guess which task is meant.`,
     "",
-    "Do NOT spawn subagents: work every step yourself, sequentially, in order. In particular, NEVER spawn a phase agent (cw-implementer, cw-reviewer, cw-fixer, cw-shipper) — a phase agent that spawns phase agents recurses without bound.",
+    "Do NOT spawn subagents: work every step yourself, sequentially, in order. In particular, NEVER spawn a phase agent (cw-implementer, cw-reviewer, cw-fixer) — a phase agent that spawns phase agents recurses without bound.",
     "",
     "Your final message is returned to the session that delegated to you: report what you did, the board updates you made, and anything that blocked you.",
     ...(extra.length ? ["", ...extra] : []),
@@ -86,19 +86,13 @@ const CW_FIXER = phaseAgent(
   `Run the Fix phase of a Code Workbench (cw-tasks) board task. ${PHASE_DESCRIPTIONS.fix} Use when a board task in the Fix phase has open review-finding subtasks to resolve.`,
 );
 
-const CW_SHIPPER = phaseAgent(
-  "ship",
-  "cw-shipper",
-  `Run the Ship phase of a Code Workbench (cw-tasks) board task. ${PHASE_DESCRIPTIONS.ship} Use when a board task in the Ship phase should be committed, pushed and opened as a PR in an isolated context.`,
-);
-
 /** Every agent definition the workbench installs. */
-const BUNDLED_AGENTS = [CW_IMPLEMENTER, CW_REVIEWER, CW_FIXER, CW_SHIPPER];
+const BUNDLED_AGENTS = [CW_IMPLEMENTER, CW_REVIEWER, CW_FIXER];
 
 /**
  * Agent file names shipped by older versions — removed on (re)install so a
- * stale copy can't linger under a legacy name. None yet.
+ * stale copy can't linger under a legacy name.
  */
-const LEGACY_AGENT_NAMES = [];
+const LEGACY_AGENT_NAMES = ["cw-shipper"];
 
 module.exports = { BUNDLED_AGENTS, LEGACY_AGENT_NAMES };

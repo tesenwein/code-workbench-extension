@@ -38,7 +38,7 @@ const VALID_STATUSES = ["open", "in-progress", "done"];
 // Workflow phase a task is in. Each phase is worked by a Claude session with a
 // model and prompt suited to it; the session advances the field when it hands
 // off. `null` means the task is not being driven through the flow.
-const VALID_PHASES = ["plan", "implement", "review", "fix", "ship"];
+const VALID_PHASES = ["plan", "implement", "review", "fix"];
 
 function serializeTask(task) {
   const safeTitle = decodeEntities(String(task.title))
@@ -71,7 +71,7 @@ function serializeTask(task) {
     `phase: ${task.phase ?? "null"}`,
     // Only written when on, so the common case keeps its files unchanged.
     ...(task.autoRun ? ["autoRun: true"] : []),
-    // Likewise only when set (the Ship phase records the PR here).
+    // Likewise only when set.
     ...(task.prUrl ? [`prUrl: ${task.prUrl}`] : []),
     // GitHub issue this task mirrors (see issueSync in the extension).
     ...(task.issueNumber ? [`issueNumber: ${task.issueNumber}`] : []),

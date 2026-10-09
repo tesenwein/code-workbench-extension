@@ -16,6 +16,8 @@ export const window = {
     Promise.resolve(undefined),
   showErrorMessage: (..._args: unknown[]): Thenable<string | undefined> =>
     Promise.resolve(undefined),
+  showInformationMessage: (..._args: unknown[]): Thenable<string | undefined> =>
+    Promise.resolve(undefined),
 };
 export const workspace = { getConfiguration: () => ({ get: () => true }) };
 export const Uri = { joinPath: () => ({}), parse: () => ({}), file: () => ({}) };

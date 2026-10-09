@@ -6,9 +6,9 @@
 export type TaskPriority = 'high' | 'medium' | 'low';
 export type TaskStatus = 'open' | 'in-progress' | 'done';
 /** Workflow phase a (root) task is being driven through by a bound Claude
- *  session — Plan → Implement → Review → Fix → Ship. Undefined/null means the task
+ *  session — Plan → Implement → Review → Fix. Undefined/null means the task
  *  isn't in the flow. */
-export type TaskPhase = 'plan' | 'implement' | 'review' | 'fix' | 'ship';
+export type TaskPhase = 'plan' | 'implement' | 'review' | 'fix';
 
 /** Resolved phase→model for each worktree, keyed by worktree key (lowercased
  *  basename). `fallback` covers unassigned tasks, which run in the active
@@ -40,7 +40,7 @@ export interface WorkspaceTask {
   phase?: TaskPhase | null;
   /** Opt-in autopilot: auto-start the next phase after a phase hands off. */
   autoRun?: boolean;
-  /** Pull request opened by the Ship phase. */
+  /** Pull request opened for this task, if any. */
   prUrl?: string | null;
   /** GitHub issue this task mirrors. */
   issueNumber?: number | null;
@@ -150,7 +150,7 @@ export interface TasksApi {
    *  that can't surface a file editor (e.g. the Electron app) omit it and the
    *  panel hides the "open in editor" affordance. */
   openInEditor?: (id: string) => Promise<void>;
-  /** Start a phase (Plan/Implement/Review/Fix/Ship) for a root task: spawns a
+  /** Start a phase (Plan/Implement/Review/Fix) for a root task: spawns a
    *  bound Claude session and sets the task's `phase`. Optional — hosts that
    *  can't spawn sessions (e.g. the Electron app) omit it and the panel hides
    *  the phase stepper. */
