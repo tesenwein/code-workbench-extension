@@ -155,6 +155,11 @@ export interface SavedSession {
   /** Board task + phase this session was spawned to run (see startTaskPhase).
    *  Lets a notify event from the session be mapped back to its task. */
   boundTask?: BoundTask;
+  /** Several board tasks this session runs in sequence (a multi-task "Start
+   *  all" batch). Mutually exclusive with `boundTask`: a batch has no single
+   *  task for hooks/usage to attribute to, but autopilot still needs to know
+   *  which tasks to advance when the session reports done. */
+  boundBatch?: BoundBatch;
 }
 
 /** Live state a session's hooks last reported. */
@@ -171,6 +176,14 @@ export interface BoundTask {
   phase: TaskPhase;
   /** Set once autopilot has acted on this session's `done`, so a resumed
    *  session's later turns never re-trigger it (persisted across restarts). */
+  autopilotHandled?: boolean;
+}
+
+/** The tasks + phase a multi-task batch session is bound to. */
+export interface BoundBatch {
+  ids: string[];
+  phase: TaskPhase;
+  /** Same role as BoundTask.autopilotHandled. */
   autopilotHandled?: boolean;
 }
 

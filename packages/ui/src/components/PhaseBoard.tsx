@@ -1,6 +1,6 @@
 /* Phase Board — the task-bound phase flow as a kanban board.
  *
- * One column per stage of Plan → Implement → Review → Fix → Ship. A task's `phase`
+ * One column per stage of Plan → Implement → Review → Fix. A task's `phase`
  * field names the phase to run NEXT, so the column a card sits in is exactly
  * the phase its Start button launches: the board is the state machine, and
  * the button is the only way to advance it. A root task with no explicit
@@ -42,25 +42,20 @@ const STATUS_LABELS: Record<WorkspaceTask['status'], string> = {
 
 type ColumnKey = TaskPhase;
 
-const COLUMNS: ColumnKey[] = ['plan', 'implement', 'review', 'fix', 'ship'];
+const COLUMNS: ColumnKey[] = ['plan', 'implement', 'review', 'fix'];
 
 const COLUMN_LABELS: Record<ColumnKey, string> = {
   plan: 'Plan',
   implement: 'Implement',
   review: 'Review',
   fix: 'Fix',
-  ship: 'Ship',
 };
-
-/** How long a shipped (done, PR-linked) task stays on the board's Ship column. */
-const SHIPPED_VISIBLE_DAYS = 7;
 
 const COLUMN_HINTS: Record<ColumnKey, string> = {
   plan: 'Explores the code, writes a memo, files plan-step subtasks.',
   implement: 'Works the plan-step subtasks until lint, typecheck and tests pass.',
   review: 'Reviews the diff and files review-finding subtasks.',
   fix: 'Fixes the review-finding subtasks, then re-runs the checks.',
-  ship: 'Commits, pushes, opens the PR, waits for CI and marks the task done.',
 };
 
 /** Which column a task belongs in — `null` for anything the board ignores
@@ -68,24 +63,12 @@ const COLUMN_HINTS: Record<ColumnKey, string> = {
  *  with no explicit `phase` is inferred from its subtasks: already having
  *  plan-step subtasks means planning happened, so it belongs in Implement;
  *  otherwise it hasn't been planned yet. */
-export function columnFor(
-  task: WorkspaceTask,
-  children: WorkspaceTask[],
-  now: number = Date.now(),
-): ColumnKey | null {
+export function columnFor(task: WorkspaceTask, children: WorkspaceTask[]): ColumnKey | null {
   if (task.parentId) return null;
   // Done wins over a lingering `phase`: marking a task done from the Task
   // Board doesn't clear `phase`, and a done task must never keep a live
   // "Start <phase>" card on the board.
-  // The one exception: a shipped task stays visible in Ship, carrying its PR
-  // link — but only for SHIPPED_VISIBLE_DAYS, so the column doesn't grow forever.
-  if (task.status === 'done') {
-    if (!task.prUrl) return null;
-    const updated = Date.parse(task.updated);
-    return Number.isNaN(updated) || now - updated <= SHIPPED_VISIBLE_DAYS * 86_400_000
-      ? 'ship'
-      : null;
-  }
+  if (task.status === 'done') return null;
   if (task.phase) return task.phase;
   return children.some((c) => c.tags?.includes('plan-step')) ? 'implement' : 'plan';
 }

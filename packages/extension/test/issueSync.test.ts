@@ -38,7 +38,7 @@ describe('planIssueSync', () => {
   });
 
   it('closes the issue (with the PR link) when the task reaches done', () => {
-    const prev = new Map<string, TaskStamp>([['t1', { status: 'in-progress', phase: 'ship' }]]);
+    const prev = new Map<string, TaskStamp>([['t1', { status: 'in-progress', phase: 'fix' }]]);
     const { actions } = planIssueSync(prev, [
       task({ status: 'done', phase: null, prUrl: 'https://x/pull/1' }),
     ]);

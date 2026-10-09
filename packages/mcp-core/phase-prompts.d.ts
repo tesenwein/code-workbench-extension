@@ -1,6 +1,6 @@
 import type { ClaudeModel } from './claude-models';
 
-export type TaskPhase = 'plan' | 'implement' | 'review' | 'fix' | 'ship';
+export type TaskPhase = 'plan' | 'implement' | 'review' | 'fix';
 
 export interface PhaseMeta {
   label: string;

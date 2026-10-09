@@ -76,7 +76,7 @@ The task's `phase` field names the phase to run **next**, so the column a card s
 
 **Autopilot.** Tick **Run through** on a card (or in the task detail) and the extension starts the next phase for you whenever a phase session reports done and has advanced `phase`. It stops — with a notice — when the session asks for input, finishes without handing off (blocked), Review files high-priority findings, or the task is done.
 
-To run a phase by hand instead, use the bundled skills — `/cw-plan`, `/cw-implement <taskId>`, `/cw-review <taskId>`, `/cw-fix <taskId>`, `/cw-ship <taskId>`. They follow the same procedure the board's Start button injects, because both are generated from `packages/mcp-core/phase-prompts.cjs`.
+To run a phase by hand instead, use the bundled skills — `/cw-plan`, `/cw-implement <taskId>`, `/cw-review <taskId>`, `/cw-fix <taskId>`. They follow the same procedure the board's Start button injects, because both are generated from `packages/mcp-core/phase-prompts.cjs`.
 
 ### Choosing the model per phase
 

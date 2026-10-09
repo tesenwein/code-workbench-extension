@@ -1,4 +1,4 @@
-/* Task-bound phase flow: Plan -> Implement -> Review -> Fix -> Ship.
+/* Task-bound phase flow: Plan -> Implement -> Review -> Fix.
  *
  * Generalizes the pattern in commands/codeReview.ts (a Claude session with a
  * fixed model + prompt) to any task on the board: each phase spawns a session
@@ -8,7 +8,7 @@
  * the session and reopening the task later loses nothing.
  *
  * The prompts and per-phase model live in mcp-core/phase-prompts, shared with
- * the bundled `/cw-implement`, `/cw-review`, `/cw-fix`, `/cw-ship` skills so a phase run by
+ * the bundled `/cw-implement`, `/cw-review`, `/cw-fix` skills so a phase run by
  * hand and a phase run from the board follow the same procedure. */
 
 import * as vscode from 'vscode';
@@ -197,8 +197,12 @@ async function startTaskPhaseBatch(
     model: deps.sessionMgr.resolvePhaseModel(wt, phase),
     prompt,
     ...(spec.effort != null ? { effort: spec.effort } : {}),
-    // A multi-task batch has no single task to track, so only bind a lone one.
-    ...(tasks.length === 1 ? { boundTask: { id: tasks[0].id, phase } } : {}),
+    // A multi-task batch has no single task for hooks/usage to track, so only
+    // bind a lone one; the batch binding is what lets autopilot advance each
+    // member once the session reports done.
+    ...(tasks.length === 1
+      ? { boundTask: { id: tasks[0].id, phase } }
+      : { boundBatch: { ids: tasks.map((t) => t.id), phase } }),
   });
 }
 
@@ -246,13 +250,6 @@ export async function startTaskPhaseBulk(
   }
 
   for (const [wt, tasks] of byWorktree) {
-    // Ship commits and PRs the whole working tree, so tasks sharing one cannot
-    // be shipped as a batch — each would swallow the others' changes.
-    if (phase === 'ship' && tasks.length > 1) {
-      const error = 'Ship one task at a time — these tasks share a worktree.';
-      result.failed.push(...tasks.map((t) => ({ id: t.id, error })));
-      continue;
-    }
     try {
       await startTaskPhaseBatch(deps, key, wt, tasks, phase);
       result.succeeded.push(...tasks.map((t) => t.id));
@@ -264,9 +261,20 @@ export async function startTaskPhaseBulk(
   return result;
 }
 
-/** Autopilot: when a phase session reports done/needs_input, re-read its task
- *  and — if the task opted in via `autoRun` and the session handed off — start
- *  the next phase. The decision itself lives in phaseAutopilot.ts. */
+/** The tasks a session was spawned to run: a lone bound task, or every member
+ *  of a multi-task batch. Both bindings carry the phase that was launched. */
+function sessionMembers(s: SavedSession): { ids: string[]; phase: TaskPhase } | undefined {
+  if (s.boundTask) return { ids: [s.boundTask.id], phase: s.boundTask.phase };
+  if (s.boundBatch) return { ids: s.boundBatch.ids, phase: s.boundBatch.phase };
+  return undefined;
+}
+
+/** Autopilot: when a phase session reports done/needs_input, re-read its
+ *  task(s) and — for each that opted in via `autoRun` and handed off — start
+ *  the next phase. Members of a batch that share a next phase start again as
+ *  ONE batch in the same worktree, for the same reason "Start all" batches:
+ *  one agent with a queue, never N agents editing one tree. The per-task
+ *  decision itself lives in phaseAutopilot.ts. */
 export function registerAutopilot(ctx: vscode.ExtensionContext, deps: TaskFlowDeps): void {
   // Each session gets one verdict: a later chat turn in the same terminal must
   // not re-trigger a phase that has since been started or advanced.
@@ -274,13 +282,13 @@ export function registerAutopilot(ctx: vscode.ExtensionContext, deps: TaskFlowDe
   ctx.subscriptions.push(
     deps.sessionMgr.onNotify(({ sessionId, kind }) => {
       if (kind === 'info' || handled.has(sessionId)) return;
-      if (deps.sessionMgr.list().find((s) => s.id === sessionId)?.boundTask?.autopilotHandled)
-        return;
       const session = deps.sessionMgr.list().find((s) => s.id === sessionId);
-      const bound = session?.boundTask;
+      if (session?.boundTask?.autopilotHandled || session?.boundBatch?.autopilotHandled) return;
+      const members = session && sessionMembers(session);
       const key = deps.getRepoKey();
       const repoRoot = deps.getRepoRoot();
-      if (!session || !bound || !key || !repoRoot) return;
+      if (!session || !members || !key || !repoRoot) return;
+      const ranPhase = members.phase;
       // needs_input is not final: the session continues once the user answers.
       if (kind === 'done') {
         handled.add(sessionId);
@@ -288,42 +296,50 @@ export function registerAutopilot(ctx: vscode.ExtensionContext, deps: TaskFlowDe
       }
       void (async () => {
         if (kind === 'done') {
-          await deps.onPhaseDone?.(session.worktreePath, bound.id, bound.phase).catch(() => {});
+          for (const id of members.ids) {
+            await deps.onPhaseDone?.(session.worktreePath, id, ranPhase).catch(() => {});
+          }
         }
         const all = await listTasks(key);
-        const task = all.find((t) => t.id === bound.id);
-        if (!task?.autoRun) return;
-        const decision = decideNextPhase({
-          task,
-          subtasks: all.filter((t) => t.parentId === task.id),
-          event: kind,
-          ranPhase: bound.phase,
-        });
-        if ('stop' in decision) {
-          void vscode.window.showInformationMessage(
-            `Autopilot stopped for "${task.title}": ${describeStop(decision.stop)}.`,
-          );
-          return;
+        const byPhase = new Map<TaskPhase, Task[]>();
+        for (const id of members.ids) {
+          const task = all.find((t) => t.id === id);
+          if (!task?.autoRun) continue;
+          const decision = decideNextPhase({
+            task,
+            subtasks: all.filter((t) => t.parentId === task.id),
+            event: kind,
+            ranPhase,
+          });
+          if ('stop' in decision) {
+            void vscode.window.showInformationMessage(
+              `Autopilot stopped for "${task.title}": ${describeStop(decision.stop)}.`,
+            );
+            continue;
+          }
+          // Guard double-start: another live session already runs this phase.
+          const dup = deps.sessionMgr.list().some((s) => {
+            if (s.id === sessionId || !deps.sessionMgr.isOpen(s.id)) return false;
+            const m = sessionMembers(s);
+            return !!m && m.phase === decision.start && m.ids.includes(task.id);
+          });
+          if (dup) continue;
+          const group = byPhase.get(decision.start);
+          if (group) group.push(task);
+          else byPhase.set(decision.start, [task]);
         }
-        // Guard double-start: another live session already runs this phase.
-        const dup = deps.sessionMgr
-          .list()
-          .some(
-            (s) =>
-              s.id !== sessionId &&
-              deps.sessionMgr.isOpen(s.id) &&
-              s.boundTask?.id === task.id &&
-              s.boundTask.phase === decision.start,
+        for (const [phase, tasks] of byPhase) {
+          const what = tasks.length === 1 ? `"${tasks[0].title}"` : `${tasks.length} tasks`;
+          void vscode.window.showInformationMessage(
+            `Autopilot: starting ${PHASE_META[phase].label} for ${what}`,
           );
-        if (dup) return;
-        void vscode.window.showInformationMessage(
-          `Autopilot: starting ${PHASE_META[decision.start].label} for "${task.title}"`,
-        );
-        try {
-          await startTaskPhase(deps, key, repoRoot, task.id, decision.start, session.worktreePath);
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err ?? '');
-          void vscode.window.showErrorMessage(`Autopilot could not start the next phase: ${msg}`);
+          try {
+            // Same worktree the finished session ran in — never the active one.
+            await startTaskPhaseBatch(deps, key, session.worktreePath, tasks, phase);
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err ?? '');
+            void vscode.window.showErrorMessage(`Autopilot could not start the next phase: ${msg}`);
+          }
         }
       })();
     }),
@@ -356,18 +372,23 @@ export function registerTaskFlowCommand(ctx: vscode.ExtensionContext, deps: Task
     // never shadows the current run; sessions that reported done are over even
     // though their terminal usually stays open.
     vscode.commands.registerCommand('codeWorkbench.tasks.activeSessions', () => {
-      const newest = new Map<string, SavedSession>();
+      const newest = new Map<string, { session: SavedSession; phase: TaskPhase }>();
       for (const s of deps.sessionMgr.list()) {
-        if (!s.boundTask || !deps.sessionMgr.isOpen(s.id) || deps.sessionMgr.isFinished(s.id)) {
+        const members = sessionMembers(s);
+        if (!members || !deps.sessionMgr.isOpen(s.id) || deps.sessionMgr.isFinished(s.id)) {
           continue;
         }
-        const cur = newest.get(s.boundTask.id);
-        if (!cur || s.created > cur.created) newest.set(s.boundTask.id, s);
+        for (const id of members.ids) {
+          const cur = newest.get(id);
+          if (!cur || s.created > cur.session.created) {
+            newest.set(id, { session: s, phase: members.phase });
+          }
+        }
       }
-      return [...newest.values()].map((s) => ({
-        taskId: s.boundTask!.id,
-        sessionId: s.id,
-        phase: s.boundTask!.phase,
+      return [...newest].map(([taskId, { session, phase }]) => ({
+        taskId,
+        sessionId: session.id,
+        phase,
       }));
     }),
     // Aggregated token usage for the task detail pane (null when nothing ran).

@@ -421,7 +421,7 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
           <span class="num">02a</span><h2>Workbench Agents</h2>
           <span class="tag">.claude/agents/</span>
         </div>
-        <p class="sectlede">Reinstall <code>cw-implementer</code>, <code>cw-reviewer</code>, <code>cw-fixer</code> and <code>cw-shipper</code> — phase subagents Claude can delegate board tasks to.</p>
+        <p class="sectlede">Reinstall <code>cw-implementer</code>, <code>cw-reviewer</code> and <code>cw-fixer</code> — phase subagents Claude can delegate board tasks to.</p>
         <div class="btnrow">
           <button class="btn primary" id="installAgentsUser">Reinstall agents</button>
         </div>
@@ -498,7 +498,7 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
           <span class="tag">model per phase</span>
         </div>
         <p class="sectlede">
-          Which model the Phase Board spawns for each phase of Plan → Implement → Review → Fix → Ship.
+          Which model the Phase Board spawns for each phase of Plan → Implement → Review → Fix.
           A worktree's own Claude settings can override any of these.
         </p>
         ${PHASE_ORDER.map(

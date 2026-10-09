@@ -1,6 +1,6 @@
 export type TaskPriority = "high" | "medium" | "low";
 export type TaskStatus = "open" | "in-progress" | "done";
-export type TaskPhase = "plan" | "implement" | "review" | "fix" | "ship";
+export type TaskPhase = "plan" | "implement" | "review" | "fix";
 
 export interface Task {
   id: string;
@@ -20,7 +20,7 @@ export interface Task {
   /** Opt-in "run through": the extension starts the next phase automatically
    *  when a phase session reports done and advanced `phase`. */
   autoRun: boolean;
-  /** URL of the pull request opened by the Ship phase, or null. */
+  /** URL of the pull request opened for this task, or null. */
   prUrl: string | null;
   /** GitHub issue number this task mirrors, or null. */
   issueNumber: number | null;

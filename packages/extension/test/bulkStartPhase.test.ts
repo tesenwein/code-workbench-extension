@@ -118,6 +118,28 @@ describe('startTaskPhaseBulk', () => {
     expect(opts.prompt).toContain('IMPLEMENT phase for task a.');
   });
 
+  it('binds a multi-task batch so autopilot can advance every member', async () => {
+    listTasksMock.mockResolvedValue([task('a'), task('b')]);
+    const d = deps();
+
+    await run(d, ['a', 'b']);
+
+    const opts = d.create.mock.calls[0][3] as unknown as Record<string, unknown>;
+    expect(opts.boundTask).toBeUndefined();
+    expect(opts.boundBatch).toEqual({ ids: ['a', 'b'], phase: 'implement' });
+  });
+
+  it('binds a lone task as a single bound task, not a batch', async () => {
+    listTasksMock.mockResolvedValue([task('a')]);
+    const d = deps();
+
+    await run(d, ['a']);
+
+    const opts = d.create.mock.calls[0][3] as unknown as Record<string, unknown>;
+    expect(opts.boundTask).toEqual({ id: 'a', phase: 'implement' });
+    expect(opts.boundBatch).toBeUndefined();
+  });
+
   it('fails every task of a batch whose session could not spawn', async () => {
     listTasksMock.mockResolvedValue([task('a'), task('b')]);
     const create = vi.fn(async () => Promise.reject(new Error('spawn failed')));

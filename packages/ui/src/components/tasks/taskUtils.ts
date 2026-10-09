@@ -101,13 +101,12 @@ export function parseTags(input: string): string[] {
 
 /** Ordered phase flow — used both to render the stepper and to know which
  *  phase a "start" click on an unset task should begin at. */
-export const PHASE_FLOW: TaskPhase[] = ['plan', 'implement', 'review', 'fix', 'ship'];
+export const PHASE_FLOW: TaskPhase[] = ['plan', 'implement', 'review', 'fix'];
 export const PHASE_LABELS: Record<TaskPhase, string> = {
   plan: 'Plan',
   implement: 'Implement',
   review: 'Review',
   fix: 'Fix',
-  ship: 'Ship',
 };
 
 export const BLANK_TASK: WorkspaceTask = {

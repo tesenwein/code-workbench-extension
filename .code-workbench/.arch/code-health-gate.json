@@ -17,7 +17,7 @@
     "onPhaseDone is awaited before autopilot so the next phase sees the delta."
   ],
   "anti_patterns": [
-    "Do not gate Plan/Review/Ship phases — only phases that change code."
+    "Do not gate Plan/Review phases — only phases that change code (Implement, Fix)."
   ],
   "decisions": [],
   "tags": [
@@ -33,6 +33,6 @@
     "phase-autopilot",
     "tasks-view"
   ],
-  "updatedAt": "2026-10-09T10:05:00.830Z",
+  "updatedAt": "2026-10-09T17:40:14.600Z",
   "createdAt": "2026-10-09T10:05:00.830Z"
 }

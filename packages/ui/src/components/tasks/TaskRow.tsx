@@ -405,7 +405,6 @@ export function TaskEditForm({
               <option value="implement">Implement</option>
               <option value="review">Review</option>
               <option value="fix">Fix</option>
-              <option value="ship">Ship</option>
             </select>
           </label>
         )}
