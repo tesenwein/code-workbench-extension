@@ -329,8 +329,7 @@ export function registerAutopilot(ctx: vscode.ExtensionContext, deps: TaskFlowDe
           else byPhase.set(decision.start, [task]);
         }
         for (const [phase, tasks] of byPhase) {
-          const what =
-            tasks.length === 1 ? `"${tasks[0].title}"` : `${tasks.length} tasks`;
+          const what = tasks.length === 1 ? `"${tasks[0].title}"` : `${tasks.length} tasks`;
           void vscode.window.showInformationMessage(
             `Autopilot: starting ${PHASE_META[phase].label} for ${what}`,
           );
@@ -339,9 +338,7 @@ export function registerAutopilot(ctx: vscode.ExtensionContext, deps: TaskFlowDe
             await startTaskPhaseBatch(deps, key, session.worktreePath, tasks, phase);
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err ?? '');
-            void vscode.window.showErrorMessage(
-              `Autopilot could not start the next phase: ${msg}`,
-            );
+            void vscode.window.showErrorMessage(`Autopilot could not start the next phase: ${msg}`);
           }
         }
       })();

@@ -1,7 +1,7 @@
 {
   "slug": "phase-autopilot",
   "name": "Phase Autopilot",
-  "description": "Opt-in per-task `autoRun` (\"Run through\") flag that auto-starts the next phase when a phase session finishes. startTaskPhase records `boundTask {id, phase}` on the spawned SavedSession; a multi-task \"Start all\" batch (startTaskPhaseBatch) records `boundBatch {ids, phase}` instead (sessionTypes.ts) — hooks/usage/sessions-view only read boundTask, autopilot reads both via sessionMembers(). mcp-core notify-server includes the sender's sessionId in notifications; NotifyServer (notifications.ts) fires onNotify, exposed by SessionManager.onNotify. registerAutopilot (commands/taskFlow.ts) maps the event to the bound task(s), re-reads each from the task-store and asks the pure decideNextPhase (phaseAutopilot.ts) for {start} or {stop: reason} per task. Members whose next phase matches are re-batched into ONE session via startTaskPhaseBatch in the finished session's worktree (one agent with a queue, never N agents on one tree). Stops: autorun off, needs_input, task done/phase cleared, phase unchanged after done (blocked), next phase fix with open high-priority review-finding subtasks, or ship. One verdict per session on 'done' (markAutopilotHandled flags boundTask or boundBatch); a live session already bound (singly or in a batch) to the same task+phase blocks a double-start. UI: \"Run through\" checkbox + \"autopilot\" chip on Phase Board cards and the column footer's bulk checkbox, and in TaskDetailPane's PhaseStepper. autoRun is serialized in task frontmatter only when true.",
+  "description": "Opt-in per-task `autoRun` (\"Run through\") flag that auto-starts the next phase when a phase session finishes. startTaskPhase records `boundTask {id, phase}` on the spawned SavedSession; a multi-task \"Start all\" batch (startTaskPhaseBatch) records `boundBatch {ids, phase}` instead (sessionTypes.ts) — hooks/usage/sessions-view only read boundTask, autopilot reads both via sessionMembers(). mcp-core notify-server includes the sender's sessionId in notifications; NotifyServer (notifications.ts) fires onNotify, exposed by SessionManager.onNotify. registerAutopilot (commands/taskFlow.ts) maps the event to the bound task(s), re-reads each from the task-store and asks the pure decideNextPhase (phaseAutopilot.ts) for {start} or {stop: reason} per task. Members whose next phase matches are re-batched into ONE session via startTaskPhaseBatch in the finished session's worktree (one agent with a queue, never N agents on one tree). Stops: autorun off, needs_input, task done/phase cleared, phase unchanged after done (blocked), or next phase fix with open high-priority review-finding subtasks. Fix is the last phase of the flow (Plan → Implement → Review → Fix): Fix, or a Review that files nothing, clears `phase` and marks the task done. One verdict per session on 'done' (markAutopilotHandled flags boundTask or boundBatch); a live session already bound (singly or in a batch) to the same task+phase blocks a double-start. UI: \"Run through\" checkbox + \"autopilot\" chip on Phase Board cards and the column footer's bulk checkbox, and in TaskDetailPane's PhaseStepper. autoRun is serialized in task frontmatter only when true.",
   "files": [
     "packages/extension/src/phaseAutopilot.ts",
     "packages/extension/src/commands/taskFlow.ts",
@@ -10,6 +10,7 @@
     "packages/extension/src/sessions.ts",
     "packages/mcp-core/notify-server.mjs",
     "packages/mcp-core/task-format.cjs",
+    "packages/mcp-core/phase-prompts.cjs",
     "packages/ui/src/components/PhaseBoard.tsx",
     "packages/ui/src/components/tasks/TaskDetail.tsx",
     "packages/extension/test/phaseAutopilot.test.ts",
@@ -19,12 +20,14 @@
     "Decision logic stays in the pure decideNextPhase; keep I/O in registerAutopilot.",
     "Autopilot starts phases only through startTaskPhase / startTaskPhaseBatch so manual and automatic starts share one path.",
     "`task.phase` names the NEXT phase; 'unchanged after done' means task.phase === the session's bound phase.",
-    "Any session that should be auto-advanced must carry boundTask or boundBatch — a session with neither is invisible to autopilot."
+    "Any session that should be auto-advanced must carry boundTask or boundBatch — a session with neither is invisible to autopilot.",
+    "Add or change a phase ONLY in phase-prompts.cjs plus the type unions (VALID_PHASES, TaskPhase d.ts files, ui TaskPhase/COLUMNS/PHASE_FLOW, tasks-server enums)."
   ],
   "anti_patterns": [
     "Do not auto-start past a high-priority review finding or a needs_input stop.",
     "Do not trigger from notifications without a sessionId or a bound task/batch.",
-    "Do not fan a finished batch out into one session per task — re-batch members that share a next phase."
+    "Do not fan a finished batch out into one session per task — re-batch members that share a next phase.",
+    "Do not re-add a Ship/commit/PR phase after Fix — it was tried (Oct 2026) and removed; committing and PRs are left to the user. The optional `prUrl` task field survives as plain data only."
   ],
   "decisions": [],
   "tags": [
@@ -34,7 +37,10 @@
     "auto-advance",
     "phase flow",
     "boundBatch",
-    "bulk start"
+    "bulk start",
+    "phase order",
+    "last phase",
+    "ship removed"
   ],
   "dependsOn": [
     "tasks-view",
@@ -42,6 +48,6 @@
     "session-manager",
     "task-store"
   ],
-  "updatedAt": "2026-10-09T17:18:03.481Z",
+  "updatedAt": "2026-10-09T17:40:07.034Z",
   "createdAt": "2026-10-09T09:53:22.659Z"
 }
