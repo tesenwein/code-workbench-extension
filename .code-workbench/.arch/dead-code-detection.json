@@ -32,7 +32,8 @@
   "decisions": [
     "The extension host is a thin adapter delegating scan/ack/exclude/persist to shared-scan-service",
     "The scan panel UI moved into @code-workbench/ui; the sidebar DeadCodeView is gone, replaced by the editor-tab page in scanPages.ts",
-    "Host-writes / MCP-reads: detect_dead_code reads <repo>/.code-workbench/dead-code-findings.json by default. force_scan: true preserves the legacy inline-scan path for headless use."
+    "Host-writes / MCP-reads: detect_dead_code reads <repo>/.code-workbench/dead-code-findings.json by default. force_scan: true preserves the legacy inline-scan path for headless use.",
+    "The scan panel UI moved into @code-workbench/ui; the extension's DeadCodeView was first a React webview rather than a vanilla-JS script, before being replaced by the editor-tab page."
   ],
   "tags": [
     "dead code",

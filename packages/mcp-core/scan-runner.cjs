@@ -145,7 +145,6 @@ function runTypeEscapeScan(opts) {
   return runItemScan("type-escapes", opts);
 }
 
-
 /**
  * Run clone-detect.mjs and return validated DuplicateGroup[].
  *
@@ -189,7 +188,6 @@ async function runDuplicateScan({
   }
   return groups;
 }
-
 
 /**
  * Run code-search.mjs and return ranked symbol matches for `query`.

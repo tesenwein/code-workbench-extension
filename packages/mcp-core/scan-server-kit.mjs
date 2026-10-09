@@ -126,7 +126,7 @@ export function makeDetectTool({
     const wanted = new Set(cats);
     const filteredByCategory = allItems.filter((i) => {
       const cat = categoryOf(i);
-      return cat ? wanted.has(cat) : true;
+      return cat === undefined ? true : wanted.has(cat);
     });
     const visible = filteredByCategory.filter(
       (i) => !ackedSet.has(i.fingerprint),

@@ -6,11 +6,12 @@
 // CommonJS so the CJS extension host and the ESM MCP servers share one copy.
 
 /**
- * @returns {<T>(key: string, fn: () => Promise<T> | T) => Promise<T>}
+ * @returns {(<T>(key: string, fn: () => Promise<T> | T) => Promise<T>) & { size: () => number }}
+ *   `size()` is the number of keys with pending work (0 once all chains settle).
  */
 function createKeyedLock() {
   const locks = new Map();
-  return function withLock(key, fn) {
+  function withLock(key, fn) {
     const prev = locks.get(key) ?? Promise.resolve();
     const next = prev
       .catch(() => {})
@@ -20,7 +21,9 @@ function createKeyedLock() {
       });
     locks.set(key, next);
     return next;
-  };
+  }
+  withLock.size = () => locks.size;
+  return withLock;
 }
 
 module.exports = { createKeyedLock };

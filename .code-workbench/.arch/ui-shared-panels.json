@@ -46,7 +46,7 @@
     "The extension's old vanilla-JS webview scripts were replaced by React bundles rendering these shared components.",
     "ui ships raw .tsx/.css source; the host bundler compiles it (esbuild for the extension webviews).",
     "Task search was moved out of the TasksPanel header into a fixed .task-search-row at the top of the body (2026-06) so the 'Tasks' title renders in full.",
-    "The Architecture panel was added to the shared package (2026-06); ArchPanel is now a search + list that opens each card's .json file via openCard. See [[arch-view]].",
+    "The Architecture panel was added to the shared package (2026-06), ported from the removed Electron app's ArchWikiPane; its ArchGraph nodes view and in-webview CardEditor form were later removed — ArchPanel is now a search + list that opens each card's .json file in the normal editor via openCard. See [[arch-view]].",
     "TasksPanel.tsx (1635 lines) was split into components/tasks/ with a shared useTaskForm hook; public TasksPanel props unchanged."
   ],
   "tags": [

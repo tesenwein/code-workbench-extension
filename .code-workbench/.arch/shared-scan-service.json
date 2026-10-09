@@ -42,11 +42,12 @@
   ],
   "decisions": [
     "CJS implementation + MJS shim pattern (same as task-store) so CJS extension host and ESM MCP servers share one copy",
-    "groupFingerprint centralized here (previously duplicated across ast-server.mjs and host code)",
+    "groupFingerprint centralized here (previously duplicated across ast-server.mjs and host code) to eliminate the duplication",
     "The old ScanViewProvider<T> sidebar views were replaced by editor-tab pages (scanPages.ts); see [[editor-tab-pages]]",
     "code-search.mjs is bundled with @xenova/transformers external — the extension's code search degrades to BM25-only since the optional model dep is not shipped in the .vsix",
-    "Findings persistence introduced so MCP tool calls are O(read JSON) instead of triggering full scans. UI Rescan is the canonical scan trigger; MCP tools expose force_scan: true as an escape hatch.",
-    "type-escapes added as a third scan feature (2026-05); see [[type-escape-detection]]. Categories ARE the kinds, and TypeEscapeItem carries an extra content snippet field.",
+    "Findings persistence introduced so MCP tool calls are O(read JSON) instead of triggering full scans. UI Rescan is the canonical scan trigger; MCP tools expose force_scan: true as an escape hatch for headless workflows.",
+    "Findings stored unfiltered + acks applied at read time, so toggling an ack never invalidates the persisted scan.",
+    "type-escapes added as a third scan feature (2026-05); see [[type-escape-detection]]. Categories ARE the kinds (no remap), and TypeEscapeItem carries an extra content snippet field.",
     "Dead-code/type-escape pipeline unified onto feature tables (runItemScan, runScan, makeDetectTool, toggleListEntry, createScanApp) so a fourth scan is a table row"
   ],
   "tags": [

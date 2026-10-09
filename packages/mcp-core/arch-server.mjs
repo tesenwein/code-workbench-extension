@@ -9,15 +9,15 @@ import path from "node:path";
 import { randomBytes } from "node:crypto";
 import { recordToolUse } from "./usage-log.mjs";
 import { archCardsDir, readArchCards } from "./arch-cards.mjs";
+import { tokenize, bm25Rank } from "./text-rank.mjs";
+import { createKeyedLock } from "./keyed-lock.mjs";
+import { findWorktreeRootFromCwd } from "./server-env.mjs";
 
 // ---------------------------------------------------------------------------
 // Write serialization
 // ---------------------------------------------------------------------------
 
 const withArchLock = createKeyedLock();
-import { tokenize, bm25Rank } from "./text-rank.mjs";
-import { createKeyedLock } from "./keyed-lock.mjs";
-import { findWorktreeRootFromCwd } from "./server-env.mjs";
 
 // ---------------------------------------------------------------------------
 // Repo-path resolution

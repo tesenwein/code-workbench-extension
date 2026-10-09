@@ -1,5 +1,4 @@
 import * as path from 'path';
-import { randomBytes } from 'crypto';
 import {
   CLAUDE_MODELS,
   CLAUDE_PHASE_MODELS,
@@ -12,7 +11,7 @@ import {
 } from './sessions';
 import { PHASE_META, PHASE_ORDER, type TaskPhase } from '@code-workbench/mcp-core/phase-prompts';
 import { themeTokenDecls, hcOverrideCss } from './webviewTheme';
-import { escapeHtml, safeJson } from './html';
+import { escapeHtml, makeNonce, safeJson } from './html';
 
 const COLOR_SWATCH: Record<WorktreeColor, string> = {
   default: 'transparent',
@@ -38,7 +37,7 @@ export interface PrefsPanelState {
 }
 
 export function renderPrefsHtml(worktreePath: string, state: PrefsPanelState): string {
-  const nonce = randomBytes(16).toString('base64');
+  const nonce = makeNonce();
   const name = path.basename(worktreePath);
   const initial = safeJson(state);
   const models = CLAUDE_MODELS.map((m) => `<option value="${m.value}">${m.label}</option>`).join(

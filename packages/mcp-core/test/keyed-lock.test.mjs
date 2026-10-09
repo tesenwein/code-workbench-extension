@@ -40,4 +40,18 @@ describe("createKeyedLock", () => {
     await expect(failed).rejects.toThrow("boom");
     await expect(withLock("k", () => 42)).resolves.toBe(42);
   });
+
+  it("removes the map entry once the chain settles", async () => {
+    const withLock = createKeyedLock();
+    const a = withLock("k", async () => {
+      await tick(5);
+    });
+    const b = withLock("k", async () => {
+      throw new Error("boom");
+    });
+    expect(withLock.size()).toBe(1);
+    await a;
+    await expect(b).rejects.toThrow("boom");
+    expect(withLock.size()).toBe(0);
+  });
 });

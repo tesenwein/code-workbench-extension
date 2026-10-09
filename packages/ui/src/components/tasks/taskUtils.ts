@@ -1,7 +1,5 @@
 import type { WorkspaceTask, TaskPhase } from '../../types';
 
-/* Platform-independent worktree identifier — last path segment, lowercased.
- * Mirrors worktreeKey() in @code-workbench/mcp-core/task-format. */
 /** Get the value for `key`, inserting `init()` first when absent. */
 export function getOrCreate<K, V>(map: Map<K, V>, key: K, init: () => V): V {
   let v = map.get(key);
@@ -12,6 +10,8 @@ export function getOrCreate<K, V>(map: Map<K, V>, key: K, init: () => V): V {
   return v;
 }
 
+/* Platform-independent worktree identifier — last path segment, lowercased.
+ * Mirrors worktreeKey() in @code-workbench/mcp-core/task-format. */
 export function worktreeKey(p: string | null | undefined): string {
   if (!p) return '';
   const seg =

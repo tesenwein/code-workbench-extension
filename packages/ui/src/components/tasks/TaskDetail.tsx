@@ -13,10 +13,6 @@ import {
 import { SubtaskRow, InlineAddSubtask, TaskEditForm } from './TaskRow';
 import { useTaskForm } from './useTaskForm';
 
-// ── TaskDetailPane ────────────────────────────────────────────────────────────
-
-/** Full-width task editor for page mode — replaces "open the .md file" as the
- *  primary way to work on a task. Always editable; subtasks inline below. */
 /** Plan → Implement → Review → Fix stepper for a root task's detail pane.
  *
  *  A task's `phase` names the phase to run NEXT — the Plan session hands off by
@@ -82,6 +78,11 @@ export function PhaseStepper({
   );
 }
 
+
+// ── TaskDetailPane ────────────────────────────────────────────────────────────
+
+/** Full-width task editor for page mode — replaces "open the .md file" as the
+ *  primary way to work on a task. Always editable; subtasks inline below. */
 export function TaskDetailPane({
   task,
   subtasks,
@@ -116,6 +117,8 @@ export function TaskDetailPane({
   const savedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => () => clearTimeout(savedTimer.current), []);
+
+  const parentId = task.parentId;
 
   return (
     <div className="task-detail-pane">
@@ -171,7 +174,7 @@ export function TaskDetailPane({
           }}
           onCancel={onClose}
         />
-        {task.parentId ? (
+        {parentId ? (
           /* Subtasks can't nest, so instead of a dead Subtasks section a subtask
            links back up to its parent. */
           <div className="task-detail-subtasks">
@@ -180,10 +183,10 @@ export function TaskDetailPane({
             </div>
             <button
               className="task-detail-parent-link"
-              onClick={() => onOpenTask?.(task.parentId!)}
+              onClick={() => onOpenTask?.(parentId)}
               title="Open parent task"
             >
-              ↑ {parent?.title ?? task.parentId}
+              ↑ {parent?.title ?? parentId}
             </button>
           </div>
         ) : (

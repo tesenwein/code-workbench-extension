@@ -40,41 +40,22 @@ export function registerPageCommands(
   ctx: vscode.ExtensionContext,
   { sessionMgr, archProvider, getRepoRoot, getRepoKey, refreshTaskSurfaces }: PageCommandDeps,
 ): void {
+  const getActiveWorktree = () => sessionMgr.getActiveWorktree() ?? undefined;
+  const openTasksPage = (opts: Parameters<typeof showTasksPage>[4]) =>
+    showTasksPage(ctx, getRepoKey, getRepoRoot, getActiveWorktree, opts, refreshTaskSurfaces);
+
   ctx.subscriptions.push(
-    vscode.commands.registerCommand('codeWorkbench.tasks.openAsPage', () =>
-      showTasksPage(
-        ctx,
-        getRepoKey,
-        getRepoRoot,
-        () => sessionMgr.getActiveWorktree() ?? undefined,
-        {},
-        refreshTaskSurfaces,
-      ),
-    ),
+    vscode.commands.registerCommand('codeWorkbench.tasks.openAsPage', () => openTasksPage({})),
     // Opening a task from the sidebar reveals the full-width board with that
     // task selected in its detail editor — editing lives in the main panel,
     // never squeezed into the narrow side view.
     vscode.commands.registerCommand('codeWorkbench.tasks.openTaskInPage', (id?: string) =>
-      showTasksPage(
-        ctx,
-        getRepoKey,
-        getRepoRoot,
-        () => sessionMgr.getActiveWorktree() ?? undefined,
-        { selectTaskId: typeof id === 'string' ? id : undefined },
-        refreshTaskSurfaces,
-      ),
+      openTasksPage({ selectTaskId: typeof id === 'string' ? id : undefined }),
     ),
     // Creating a task opens the board with a blank editor in the detail
     // column — no more input-box chain.
     vscode.commands.registerCommand('codeWorkbench.tasks.newInPage', () =>
-      showTasksPage(
-        ctx,
-        getRepoKey,
-        getRepoRoot,
-        () => sessionMgr.getActiveWorktree() ?? undefined,
-        { create: true },
-        refreshTaskSurfaces,
-      ),
+      openTasksPage({ create: true }),
     ),
     // The phase-flow counterpart to the Task Board: columns are phases, and
     // each card's Start button spawns that phase's bound Claude session.
@@ -83,7 +64,7 @@ export function registerPageCommands(
         sessionMgr,
         getRepoKey,
         getRepoRoot,
-        getActiveWorktree: () => sessionMgr.getActiveWorktree() ?? undefined,
+        getActiveWorktree,
         afterMutation: refreshTaskSurfaces,
       }),
     ),
