@@ -248,6 +248,8 @@ export function PhaseBoard({ api, reloadKey = 0, phaseModels, onOpenTask }: Phas
    * load effect never touches `bulkError`, so it survives that reload and is
    * cleared only by the next bulk click or an all-success batch. */
   const [bulkError, setBulkError] = useState<string | null>(null);
+  /** Per-column "Run through" choice for the Start all button. */
+  const [bulkAutoRun, setBulkAutoRun] = useState<Partial<Record<ColumnKey, boolean>>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -346,6 +348,15 @@ export function PhaseBoard({ api, reloadKey = 0, phaseModels, onOpenTask }: Phas
       setBulkStarting(column);
       setBulkError(null);
       try {
+        // "Run through" for the whole batch: flag every task before starting, so
+        // the autopilot picks each one up when its phase hands off.
+        if (bulkAutoRun[column]) {
+          await Promise.all(
+            [...startableIds, ...inProgressIds]
+              .filter((id) => !items.find((t) => t.id === id)?.autoRun)
+              .map((id) => api.update(id, { autoRun: true })),
+          );
+        }
         const { succeeded, failed } = await confirmBulkStart(column, startableIds, inProgressIds);
         // Same reason as the single-card start: the cards stay in this column,
         // but they are now in-progress. Re-list rather than wait for the watcher.
@@ -362,7 +373,7 @@ export function PhaseBoard({ api, reloadKey = 0, phaseModels, onOpenTask }: Phas
         setBulkStarting(null);
       }
     },
-    [api],
+    [api, bulkAutoRun],
   );
 
   if (!api.startPhase) {
@@ -428,6 +439,20 @@ export function PhaseBoard({ api, reloadKey = 0, phaseModels, onOpenTask }: Phas
                         ? 'Starting…'
                         : `Start all ${COLUMN_LABELS[column]} (${startable + inProgress})`}
                     </button>
+                    <label
+                      className="phase-card-autorun"
+                      title="Turn on Run through for every task this starts, so each continues to the next phase automatically"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!bulkAutoRun[column]}
+                        disabled={bulkStarting !== null}
+                        onChange={(e) =>
+                          setBulkAutoRun((prev) => ({ ...prev, [column]: e.target.checked }))
+                        }
+                      />
+                      Run through
+                    </label>
                   </footer>
                 )}
               </section>
