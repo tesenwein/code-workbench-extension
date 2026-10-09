@@ -1,6 +1,6 @@
 import type { ClaudeModel } from './claude-models.cjs';
 
-export type TaskPhase = 'plan' | 'implement' | 'review' | 'fix';
+export type TaskPhase = 'plan' | 'implement' | 'review' | 'fix' | 'ship';
 
 export interface PhaseMeta {
   label: string;
@@ -37,11 +37,17 @@ export const PHASE_DESCRIPTIONS: Record<TaskPhase, string>;
 /** The phase's instructions with the task-id placeholder resolved. */
 export function phaseProcedure(phase: TaskPhase, taskId: string): string;
 
-/** Full prompt for a spawned phase session. */
-export function phasePrompt(phase: TaskPhase, task: PhaseTask): string;
+/** Full prompt for a spawned phase session. `context` is an optional
+ *  prefetched block (arch cards / code symbols) appended before the procedure. */
+export function phasePrompt(phase: TaskPhase, task: PhaseTask, context?: string): string;
 
 /** Full prompt for ONE session that runs a phase across several tasks in sequence. */
-export function phasePromptBulk(phase: TaskPhase, tasks: PhaseTask[]): string;
+export function phasePromptBulk(
+  phase: TaskPhase,
+  tasks: PhaseTask[],
+  /** Prefetched context keyed by task id. */
+  contexts?: Record<string, string>,
+): string;
 
 /** `.claude/skills/cw-<phase>/SKILL.md` body. */
 export function phaseSkillBody(phase: TaskPhase): string;

@@ -17,6 +17,8 @@ export type {
   TaskPriority,
   TaskStatus,
   TaskPhase,
+  TaskUsageSummary,
+  ActiveSession,
   PhaseModelMap,
   WorkspaceTask,
   NewWorkspaceTask,

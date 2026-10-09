@@ -1605,6 +1605,45 @@
   background: var(--bg-2);
   white-space: nowrap;
 }
+.task-session-chip {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  border: none;
+  color: var(--fg-2);
+  background: var(--bg-2);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.task-session-chip:disabled {
+  cursor: default;
+}
+.task-usage {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--fg-3);
+  margin: 4px 0 8px;
+}
+.phase-card-health-bad {
+  color: #e05c5c;
+}
+.phase-card-pr {
+  text-decoration: none;
+  cursor: pointer;
+}
+.phase-card-autopilot {
+  color: var(--fg-2);
+}
+.phase-card-autorun,
+.task-phase-autorun {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  color: var(--fg-3);
+  cursor: pointer;
+}
 .phase-card-start {
   display: flex;
   align-items: center;

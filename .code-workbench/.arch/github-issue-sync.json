@@ -1,0 +1,33 @@
+{
+  "slug": "github-issue-sync",
+  "name": "GitHub Issue Sync",
+  "description": "Keeps a GitHub issue in step with the task created from it. worktrees.addFromIssue now also creates a root task (title = issue title, description holds the issue URL, worktree = new worktree) carrying the optional `issueNumber` frontmatter field (task-format/store/tasks-server/UI types; serialized only when set). extension/src/issueSync.ts: pure planIssueSync(prevStamps, tasks) diffs {status, phase} per root task with an issueNumber — first sight only primes (no spam), a change yields a `gh issue comment`, reaching done yields `gh issue close --comment` (with the PR URL). registerIssueSync runs it debounced (2 s) from refreshTaskSurfaces; failures are swallowed. Opt-in: codeWorkbench.github.syncIssues (default false) since it writes to GitHub.",
+  "files": [
+    "packages/extension/src/issueSync.ts",
+    "packages/extension/src/commands/worktreeCommands.ts",
+    "packages/mcp-core/task-format.cjs",
+    "packages/extension/test/issueSync.test.ts"
+  ],
+  "guidelines": [
+    "Keep the diff/plan pure and unit-tested; gh calls are best-effort and never block the board.",
+    "Never enable sync by default — it writes to an external service."
+  ],
+  "anti_patterns": [
+    "Do not post for tasks seen for the first time (enabling sync must not comment on old issues)."
+  ],
+  "decisions": [],
+  "tags": [
+    "github",
+    "issue",
+    "gh",
+    "sync",
+    "issueNumber"
+  ],
+  "dependsOn": [
+    "worktrees-view",
+    "task-store",
+    "tasks-view"
+  ],
+  "updatedAt": "2026-10-09T10:06:15.919Z",
+  "createdAt": "2026-10-09T10:06:15.919Z"
+}

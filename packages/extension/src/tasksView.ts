@@ -124,6 +124,11 @@ export function buildTaskRpcHandlers(
     startPhase: async (id: unknown, phase: unknown) => {
       await vscode.commands.executeCommand('codeWorkbench.tasks.startPhase', String(id), phase);
     },
+    focusSession: async (id: unknown) => {
+      await vscode.commands.executeCommand('codeWorkbench.sessions.focus', String(id));
+    },
+    taskUsage: async (id: unknown) =>
+      vscode.commands.executeCommand('codeWorkbench.tasks.usage', String(id)),
     confirmBulkStart: async (phase: unknown, startableIds: unknown, inProgressIds: unknown) =>
       confirmBulkStartPhase(
         phase as TaskPhase,
@@ -137,7 +142,11 @@ export function buildTaskRpcHandlers(
 export async function taskPanelContext(
   getRepoRoot: () => string | undefined,
   getActiveWorktree: () => string | undefined,
-): Promise<{ activeWorktree: string | null; worktrees: string[] }> {
+): Promise<{
+  activeWorktree: string | null;
+  worktrees: string[];
+  activeSessions: { taskId: string; sessionId: string; phase: TaskPhase }[];
+}> {
   let worktrees: string[] = [];
   const root = getRepoRoot();
   if (root) {
@@ -147,7 +156,12 @@ export async function taskPanelContext(
       /* best-effort — dropdown just shows Unassigned */
     }
   }
-  return { activeWorktree: getActiveWorktree() ?? null, worktrees };
+  // Via a command, like startPhase: this module never holds a SessionManager.
+  const activeSessions =
+    (await vscode.commands.executeCommand<
+      { taskId: string; sessionId: string; phase: TaskPhase }[]
+    >('codeWorkbench.tasks.activeSessions')) ?? [];
+  return { activeWorktree: getActiveWorktree() ?? null, worktrees, activeSessions };
 }
 
 /**

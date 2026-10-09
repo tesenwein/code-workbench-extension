@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import type { WorkspaceTask, TaskPhase } from '../../types';
+import type { ActiveSession, WorkspaceTask, TaskPhase } from '../../types';
 import { useTaskForm } from './useTaskForm';
 import {
   isPriority,
@@ -8,6 +8,7 @@ import {
   worktreeKey,
   PRIORITY_COLORS,
   STATUS_LABELS,
+  PHASE_LABELS,
 } from './taskUtils';
 
 // ── SubtaskRow ────────────────────────────────────────────────────────────────
@@ -404,6 +405,7 @@ export function TaskEditForm({
               <option value="implement">Implement</option>
               <option value="review">Review</option>
               <option value="fix">Fix</option>
+              <option value="ship">Ship</option>
             </select>
           </label>
         )}
@@ -453,9 +455,15 @@ export const TaskRow = React.memo(function TaskRow({
   onCreateSubtask,
   onOpenTask,
   onOpenInEditor,
+  session,
+  onFocusSession,
 }: {
   task: WorkspaceTask;
   subtasks: WorkspaceTask[];
+  /** Live session running a phase for this task, if any. */
+  session?: ActiveSession;
+  /** Focus that session's terminal; omitted → the chip is inert text. */
+  onFocusSession?: (sessionId: string) => void;
   activeWorktree: string | null;
   worktrees: string[];
   onDelete: (id: string) => Promise<void>;
@@ -510,6 +518,20 @@ export const TaskRow = React.memo(function TaskRow({
         <span className={`task-status-chip task-status-${task.status}`}>
           {STATUS_LABELS[task.status]}
         </span>
+        {session && (
+          <button
+            type="button"
+            className="task-session-chip"
+            disabled={!onFocusSession}
+            title="Focus the session running this task"
+            onClick={(e) => {
+              e.stopPropagation();
+              onFocusSession?.(session.sessionId);
+            }}
+          >
+            ▶ {PHASE_LABELS[session.phase]}
+          </button>
+        )}
         {task.tags && task.tags.length > 0 && (
           <span className="task-tags-row">
             {task.tags.map((tag) => (

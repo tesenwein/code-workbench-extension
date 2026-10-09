@@ -1,0 +1,31 @@
+{
+  "slug": "review-diagnostics",
+  "name": "Review Diagnostics",
+  "description": "Publishes open review-finding subtasks as VS Code diagnostics. mcp-core task-format.parseFindingLocation extracts the first path:line[:col] (also ranges, #L anchors, Windows drive paths) from the finding description. extension/src/reviewDiagnostics.ts: pure findingDiagnostics(tasks, resolveRoot) maps open findings of live root tasks (severity from priority: high=error, medium=warning, low=info; skips done, unlocated) and registerReviewDiagnostics owns a DiagnosticCollection refreshed (300 ms debounce) from refreshTaskSurfaces in extension.ts. Relative paths resolve against the parent task's worktree (unassigned → active worktree). Quick fixes keyed by the diagnostic's short task-id code: \"Open finding on task board\" (codeWorkbench.tasks.openTaskInPage on the parent) and \"Mark finding done\" (codeWorkbench.reviewDiagnostics.markDone → task-store). Toggle: codeWorkbench.reviewDiagnostics.enabled.",
+  "files": [
+    "packages/extension/src/reviewDiagnostics.ts",
+    "packages/mcp-core/task-format.cjs",
+    "packages/extension/test/reviewDiagnostics.test.ts",
+    "packages/mcp-core/test/task-format.test.mjs"
+  ],
+  "guidelines": [
+    "Keep the task→diagnostic mapping pure; only the collection/code-action wiring touches vscode.",
+    "Do not reference vscode enums at module scope (the test stub lacks them)."
+  ],
+  "anti_patterns": [
+    "Do not parse finding locations ad hoc elsewhere — use parseFindingLocation."
+  ],
+  "decisions": [],
+  "tags": [
+    "diagnostics",
+    "problems panel",
+    "review-finding",
+    "code action"
+  ],
+  "dependsOn": [
+    "tasks-view",
+    "task-store"
+  ],
+  "updatedAt": "2026-10-09T10:03:21.040Z",
+  "createdAt": "2026-10-09T10:03:21.040Z"
+}

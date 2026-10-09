@@ -96,6 +96,9 @@ const configs = [
       ),
       // Code-search CLI spawned by scan-runner's runCodeSearch.
       'mcp-server/code-search': require.resolve('@code-workbench/mcp-core/servers/code-search'),
+      // Claude Code hook CLI (PreToolUse/Stop/SessionStart), wired by the
+      // per-session settings file — see mcp.ts.
+      'mcp-server/cw-hook': fileURLToPath(import.meta.resolve('@code-workbench/mcp-core/cw-hook.mjs')),
       // Semantic arch-card search CLI spawned by scan-runner's runArchSearch.
       'mcp-server/arch-search': fileURLToPath(
         import.meta.resolve('@code-workbench/mcp-core/arch-search.mjs'),

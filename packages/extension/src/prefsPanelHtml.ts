@@ -502,7 +502,7 @@ export function renderPrefsHtml(worktreePath: string, state: PrefsPanelState): s
             <label>Agents</label>
           </div>
           <button type="button" class="btn" id="installAgents">Install agents to .claude/agents</button>
-          <p class="hint">Writes the <code>cw-implementer</code>, <code>cw-reviewer</code> and <code>cw-fixer</code> phase subagents into <code>.claude/agents</code> in this worktree. Optional — they are already auto-installed to <code>~/.claude/agents</code>; install here only to pin them to this repo (e.g. to commit them for teammates). Re-run to update.</p>
+          <p class="hint">Writes the <code>cw-implementer</code>, <code>cw-reviewer</code>, <code>cw-fixer</code> and <code>cw-shipper</code> phase subagents into <code>.claude/agents</code> in this worktree. Optional — they are already auto-installed to <code>~/.claude/agents</code>; install here only to pin them to this repo (e.g. to commit them for teammates). Re-run to update.</p>
           <div class="result" id="agentsResult"></div>
         </div>
 

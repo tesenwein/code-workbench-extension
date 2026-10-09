@@ -44,7 +44,8 @@ async function githubRepoUrl(cwd: string): Promise<string | null> {
 import { WorktreeItem, WorktreesProvider } from '../worktreesView';
 import { TasksProvider } from '../tasksView';
 import { SessionManager, normalizeWtPath } from '../sessions';
-import { listTasks, updateTask } from '../tasks';
+import { createTask, listTasks, updateTask } from '../tasks';
+import { worktreeKey } from '@code-workbench/mcp-core/task-format';
 import { PrefsPanel } from '../prefsPanel';
 import {
   ensureWorktreeWindowTitle,
@@ -76,6 +77,37 @@ export interface WorktreeCommandDeps {
   pendingRemovalKey: string;
 }
 
+/** Worktrees whose shipped tasks (a root task with a `prUrl`) have a MERGED
+ *  PR, keyed by worktree path with the task titles as value. Asks `gh`, so any
+ *  lookup that fails (no gh, offline, bad URL) just leaves that PR out. */
+async function shippedMergedWorktrees(
+  repoRoot: string,
+  repoKey: string,
+): Promise<Map<string, string[]>> {
+  const out = new Map<string, string[]>();
+  const withPr = (await listTasks(repoKey)).filter((t) => !t.parentId && t.prUrl && t.worktree);
+  if (withPr.length === 0) return out;
+  const trees = (await listWorktrees(repoRoot)).filter(
+    (w) => normalizeWtPath(w.path) !== normalizeWtPath(repoRoot),
+  );
+  for (const task of withPr) {
+    const wt = trees.find((w) => worktreeKey(w.path) === task.worktree);
+    if (!wt) continue;
+    try {
+      const { stdout } = await pExecFile(
+        'gh',
+        ['pr', 'view', task.prUrl as string, '--json', 'state', '-q', '.state'],
+        { cwd: repoRoot },
+      );
+      if (stdout.trim() !== 'MERGED') continue;
+      out.set(wt.path, [...(out.get(wt.path) ?? []), task.title]);
+    } catch {
+      /* gh missing / offline — skip */
+    }
+  }
+  return out;
+}
+
 export function registerWorktreeCommands(
   ctx: vscode.ExtensionContext,
   deps: WorktreeCommandDeps,
@@ -91,6 +123,11 @@ export function registerWorktreeCommands(
   } = deps;
 
   ctx.subscriptions.push(
+    // Used by the Sessions view's "Reveal worktree" row action.
+    vscode.commands.registerCommand('codeWorkbench.worktrees.reveal', (worktreePath?: string) => {
+      if (worktreePath) worktreesProvider.reveal(worktreePath);
+    }),
+
     vscode.commands.registerCommand('codeWorkbench.worktrees.refresh', () =>
       worktreesProvider.refresh(),
     ),
@@ -290,8 +327,17 @@ export function registerWorktreeCommands(
       if (!repoKey) return;
 
       let merged: Worktree[];
+      // Shipped tasks whose PR merged: worktree path → task titles (for the picker).
+      let shipped = new Map<string, string[]>();
       try {
         merged = await mergedWorktrees(repoRoot);
+        shipped = await shippedMergedWorktrees(repoRoot, repoKey);
+        // A shipped worktree is merged even when git's branch check misses it
+        // (squash merges leave the branch looking unmerged).
+        const known = new Set(merged.map((w) => w.path));
+        for (const wt of await listWorktrees(repoRoot)) {
+          if (shipped.has(wt.path) && !known.has(wt.path)) merged.push(wt);
+        }
       } catch (err) {
         vscode.window.showErrorMessage(`Cleanup failed: ${errorMessage(err)}`);
         return;
@@ -313,9 +359,12 @@ export function registerWorktreeCommands(
         candidates.map((wt) => ({
           label: `$(git-branch) ${path.basename(wt.path)}`,
           description: wt.branch,
-          detail: wt.uncommittedCount
-            ? `${wt.path}  —  ●${wt.uncommittedCount} uncommitted file(s)`
-            : wt.path,
+          detail: [
+            wt.uncommittedCount
+              ? `${wt.path}  —  ●${wt.uncommittedCount} uncommitted file(s)`
+              : wt.path,
+            ...(shipped.has(wt.path) ? [`shipped: ${shipped.get(wt.path)!.join(', ')}`] : []),
+          ].join('  —  '),
           wt,
           // Pre-check clean worktrees; leave dirty ones for an explicit opt-in.
           picked: !wt.uncommittedCount,
@@ -468,11 +517,11 @@ export function registerWorktreeCommands(
         return;
       }
 
-      let issues: { number: number; title: string }[];
+      let issues: { number: number; title: string; url?: string }[];
       try {
         const { stdout } = await pExecFile(
           'gh',
-          ['issue', 'list', '--state', 'open', '--limit', '100', '--json', 'number,title'],
+          ['issue', 'list', '--state', 'open', '--limit', '100', '--json', 'number,title,url'],
           { cwd: repoRoot },
         );
         issues = JSON.parse(stdout);
@@ -498,6 +547,18 @@ export function registerWorktreeCommands(
       if (!spec) return;
       try {
         await createWorktree(repoRoot, sessionMgr, spec);
+        // Durable link back to the issue: the task carries its number so
+        // status changes can be synced to GitHub (issueSync.ts).
+        const repoKey = getRepoKey();
+        if (repoKey) {
+          await createTask(repoKey, {
+            title: pick.issue.title,
+            description: pick.issue.url ? `GitHub issue: ${pick.issue.url}` : '',
+            worktree: spec.target,
+            issueNumber: pick.issue.number,
+          });
+          tasksProvider.refresh();
+        }
         worktreesProvider.refresh();
         await offerOpen(
           `Worktree created at ${spec.target} for issue #${pick.issue.number}`,

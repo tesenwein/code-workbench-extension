@@ -1,0 +1,36 @@
+{
+  "slug": "task-session-navigation",
+  "name": "Task Session Navigation",
+  "description": "Navigation between tasks, sessions and worktrees built on SavedSession.boundTask. Host: command codeWorkbench.tasks.activeSessions lists live task-bound sessions; taskPanelContext (tasksView.ts) pushes them as `activeSessions` in the Tasks panel context (the page is refreshed from extension.ts only when the live bound-session set changes). UI: TasksPanel shows a \"▶ <Phase>\" chip on tasks with a live session (TaskRow session/onFocusSession) that calls TasksApi.focusSession → codeWorkbench.sessions.focus(id) → SessionManager.open; the page-mode status filter gains \"Active session\". Sessions view rows gain \"Open task\" (codeWorkbench.tasks.openTaskInPage) and \"Reveal worktree\" (codeWorkbench.worktrees.reveal → WorktreesProvider.reveal flashes the row) actions. Live-state churn uses SessionManager.onLiveChange, separate from onDidChange, so it never triggers the structural refresh.",
+  "files": [
+    "packages/extension/src/tasksView.ts",
+    "packages/extension/src/commands/taskFlow.ts",
+    "packages/extension/src/commands/sessionCommands.ts",
+    "packages/extension/src/sessionsView.ts",
+    "packages/extension/src/worktreesView.ts",
+    "packages/ui/src/components/TasksPanel.tsx",
+    "packages/ui/src/components/tasks/TaskRow.tsx"
+  ],
+  "guidelines": [
+    "The ui package stays host-agnostic: sessions arrive as plain ActiveSession data and focus goes through an optional TasksApi method.",
+    "Refresh the Tasks page only when the live bound-session set changes."
+  ],
+  "anti_patterns": [
+    "Do not make tasksView depend on SessionManager directly — go through registered commands."
+  ],
+  "decisions": [],
+  "tags": [
+    "navigation",
+    "running in session",
+    "reveal worktree",
+    "active session filter"
+  ],
+  "dependsOn": [
+    "sessions-view",
+    "tasks-view",
+    "worktrees-view",
+    "phase-autopilot"
+  ],
+  "updatedAt": "2026-10-09T10:08:22.796Z",
+  "createdAt": "2026-10-09T10:08:22.796Z"
+}

@@ -1,0 +1,41 @@
+{
+  "slug": "phase-autopilot",
+  "name": "Phase Autopilot",
+  "description": "Opt-in per-task `autoRun` (\"Run through\") flag that auto-starts the next phase when a phase session finishes. startTaskPhase records `boundTask {id, phase}` on the spawned SavedSession (sessionTypes.ts). mcp-core notify-server now includes the sender's sessionId in notifications; NotifyServer (notifications.ts) fires onNotify, exposed by SessionManager.onNotify. registerAutopilot (commands/taskFlow.ts) maps the event to the bound task, re-reads it from the task-store and asks the pure decideNextPhase (phaseAutopilot.ts) for {start} or {stop: reason}. Stops: autorun off, needs_input, task done/phase cleared, phase unchanged after done (blocked), or next phase is fix with open high-priority review-finding subtasks. One verdict per session on 'done'; a live session already bound to the same task+phase blocks a double-start. UI: \"Run through\" checkbox + \"autopilot\" chip on Phase Board cards and in TaskDetailPane's PhaseStepper, writing autoRun via the normal update RPC. autoRun is serialized in task frontmatter only when true.",
+  "files": [
+    "packages/extension/src/phaseAutopilot.ts",
+    "packages/extension/src/commands/taskFlow.ts",
+    "packages/extension/src/notifications.ts",
+    "packages/extension/src/sessionTypes.ts",
+    "packages/mcp-core/notify-server.mjs",
+    "packages/mcp-core/task-format.cjs",
+    "packages/ui/src/components/PhaseBoard.tsx",
+    "packages/ui/src/components/tasks/TaskDetail.tsx",
+    "packages/extension/test/phaseAutopilot.test.ts"
+  ],
+  "guidelines": [
+    "Decision logic stays in the pure decideNextPhase; keep I/O in registerAutopilot.",
+    "Autopilot starts phases only through startTaskPhase so manual and automatic starts share one path.",
+    "`task.phase` names the NEXT phase; 'unchanged after done' means task.phase === the session's bound phase."
+  ],
+  "anti_patterns": [
+    "Do not auto-start past a high-priority review finding or a needs_input stop.",
+    "Do not trigger from notifications without a sessionId or a boundTask."
+  ],
+  "decisions": [],
+  "tags": [
+    "autopilot",
+    "autoRun",
+    "run through",
+    "auto-advance",
+    "phase flow"
+  ],
+  "dependsOn": [
+    "tasks-view",
+    "notify-server",
+    "session-manager",
+    "task-store"
+  ],
+  "updatedAt": "2026-10-09T09:53:22.659Z",
+  "createdAt": "2026-10-09T09:53:22.659Z"
+}

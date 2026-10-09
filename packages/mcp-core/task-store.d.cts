@@ -14,6 +14,9 @@ export interface TaskInput {
   dueDate?: string | null;
   epic?: string | null;
   phase?: Task["phase"];
+  autoRun?: boolean;
+  prUrl?: string | null;
+  issueNumber?: number | null;
   tags?: string[];
 }
 

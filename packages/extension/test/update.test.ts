@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { executedCommands } from './stubs/vscode';
-import { applyUpdateState, compareVersions, pickVsix } from '../src/update';
+import { applyUpdateState, compareVersions, isStoreInstall, pickVsix } from '../src/update';
 
 const AVAILABLE_VERSION_KEY = 'codeWorkbench.update.availableVersion';
 
@@ -76,5 +76,25 @@ describe('pickVsix', () => {
 
   it('returns undefined when the release ships no vsix', () => {
     expect(pickVsix(release(['sha256.txt']))).toBeUndefined();
+  });
+});
+
+describe('isStoreInstall', () => {
+  it('is true for gallery installs', () => {
+    expect(isStoreInstall({ __metadata: { source: 'gallery', publisherId: 'x' } })).toBe(true);
+  });
+
+  it('is false for a sideloaded VSIX, even one carrying publisher metadata', () => {
+    expect(isStoreInstall({ __metadata: { source: 'vsix', publisherId: 'x' } })).toBe(false);
+    expect(isStoreInstall({ __metadata: { installedTimestamp: 1 } })).toBe(false);
+  });
+
+  it('is false when the manifest has no metadata (dev host / unpacked)', () => {
+    expect(isStoreInstall({})).toBe(false);
+    expect(isStoreInstall(undefined)).toBe(false);
+  });
+
+  it('falls back to publisherId when no source is recorded', () => {
+    expect(isStoreInstall({ __metadata: { publisherId: 'abc' } })).toBe(true);
   });
 });

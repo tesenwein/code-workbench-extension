@@ -1,8 +1,13 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { WORKBENCH_SYSTEM_PROMPT } from './workbenchPrompt';
+import {
+  HOOK_RULES_PROMPT,
+  NO_HOOK_RULES_PROMPT,
+  WORKBENCH_SYSTEM_PROMPT,
+} from './workbenchPrompt';
 import { resolveNodeRuntime } from './nodeRuntime';
+import type { BoundTask } from './sessionTypes';
 
 const fsp = fs.promises;
 
@@ -16,11 +21,20 @@ export interface McpConfigArgs {
   repoKey?: string;
   notifyPort?: number;
   extraPrompts?: string[];
+  /** Task + phase the session is bound to; scopes the Stop/SessionStart hooks. */
+  boundTask?: BoundTask;
 }
 
 export interface McpWriteResult {
   configPath: string;
   promptPath?: string;
+  /** Claude Code settings file carrying the enforcement `hooks` block. */
+  settingsPath?: string;
+}
+
+/** Quote one argument for the shell string a hook `command` is run through. */
+function shArg(v: string): string {
+  return `"${v.replace(/(["\\$`])/g, '\\$1')}"`;
 }
 
 export class McpConfigBuilder {
@@ -36,6 +50,10 @@ export class McpConfigBuilder {
 
   private promptPath(sessionId: string): string {
     return path.join(this.dir(), `session-${sessionId}.txt`);
+  }
+
+  private settingsPath(sessionId: string): string {
+    return path.join(this.dir(), `session-${sessionId}.settings.json`);
   }
 
   private portPath(sessionId: string): string {
@@ -169,15 +187,75 @@ export class McpConfigBuilder {
       await fsp.writeFile(this.portPath(args.sessionId), String(args.notifyPort) + '\n', 'utf8');
     }
 
+    const settingsPath = await this.writeHookSettings(args, cfg);
+
     let promptPath: string | undefined;
     const extras = (args.extraPrompts ?? []).map((p) => p.trim()).filter(Boolean);
     if (mcpServers[CODE_MCP_KEY] || extras.length > 0) {
       promptPath = this.promptPath(args.sessionId);
-      const body = [WORKBENCH_SYSTEM_PROMPT, ...extras].join('\n\n');
+      const rules = settingsPath ? HOOK_RULES_PROMPT : NO_HOOK_RULES_PROMPT;
+      const body = [WORKBENCH_SYSTEM_PROMPT, rules, ...extras].join('\n\n');
       await fsp.writeFile(promptPath, body, 'utf8');
     }
 
-    return { configPath, promptPath };
+    return { configPath, promptPath, ...(settingsPath ? { settingsPath } : {}) };
+  }
+
+  /** Write the per-session settings file whose `hooks` block runs the bundled
+   *  cw-hook CLI. Returns undefined when hooks are off or cannot be wired
+   *  (no repo key, bundle missing) — the session then runs unguarded. */
+  private async writeHookSettings(
+    args: McpConfigArgs,
+    cfg: vscode.WorkspaceConfiguration,
+  ): Promise<string | undefined> {
+    if (!cfg.get<boolean>('hooks.enabled', true) || !args.repoKey) return undefined;
+    const script = await this.serverScript('cw-hook.mjs');
+    if (!script) return undefined;
+    const node = await resolveNodeRuntime();
+    // Env cannot ride in the hooks block, so inline it (POSIX shells only; a
+    // Windows node.exe never needs the Electron fallback variables).
+    const envPrefix =
+      process.platform === 'win32'
+        ? ''
+        : Object.entries(node.env)
+            .map(([k, v]) => `${k}=${shArg(v)} `)
+            .join('');
+    const command = (event: string): string =>
+      [
+        `${envPrefix}${shArg(node.command)}`,
+        shArg(script),
+        '--event',
+        event,
+        '--repo-key',
+        shArg(args.repoKey ?? ''),
+        '--worktree',
+        shArg(args.worktreePath),
+        '--session',
+        shArg(args.sessionId),
+        '--notify-port-file',
+        shArg(this.portPath(args.sessionId)),
+        ...(args.boundTask
+          ? ['--task-id', shArg(args.boundTask.id), '--phase', shArg(args.boundTask.phase)]
+          : []),
+      ].join(' ');
+    const entry = (event: string) => ({
+      hooks: [{ type: 'command', command: command(event), timeout: 10 }],
+    });
+    const settings = {
+      hooks: {
+        // No matcher: the hook reports every tool as live activity and applies
+        // the edit guard to Edit/Write/MultiEdit/NotebookEdit itself.
+        PreToolUse: [entry('PreToolUse')],
+        PostToolUse: [entry('PostToolUse')],
+        UserPromptSubmit: [entry('UserPromptSubmit')],
+        Notification: [entry('Notification')],
+        Stop: [entry('Stop')],
+        SessionStart: [entry('SessionStart')],
+      },
+    };
+    const p = this.settingsPath(args.sessionId);
+    await fsp.writeFile(p, JSON.stringify(settings, null, 2) + '\n', 'utf8');
+    return p;
   }
 
   async delete(sessionId: string): Promise<void> {
@@ -185,6 +263,7 @@ export class McpConfigBuilder {
       this.configPath(sessionId),
       this.promptPath(sessionId),
       this.portPath(sessionId),
+      this.settingsPath(sessionId),
     ]) {
       try {
         await fsp.unlink(p);

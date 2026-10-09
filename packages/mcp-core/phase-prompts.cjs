@@ -1,4 +1,4 @@
-// Procedures for the task-bound phase flow: Plan -> Implement -> Review -> Fix.
+// Procedures for the task-bound phase flow: Plan -> Implement -> Review -> Fix -> Ship.
 //
 // ONE source of truth for what each phase tells its Claude session to do. Two
 // consumers read from here and must never drift apart:
@@ -18,7 +18,7 @@
 const TASK_ID = "{{TASK_ID}}";
 
 /** Canonical phase order — the board's state machine. */
-const PHASE_ORDER = ["plan", "implement", "review", "fix"];
+const PHASE_ORDER = ["plan", "implement", "review", "fix", "ship"];
 
 /** Presentation + session config per phase. `model` is what the spawned
  *  Claude session runs on: planning wants the strongest model, the rest are
@@ -31,6 +31,7 @@ const PHASE_META = {
   implement: { label: "Implement", icon: "rocket", model: "sonnet" },
   review: { label: "Review", icon: "checklist", model: "sonnet" },
   fix: { label: "Fix", icon: "wrench", model: "sonnet" },
+  ship: { label: "Ship", icon: "git-pull-request", model: "sonnet" },
 };
 
 /** One-line summary of each phase, reused in skill frontmatter + panel tooltips. */
@@ -41,6 +42,7 @@ const PHASE_DESCRIPTIONS = {
   review:
     "Review the work done for a Code Workbench task and file each real finding as a review-finding subtask.",
   fix: "Fix the review-finding subtasks filed against a Code Workbench task, then re-run lint/typecheck/tests.",
+  ship: "Ship a reviewed Code Workbench task: conventional commits, push, open or reuse the pull request, wait for CI, record the PR URL, then mark the task done.",
 };
 
 const REREAD = `Work ONLY on task ${TASK_ID} on the shared cw-tasks board. Start by finding it via task_list or task_find_similar and re-reading its current title, description, memo, and subtasks — anything quoted to you may have gone stale.`;
@@ -94,11 +96,13 @@ const PHASE_PROCEDURES = {
     "",
     "Review the work done for this task: `git status --short`, `git diff`, `git diff --staged`, and this branch's commits vs its base (resolve origin/HEAD, else develop, else main/master). Read surrounding files for context. Look for correctness bugs, logic errors, missing error handling, type-safety escapes, security issues, and needless complexity.",
     "",
+    'If the task\'s memo contains a "Code health:" line with a positive count (e.g. "+2 duplicates", or "+2/-2 type escapes" — new findings count even when others were removed), the phase that just ran introduced new dead code, duplicates, or type escapes: file one "review-finding" subtask per regression (find them with find_duplicates / detect_dead_code / detect_type_escapes with diff_only) instead of ignoring the line.',
+    "",
     "You may NOT fix: change no code, not even a one-line typo or an obviously-correct rename. Every finding leaves this phase as a subtask, and the Fix phase applies it. A review that edits its own findings is a review nobody checked.",
     "",
     `File each real finding as a subtask via task_create (parentId: "${TASK_ID}", tags: ["review-finding"], priority reflecting severity, description: "file:line, what is wrong, why it matters, suggested fix"). Set \`order\` on each (0, 1, 2, ...) to fix the sequence the Fix phase should follow.`,
     "",
-    `Then hand off via task_update on the task: if you filed any findings, id: "${TASK_ID}", phase: "fix". If you filed none and no other subtasks are still open, id: "${TASK_ID}", phase: "" (clear it), status: "done". If you filed none but other subtasks ARE still open, note in the memo what is left and set phase: "implement" so the remaining work gets picked up — never leave the task with no phase while it is unfinished.`,
+    `Then hand off via task_update on the task: if you filed any findings, id: "${TASK_ID}", phase: "fix". If you filed none and no other subtasks are still open, id: "${TASK_ID}", phase: "ship". If you filed none but other subtasks ARE still open, note in the memo what is left and set phase: "implement" so the remaining work gets picked up — never leave the task with no phase while it is unfinished.`,
   ].join("\n"),
 
   fix: [
@@ -110,7 +114,24 @@ const PHASE_PROCEDURES = {
     "",
     'You may NOT review: fix the findings already on the board and no more. If you spot a NEW problem while fixing, file it as another "review-finding" subtask but do NOT fix it — it belongs to the next Review/Fix round.',
     "",
-    `Then hand off via task_update on the task: if you filed any NEW findings (or had to change code beyond trivial finding fixes), id: "${TASK_ID}", phase: "review" so the new work gets reviewed. Otherwise, once every "review-finding" subtask is done: id: "${TASK_ID}", phase: "" (clear it), status: "done".`,
+    `Then hand off via task_update on the task: if you filed any NEW findings (or had to change code beyond trivial finding fixes), id: "${TASK_ID}", phase: "review" so the new work gets reviewed. Otherwise, once every "review-finding" subtask is done: id: "${TASK_ID}", phase: "ship".`,
+  ].join("\n"),
+
+  ship: [
+    REREAD,
+    STAY_IN_LANE,
+    IF_BLOCKED,
+    "",
+    "Ship the finished work: this task has been implemented, reviewed, and fixed. Change no code beyond what committing requires — if a check fails or you find a real problem, that is a blocker (see above), not something to patch here.",
+    "",
+    "1. Work out which files THIS task changed (from its memo, subtask descriptions and `git log`), then inspect `git status --short` and `git diff` for them. The worktree may be shared with other tasks: commit and PR ONLY this task's files. If the tree holds changes you cannot attribute to this task, leave them alone; if the task's own changes cannot be separated from them, that is a blocker. Run the project's lint, typecheck, and test scripts one last time; a failure blocks shipping.",
+    "2. Make sure you are on a feature branch, not the default branch (develop/main/master). If you are on the default branch, create a branch named after the task first.",
+    "3. Group this task's changes into logical Conventional Commits (`<type>: <short imperative description>`, types feat/fix/refactor/chore/docs/test/style/perf, no trailing period; a body only when the why is non-obvious). Stage files explicitly — never `git add -A` over unrelated or secret files.",
+    "4. Push the branch (`git push -u origin <branch>`).",
+    "5. If an open PR already exists for this branch (`gh pr view --json url,state`), reuse it; otherwise `gh pr create` against the repo's default base branch, with the task title as the PR title and a body built from the task's memo and description.",
+    "6. Wait for CI with a bounded watch (`gh pr checks --watch`, give up after about 15 minutes). If a check fails, record which one in the memo and treat it as a blocker.",
+    `7. Write the PR URL into the task via task_update (id: "${TASK_ID}", prUrl: "<url>") and note the final CI result in the memo.`,
+    `8. Finally task_update the task: id: "${TASK_ID}", phase: "" (clear it), status: "done".`,
   ].join("\n"),
 };
 
@@ -126,18 +147,33 @@ function phaseProcedure(phase, taskId) {
   return PHASE_PROCEDURES[phase].split(TASK_ID).join(taskId);
 }
 
+/** The optional prefetched-context block; empty array when there is none. */
+function contextSection(context) {
+  const text = typeof context === "string" ? context.trim() : "";
+  return text
+    ? ["", "## Context (prefetched, verify before relying on it)", "", text]
+    : [];
+}
+
 /**
  * Full prompt for a spawned phase session: a phase banner, the task's current
  * fields (a convenience — the procedure still tells the session to re-read
  * them), then the procedure itself.
  */
-function phasePrompt(phase, task) {
+function phasePrompt(phase, task, context) {
   assertPhase(phase);
   const header = `${PHASE_META[phase].label.toUpperCase()} phase for task ${task.id}.`;
-  const context = [`Task ${task.id}: ${task.title}`];
-  if (task.description) context.push("", task.description);
-  if (phase === "implement" && task.memo) context.push("", `Plan memo:\n${task.memo}`);
-  return [header, "", ...context, "", phaseProcedure(phase, task.id)].join("\n");
+  const taskLines = [`Task ${task.id}: ${task.title}`];
+  if (task.description) taskLines.push("", task.description);
+  if (phase === "implement" && task.memo) taskLines.push("", `Plan memo:\n${task.memo}`);
+  return [
+    header,
+    "",
+    ...taskLines,
+    ...contextSection(context),
+    "",
+    phaseProcedure(phase, task.id),
+  ].join("\n");
 }
 
 /**
@@ -148,9 +184,12 @@ function phasePrompt(phase, task) {
  * the phases mutate the board and the working tree, and a batch that interleaves
  * them would produce diffs no Review phase can attribute to a task.
  */
-function phasePromptBulk(phase, tasks) {
+function phasePromptBulk(phase, tasks, contexts) {
   assertPhase(phase);
-  if (tasks.length === 1) return phasePrompt(phase, tasks[0]);
+  if (tasks.length === 1) return phasePrompt(phase, tasks[0], contexts?.[tasks[0].id]);
+  // Ship commits and opens a PR for the working tree; batching would attribute
+  // every task's changes to whichever task ships first.
+  if (phase === "ship") throw new Error("Ship runs one task at a time.");
   // Stable-sort by `order` (nulls last) so the batch runs in the planner's
   // intended sequence no matter how the caller ordered it.
   tasks = tasks
@@ -170,13 +209,14 @@ function phasePromptBulk(phase, tasks) {
   ].join("\n");
 
   const blocks = tasks.map((task, i) => {
-    const context = [`Task ${task.id}: ${task.title}`];
-    if (task.description) context.push("", task.description);
-    if (phase === "implement" && task.memo) context.push("", `Plan memo:\n${task.memo}`);
+    const taskLines = [`Task ${task.id}: ${task.title}`];
+    if (task.description) taskLines.push("", task.description);
+    if (phase === "implement" && task.memo) taskLines.push("", `Plan memo:\n${task.memo}`);
     return [
       `--- Task ${i + 1} of ${tasks.length} — ${task.id} ---`,
       "",
-      ...context,
+      ...taskLines,
+      ...contextSection(contexts?.[task.id]),
       "",
       phaseProcedure(phase, task.id),
     ].join("\n");

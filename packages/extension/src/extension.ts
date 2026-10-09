@@ -29,7 +29,11 @@ import { registerScanPageCommands } from './scanPages';
 import { registerCodeHealthView } from './codeHealthView';
 import { registerCodeReviewCommand } from './commands/codeReview';
 import { registerPlanFeatureCommand } from './commands/planFeature';
-import { registerTaskFlowCommand } from './commands/taskFlow';
+import { registerIssueSync } from './issueSync';
+import { captureHealthBaseline, recordHealthDelta } from './codeHealth';
+import { registerReviewDiagnostics } from './reviewDiagnostics';
+import { buildTaskContext } from './taskContext';
+import { registerAutopilot, registerTaskFlowCommand } from './commands/taskFlow';
 import { registerUpdateCommand } from './update';
 import { refreshTasksPage, isTasksPageOpen } from './tasksPage';
 import { refreshPhaseBoardPage, isPhaseBoardPageOpen } from './phaseBoardPage';
@@ -209,7 +213,11 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
   // Refresh BOTH task surfaces (sidebar view + full-page board) at once. Wired
   // into every task mutation so an edit in one surface reflects in the other
   // immediately, rather than waiting on the unreliable fs.watch / 3s poll.
+  let refreshDiagnostics: () => void = () => undefined;
+  let refreshIssueSync: () => void = () => undefined;
   const refreshTaskSurfaces = () => {
+    refreshDiagnostics();
+    refreshIssueSync();
     tasksProvider.refresh();
     refreshTasksPage();
     refreshPhaseBoardPage();
@@ -238,11 +246,23 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     statusBar.tooltip = `This window's worktree: ${repoRoot}\nClick to open another worktree in a new window.`;
     statusBar.show();
   };
+  let boundSig = '';
   sessionMgr.onDidChange(() => {
     syncAccent();
     worktreesProvider.refresh();
     tasksProvider.refresh();
     refreshStatusBar();
+    // The task page shows "running in" chips: refresh it only when the set of
+    // live task-bound sessions actually changed.
+    const sig = sessionMgr
+      .list()
+      .filter((s) => s.boundTask && sessionMgr.isOpen(s.id))
+      .map((s) => s.id)
+      .join(',');
+    if (sig !== boundSig) {
+      boundSig = sig;
+      refreshTasksPage();
+    }
   });
   refreshStatusBar();
 
@@ -637,12 +657,55 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
 
   registerPlanFeatureCommand(ctx, { sessionMgr, ensureActiveWorktree });
 
-  registerTaskFlowCommand(ctx, {
+  // The gate guards phases that change code; Plan/Review/Ship leave it alone.
+  const healthGateOn = (phase: string): boolean =>
+    (phase === 'implement' || phase === 'fix') &&
+    vscode.workspace
+      .getConfiguration('codeWorkbench')
+      .get<boolean>('codeHealth.scanOnPhaseDone', true);
+  const taskFlowDeps = {
     sessionMgr,
     getRepoKey: () => repoKey,
     getRepoRoot: () => repoRoot,
     ensureActiveWorktree,
-  });
+    onPhaseStart: async (wt: string, taskId: string, phase: string) => {
+      if (repoKey && healthGateOn(phase)) await captureHealthBaseline(ctx, repoKey, wt, taskId);
+    },
+    onPhaseDone: async (wt: string, taskId: string, phase: string) => {
+      if (repoKey && healthGateOn(phase)) await recordHealthDelta(ctx, repoKey, wt, taskId);
+    },
+    prefetchContext: async (wt: string, task: { title: string; description: string }) =>
+      vscode.workspace
+        .getConfiguration('codeWorkbench')
+        .get<boolean>('taskFlow.prefetchContext', true)
+        ? buildTaskContext(ctx, wt, task).catch(() => '')
+        : '',
+  };
+  registerTaskFlowCommand(ctx, taskFlowDeps);
+  registerAutopilot(ctx, taskFlowDeps);
+
+  refreshDiagnostics = registerReviewDiagnostics(ctx, {
+    getRepoKey: () => repoKey,
+    getRepoRoot: () => repoRoot,
+    getActiveWorktree: () => sessionMgr.getActiveWorktree() ?? undefined,
+    afterMutation: refreshTaskSurfaces,
+  }).refresh;
+  // Unassigned findings resolve against the active worktree, so a switch must
+  // republish them (onDidChange fires for many reasons; only act on a real change).
+  let lastActiveWorktree = sessionMgr.getActiveWorktree();
+  ctx.subscriptions.push(
+    sessionMgr.onDidChange(() => {
+      const active = sessionMgr.getActiveWorktree();
+      if (active === lastActiveWorktree) return;
+      lastActiveWorktree = active;
+      refreshDiagnostics();
+    }),
+  );
+
+  refreshIssueSync = registerIssueSync(ctx, {
+    getRepoKey: () => repoKey,
+    getRepoRoot: () => repoRoot,
+  }).refresh;
 
   registerTaskCommands(ctx, { tasksProvider });
 

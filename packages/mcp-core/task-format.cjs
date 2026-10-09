@@ -38,7 +38,7 @@ const VALID_STATUSES = ["open", "in-progress", "done"];
 // Workflow phase a task is in. Each phase is worked by a Claude session with a
 // model and prompt suited to it; the session advances the field when it hands
 // off. `null` means the task is not being driven through the flow.
-const VALID_PHASES = ["plan", "implement", "review", "fix"];
+const VALID_PHASES = ["plan", "implement", "review", "fix", "ship"];
 
 function serializeTask(task) {
   const safeTitle = decodeEntities(String(task.title))
@@ -69,6 +69,12 @@ function serializeTask(task) {
     `dueDate: ${task.dueDate ?? "null"}`,
     `epic: ${task.epic ?? "null"}`,
     `phase: ${task.phase ?? "null"}`,
+    // Only written when on, so the common case keeps its files unchanged.
+    ...(task.autoRun ? ["autoRun: true"] : []),
+    // Likewise only when set (the Ship phase records the PR here).
+    ...(task.prUrl ? [`prUrl: ${task.prUrl}`] : []),
+    // GitHub issue this task mirrors (see issueSync in the extension).
+    ...(task.issueNumber ? [`issueNumber: ${task.issueNumber}`] : []),
     `tags: ${tagsVal}`,
     `created: ${task.created}`,
     `updated: ${task.updated}`,
@@ -141,6 +147,9 @@ function parseTask(raw) {
   const rawDueDate = get("dueDate");
   const rawEpic = get("epic");
   const rawPhase = get("phase");
+  const rawAutoRun = get("autoRun");
+  const rawPrUrl = get("prUrl");
+  const rawIssue = get("issueNumber");
   const rawTags = get("tags");
   const MEMO_SENTINEL = "\n<!-- memo -->\n";
   // Prepend a newline so the sentinel also matches when the description is
@@ -182,12 +191,40 @@ function parseTask(raw) {
         : rawDueDate,
     epic: rawEpic === "null" || !rawEpic ? null : rawEpic,
     phase: VALID_PHASES.includes(rawPhase) ? rawPhase : null,
+    autoRun: rawAutoRun === "true",
+    prUrl: rawPrUrl && rawPrUrl !== "null" ? rawPrUrl : null,
+    issueNumber: /^\d+$/.test(rawIssue) && Number(rawIssue) > 0 ? Number(rawIssue) : null,
     tags,
     description: descriptionBody,
     memo,
     created: get("created") || new Date().toISOString(),
     updated: get("updated") || new Date().toISOString(),
   };
+}
+
+// Review findings are filed as "file:line, what is wrong, ...". Matches the
+// first `path.ext:line[:col]` (also `path.ext:line-endLine`, `path.ext#L12`),
+// POSIX or Windows-drive path, optionally wrapped in backticks/quotes/parens.
+const FINDING_LOC =
+  /(?<![\w/\\.-])((?:[A-Za-z]:[\\/])?[^\s:,()"'`<>|*?#]+\.[A-Za-z0-9]+)(?::|#L)(\d+)(?::(\d+))?/g;
+
+/** First `{ file, line, column? }` named in a review-finding description, or null. */
+function parseFindingLocation(description) {
+  if (!description) return null;
+  FINDING_LOC.lastIndex = 0;
+  let m;
+  while ((m = FINDING_LOC.exec(String(description))) !== null) {
+    // `host.com:8080` inside a URL is not a source location.
+    if (m[1].startsWith("//")) continue;
+    const line = Number(m[2]);
+    if (line < 1) continue;
+    return {
+      file: m[1],
+      line,
+      ...(m[3] ? { column: Number(m[3]) } : {}),
+    };
+  }
+  return null;
 }
 
 function taskCmp(a, b) {
@@ -249,4 +286,5 @@ module.exports = {
   parseTask,
   sortTasks,
   siblingCmp,
+  parseFindingLocation,
 };

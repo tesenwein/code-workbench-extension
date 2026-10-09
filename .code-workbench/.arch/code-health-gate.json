@@ -1,0 +1,38 @@
+{
+  "slug": "code-health-gate",
+  "name": "Code Health Gate",
+  "description": "Turns the dead-code / duplicate / type-escape scans into a quality gate for phases that change code. When an Implement or Fix session starts, startTaskPhase fires deps.onPhaseStart → codeHealth.captureHealthBaseline, which runs scanHost.scanHealthSnapshot (all three scans, fingerprints only, NEVER persisting findings files) and stores it under globalStorage/task-health/<repoKey>/<taskId>.json. When the bound session reports notify_done, registerAutopilot awaits deps.onPhaseDone → codeHealth.recordHealthDelta BEFORE autopilot decides: it re-scans, diffs per fingerprint (new minus gone, so the delta is scoped to what the phase changed; the scans themselves cover the whole worktree) and idempotently writes \"Code health: +N duplicates, -M dead-code items, ±K type escapes\" into the task memo. The Phase Board card shows a health chip (red ▲ when any count is positive) parsed from that memo line; the Review procedure tells the session to file a review-finding per positive regression. Setting: codeWorkbench.codeHealth.scanOnPhaseDone (default true). Baseline capture is fire-and-forget, so it can race the session's first edits on very large repos.",
+  "files": [
+    "packages/extension/src/codeHealth.ts",
+    "packages/extension/src/scanHost.ts",
+    "packages/extension/src/commands/taskFlow.ts",
+    "packages/extension/src/extension.ts",
+    "packages/ui/src/components/PhaseBoard.tsx",
+    "packages/mcp-core/phase-prompts.cjs",
+    "packages/extension/test/codeHealth.test.ts"
+  ],
+  "guidelines": [
+    "Health scans must not persist findings files (that is the host's on-demand contract in shared-scan-service).",
+    "The memo line is replaced idempotently via upsertHealthLine; the chip parses the same 'Code health:' prefix.",
+    "onPhaseDone is awaited before autopilot so the next phase sees the delta."
+  ],
+  "anti_patterns": [
+    "Do not gate Plan/Review/Ship phases — only phases that change code."
+  ],
+  "decisions": [],
+  "tags": [
+    "code health",
+    "quality gate",
+    "scan delta",
+    "baseline",
+    "diff scoped"
+  ],
+  "dependsOn": [
+    "shared-scan-service",
+    "scan-trends",
+    "phase-autopilot",
+    "tasks-view"
+  ],
+  "updatedAt": "2026-10-09T10:05:00.830Z",
+  "createdAt": "2026-10-09T10:05:00.830Z"
+}

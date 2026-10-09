@@ -1,19 +1,39 @@
 {
   "slug": "sessions-view",
   "name": "Sessions View",
-  "description": "VS Code WebviewView sidebar panel that lists open and saved Claude/shell sessions for the active worktree. Shows live activity indicators (blink), session icons, and exposes rename/close/set-icon context menu actions.",
-  "files": ["packages/extension/src/sessionsView.ts"],
+  "description": "VS Code WebviewView sidebar panel that lists open and saved Claude/shell sessions for the active worktree. Shows live activity indicators (blink), session icons, and exposes rename/close/set-icon context menu actions. Rows also show hook-reported live state (running · <tool> / waiting / idle) from SessionManager.getLiveState, a bound-task chip (click → codeWorkbench.tasks.openTaskInPage) from SavedSession.boundTask, and a compact token count (tooltip = breakdown) from SessionManager.getUsage. Live state comes from cw-hook.mjs posting {type:'activity'} lines to the NotifyServer (onActivity); it is in-memory only and coalesced (250ms) before refreshing. Token usage is summed from the Claude transcript JSONL (sessionLaunch.readSessionUsage, cached by mtime+size, last entry per message id wins); getTaskUsage aggregates over all sessions bound to a task and feeds the TaskDetailPane usage line via the codeWorkbench.tasks.usage command.",
+  "files": [
+    "packages/extension/src/sessionsView.ts",
+    "packages/extension/src/sessionLaunch.ts",
+    "packages/extension/src/notifications.ts",
+    "packages/mcp-core/cw-hook.mjs",
+    "packages/extension/test/sessionUsage.test.ts"
+  ],
   "guidelines": [
     "Subscribe to both onDidChange (structural changes) and onBlink (activity flicker) to avoid refreshing idle rows unnecessarily.",
-    "Session icon codicons are configurable per-session and persisted; new icon takes effect on next terminal open since VS Code has no live iconPath setter."
+    "Session icon codicons are configurable per-session and persisted; new icon takes effect on next terminal open since VS Code has no live iconPath setter.",
+    "Live hook state is in-memory only so a stale 'running' never survives a host restart; only trust it for open sessions."
   ],
   "anti_patterns": [
-    "Do not trigger a full tree refresh on every blink tick — only refresh active session rows to avoid idle-row flicker."
+    "Do not trigger a full tree refresh on every blink tick — only refresh active session rows to avoid idle-row flicker.",
+    "Do not refresh the view on every raw activity event — coalesce them."
   ],
   "decisions": [
-    "Uses retainContextWhenHidden to preserve webview state across panel collapse."
+    "Uses retainContextWhenHidden to preserve webview state across panel collapse.",
+    "Activity is a separate notify message type ('activity'), not a notification kind, so it never raises a toast."
   ],
-  "dependsOn": ["session-manager"],
-  "updatedAt": "2026-05-19T04:49:42.231Z",
-  "createdAt": "2026-05-19T04:49:42.231Z"
+  "dependsOn": [
+    "session-manager",
+    "session-hooks",
+    "notify-server"
+  ],
+  "updatedAt": "2026-10-09T09:58:13.103Z",
+  "createdAt": "2026-05-19T04:49:42.231Z",
+  "tags": [
+    "sessions",
+    "token usage",
+    "live state",
+    "waiting",
+    "task chip"
+  ]
 }

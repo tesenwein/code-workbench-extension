@@ -2,6 +2,8 @@ name: Release
 
 # Runs when develop is merged into main. Bumps the extension version,
 # builds the VSIX, and publishes a GitHub Release with the VSIX attached.
+# The `stores` job then publishes that tag to the VS Code Marketplace / Open VSX
+# (publish-stores.yml; see CONTRIBUTING.md).
 # The version-bump commit is pushed with the built-in GITHUB_TOKEN, whose
 # pushes do not re-trigger workflows, so there is no release loop.
 on:
@@ -62,3 +64,18 @@ jobs:
             release/extension/*.vsix \
             --title "v${{ steps.bump.outputs.version }}" \
             --generate-notes
+
+    outputs:
+      tag: v${{ steps.bump.outputs.version }}
+
+  # Store publishing is its own job (a reusable workflow) so a failed publish —
+  # expired PAT, missing namespace — can be retried with "Re-run failed jobs"
+  # WITHOUT bumping the version again, or later via publish-stores.yml's
+  # workflow_dispatch with the release tag.
+  stores:
+    name: Publish to stores
+    needs: release
+    uses: ./.github/workflows/publish-stores.yml
+    with:
+      tag: ${{ needs.release.outputs.tag }}
+    secrets: inherit

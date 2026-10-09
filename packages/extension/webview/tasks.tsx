@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TasksPanel } from '@code-workbench/ui';
-import type { TasksApi } from '@code-workbench/ui';
+import type { ActiveSession, TasksApi } from '@code-workbench/ui';
 import '@code-workbench/ui/styles.css';
 import { createBridge, mountApp } from './bridge';
 
@@ -13,11 +13,15 @@ const api: TasksApi = {
   remove: (id) => bridge.call('remove', id),
   openInEditor: (id) => bridge.call('openInEditor', id),
   startPhase: (id, phase) => bridge.call('startPhase', id, phase),
+  focusSession: (id) => bridge.call('focusSession', id),
+  taskUsage: (id) => bridge.call('taskUsage', id),
 };
 
 interface Context {
   activeWorktree: string | null;
   worktrees: string[];
+  /** Live sessions bound to tasks — drives the "running in" chip. */
+  activeSessions?: ActiveSession[];
   /** 'page' when hosted as the full editor-tab board (tasksPage.ts). */
   surface?: 'sidebar' | 'page';
 }
@@ -58,6 +62,7 @@ function App() {
       api={api}
       activeWorktree={ctx.activeWorktree}
       worktrees={ctx.worktrees}
+      activeSessions={ctx.activeSessions}
       reloadKey={reloadKey}
       hideHeaderTitle
       hideHeaderActions

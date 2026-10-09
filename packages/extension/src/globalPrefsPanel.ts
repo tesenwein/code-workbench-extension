@@ -12,7 +12,10 @@ import { renderGlobalPrefsHtml } from './globalPrefsPanelHtml';
 import { errorMessage } from './errors';
 import { StatePanelBase } from './statePanelBase';
 
-export class GlobalPrefsPanel extends StatePanelBase<GlobalPrefs> {
+/** Prefs as shown in the panel: the stored file plus VS Code settings it mirrors. */
+type PanelState = GlobalPrefs & { prefetchContext?: boolean };
+
+export class GlobalPrefsPanel extends StatePanelBase<PanelState> {
   private static current: GlobalPrefsPanel | undefined;
 
   static async show(_ctx: vscode.ExtensionContext, mgr: SessionManager): Promise<void> {
@@ -40,11 +43,18 @@ export class GlobalPrefsPanel extends StatePanelBase<GlobalPrefs> {
     return renderGlobalPrefsHtml(this.state());
   }
 
-  protected state(): GlobalPrefs {
-    return this.mgr.getGlobalPrefs();
+  protected state(): PanelState {
+    return {
+      ...this.mgr.getGlobalPrefs(),
+      prefetchContext: vscode.workspace
+        .getConfiguration('codeWorkbench')
+        .get<boolean>('taskFlow.prefetchContext', true),
+    };
   }
 
-  private async patch(next: GlobalPrefs): Promise<void> {
+  private async patch(withMirrored: PanelState): Promise<void> {
+    // Mirrored settings live in VS Code config, never in the prefs file.
+    const { prefetchContext: _mirrored, ...next } = withMirrored;
     this.mgr.setGlobalPrefs(next);
     try {
       await saveGlobalPrefs(next);
@@ -87,6 +97,11 @@ export class GlobalPrefsPanel extends StatePanelBase<GlobalPrefs> {
       await this.patch({ ...cur, claudeCommand: msg.value });
     } else if (msg.type === 'setYoloArgs' && typeof msg.value === 'string') {
       await this.patch({ ...cur, claudeYoloArgs: msg.value });
+    } else if (msg.type === 'setPrefetchContext' && typeof msg.value === 'boolean') {
+      await vscode.workspace
+        .getConfiguration('codeWorkbench')
+        .update('taskFlow.prefetchContext', msg.value, vscode.ConfigurationTarget.Global);
+      this.postState();
     } else if (msg.type === 'setOpenOnStartup' && typeof msg.value === 'boolean') {
       await this.patch({ ...cur, openOnStartup: msg.value });
     } else if (msg.type === 'setLanguage' && typeof msg.value === 'string') {

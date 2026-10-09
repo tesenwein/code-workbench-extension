@@ -52,6 +52,12 @@ export function registerSessionCommands(
       void sessionMgr.open(item.session);
     }),
 
+    // By id (not item): the Tasks panel's "running in" chip only knows the id.
+    vscode.commands.registerCommand('codeWorkbench.sessions.focus', (sessionId?: string) => {
+      const session = sessionMgr.list().find((s) => s.id === sessionId);
+      if (session) void sessionMgr.open(session);
+    }),
+
     vscode.commands.registerCommand('codeWorkbench.sessions.rename', async (item: SessionItem) => {
       if (!item) return;
       const next = await vscode.window.showInputBox({

@@ -16,6 +16,7 @@ const CW_PLAN = require("./skills/cw-plan.cjs");
 const CW_IMPLEMENT = require("./skills/cw-implement.cjs");
 const CW_REVIEW = require("./skills/cw-review.cjs");
 const CW_FIX = require("./skills/cw-fix.cjs");
+const CW_SHIP = require("./skills/cw-ship.cjs");
 const CW_ARCH = require("./skills/cw-arch.cjs");
 const CW_ARCH_AUDIT = require("./skills/cw-arch-audit.cjs");
 const DUPLICATE_CLEANUP = require("./skills/cw-duplicate-cleanup.cjs");
@@ -31,6 +32,7 @@ const BUNDLED_SKILLS = [
   CW_IMPLEMENT,
   CW_REVIEW,
   CW_FIX,
+  CW_SHIP,
   CW_ARCH,
   CW_ARCH_AUDIT,
   DUPLICATE_CLEANUP,

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   PHASE_ORDER,
+  phasePromptBulk,
   PHASE_META,
   phaseProcedure,
   phasePrompt,
@@ -48,6 +49,16 @@ describe("phasePrompt", () => {
     expect(phasePrompt("review", TASK)).toContain('phase: "fix"');
   });
 
+  it("hands Fix and a clean Review off to Ship, and Ship closes the task out", () => {
+    expect(phasePrompt("fix", TASK)).toContain('phase: "ship"');
+    expect(phasePrompt("review", TASK)).toContain('phase: "ship"');
+    const ship = phasePrompt("ship", TASK);
+    expect(ship).toContain("gh pr create");
+    expect(ship).toContain("gh pr checks");
+    expect(ship).toContain("prUrl");
+    expect(ship).toContain('phase: "" (clear it), status: "done"');
+  });
+
   it("routes Fix back to Review when new findings were filed", () => {
     expect(phasePrompt("fix", TASK)).toContain('phase: "review"');
   });
@@ -82,5 +93,44 @@ describe("PHASE_META", () => {
     for (const phase of ["implement", "review", "fix"]) {
       expect(PHASE_META[phase].model).toBe("sonnet");
     }
+  });
+});
+
+describe("Ship phase wiring", () => {
+  it("is the last phase and generates a cw-ship skill", () => {
+    expect(PHASE_ORDER[PHASE_ORDER.length - 1]).toBe("ship");
+    expect(phaseSkill("ship").name).toBe("cw-ship");
+  });
+});
+
+describe("prefetched context", () => {
+  it("adds a Context section before the procedure only when given", () => {
+    const withCtx = phasePrompt("implement", TASK, "- card-a — A");
+    expect(withCtx).toContain("## Context (prefetched, verify before relying on it)");
+    expect(withCtx.indexOf("card-a")).toBeLessThan(withCtx.indexOf("If you get blocked"));
+    expect(phasePrompt("implement", TASK)).not.toContain("## Context");
+    expect(phasePrompt("implement", TASK, "   ")).not.toContain("## Context");
+  });
+
+  it("gives each bulk task its own context block", () => {
+    const other = { ...TASK, id: "zzz999" };
+    const prompt = phasePromptBulk("review", [TASK, other], { [other.id]: "ctx-for-other" });
+    expect(prompt).toContain("ctx-for-other");
+    expect(prompt.split("## Context").length).toBe(2);
+  });
+});
+
+describe("code-health gate", () => {
+  it("tells Review to file a finding per positive code-health regression", () => {
+    const review = phasePrompt("review", TASK);
+    expect(review).toContain('"Code health:"');
+    expect(review).toContain("one \"review-finding\" subtask per regression");
+    expect(phasePrompt("fix", TASK)).not.toContain('"Code health:"');
+  });
+});
+
+describe("ship batching", () => {
+  it("refuses a multi-task Ship prompt", () => {
+    expect(() => phasePromptBulk("ship", [TASK, { ...TASK, id: "other" }])).toThrow(/one task/i);
   });
 });

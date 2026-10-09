@@ -14,11 +14,13 @@ import {
   claudeModel,
   sessionIconId,
   worktreeTerminalColor,
+  type BoundTask,
   type ClaudeEffort,
   type ClaudeModel,
   type ClaudePermissionMode,
   type SavedSession,
   type SessionKind,
+  type SessionLiveState,
   type SessionProfile,
   type WorktreeColor,
   type WorktreePrefs,
@@ -27,8 +29,12 @@ import {
   buildBanner,
   claudeConversationExists,
   cryptoRandom,
+  EMPTY_USAGE,
+  addUsage,
   readFirstUserMessage,
+  readSessionUsage,
   shellQuote,
+  type TokenUsage,
 } from './sessionLaunch';
 
 export * from './sessionTypes';
@@ -48,6 +54,8 @@ export interface CreateSessionOptions {
    *  (e.g. so a Plan-phase session can force 'max' regardless of the user's
    *  usual setting). */
   effort?: ClaudeEffort;
+  /** Task + phase this session runs; recorded so notify events map to the task. */
+  boundTask?: BoundTask;
 }
 
 // Legacy workspaceState keys — read only, for one-shot migration into the
@@ -62,6 +70,9 @@ const BOTTOM_GROUP_KEY = 'codeWorkbench.bottomGroupColumn';
  *  All worktrees of the same repo share one bucket, so switching worktrees
  *  doesn't fragment state across folder-identity workspaceState buckets. */
 const REPOS_KEY = 'codeWorkbench.repos.v1';
+/** taskId → Claude session ids of bound sessions that have since been closed,
+ *  so a task's token total survives its sessions' removal from the panel. */
+const CLOSED_TASK_SESSIONS_KEY = 'codeWorkbench.taskClosedSessions.v1';
 
 /** Canonical form of a worktree path for equality checks. Sessions, prefs and
  *  `git worktree list` output can each render the same path slightly
@@ -105,12 +116,23 @@ export class SessionManager {
   private terminals = new Map<string, vscode.Terminal>();
   private mcp: McpConfigBuilder;
   private notify = new NotifyServer();
+  /** Done / needs-input / info notifications from sessions' MCP notify tools. */
+  get onNotify() {
+    return this.notify.onNotify;
+  }
   private _onDidChange = new vscode.EventEmitter<void>();
   readonly onDidChange = this._onDidChange.event;
   /** Fires on each blink tick. Consumers should refresh ONLY the active
    *  session rows, not the whole tree — otherwise idle rows flicker too. */
   private _onBlink = new vscode.EventEmitter<void>();
   readonly onBlink = this._onBlink.event;
+  /** Latest hook-reported state per session (see cw-hook.mjs). In-memory only:
+   *  a stale "running" must not survive an extension-host restart. */
+  private liveState = new Map<string, SessionLiveState>();
+  private liveRefreshTimer: NodeJS.Timeout | undefined;
+  private _onLiveChange = new vscode.EventEmitter<void>();
+  /** Coalesced: fires when a session's hook-reported state/tool changed. */
+  readonly onLiveChange = this._onLiveChange.event;
   /** Wall-clock timestamp of the most recent terminal write per session. */
   private lastActivity = new Map<string, number>();
   /** Current phase of the blink toggle. Flipped on each interval tick. */
@@ -130,6 +152,10 @@ export class SessionManager {
    *  checks against `git worktree list` output match exactly. */
   private currentWorktreePath: string | undefined;
 
+  /** Sessions that reported notify_done and have not been prompted since. Their
+   *  terminals usually stay open, but the run they were bound to is over. */
+  private finished = new Set<string>();
+
   /** Resolves once the notify TCP server is listening (port assigned). */
   private notifyReady: Promise<void>;
 
@@ -137,6 +163,31 @@ export class SessionManager {
     this.mcp = new McpConfigBuilder(ctx);
     this.notifyReady = this.notify.start().catch(() => {
       /* notifications unavailable — sessions still work */
+    });
+    this.notify.onNotify(({ sessionId, kind }) => {
+      if (kind !== 'done' || this.finished.has(sessionId)) return;
+      this.finished.add(sessionId);
+      this._onDidChange.fire();
+    });
+    this.notify.onActivity(({ sessionId, state, tool }) => {
+      // A user prompt (running, no tool) resumes a finished session; tool
+      // events right after notify_done must not.
+      if (state === 'running' && !tool && this.finished.delete(sessionId)) {
+        this._onDidChange.fire();
+      }
+      const prev = this.liveState.get(sessionId);
+      this.liveState.set(sessionId, {
+        state,
+        lastTool: tool || prev?.lastTool || '',
+        at: Date.now(),
+      });
+      // Tool events arrive in bursts; coalesce the tree refresh.
+      // Its own event: live-state churn must not trigger the structural refresh
+      // (task panel re-list, worktree badges) that onDidChange drives.
+      this.liveRefreshTimer ??= setTimeout(() => {
+        this.liveRefreshTimer = undefined;
+        this._onLiveChange.fire();
+      }, 250);
     });
     this.notify.onTitle(({ sessionId, title }) => {
       void this.applyRemoteTitle(sessionId, title);
@@ -246,6 +297,62 @@ export class SessionManager {
       this.blinkTimer = undefined;
       this.blinkPhase = false;
     }
+  }
+
+  /** Hook-reported live state, or undefined when the session never reported
+   *  one (hooks off / non-Claude session) or its terminal is closed. */
+  getLiveState(id: string): SessionLiveState | undefined {
+    return this.isOpen(id) ? this.liveState.get(id) : undefined;
+  }
+
+  /** Token usage of one Claude session (from its transcript). */
+  getUsage(id: string): TokenUsage | undefined {
+    const claudeId = this.list().find((s) => s.id === id)?.claudeSessionId;
+    return claudeId ? readSessionUsage(claudeId) : undefined;
+  }
+
+  /** Usage summed over every session ever bound to `taskId`, closed ones included
+   *  (their transcripts stay on disk; only the Claude session ids are remembered). */
+  getTaskUsage(taskId: string): TokenUsage {
+    const claudeIds = new Set(
+      this.ctx.globalState.get<Record<string, string[]>>(CLOSED_TASK_SESSIONS_KEY, {})[taskId],
+    );
+    for (const s of this.list()) {
+      if (s.boundTask?.id === taskId && s.claudeSessionId) claudeIds.add(s.claudeSessionId);
+    }
+    let total = EMPTY_USAGE;
+    for (const id of claudeIds) {
+      const u = readSessionUsage(id);
+      if (u) total = addUsage(total, u);
+    }
+    return total;
+  }
+
+  /** Remember the Claude session ids of bound sessions about to be removed. */
+  private async rememberClosedBound(sessions: SavedSession[]): Promise<void> {
+    const bound = sessions.filter((s) => s.boundTask && s.claudeSessionId);
+    if (bound.length === 0) return;
+    const store = {
+      ...this.ctx.globalState.get<Record<string, string[]>>(CLOSED_TASK_SESSIONS_KEY, {}),
+    };
+    for (const s of bound) {
+      const id = s.boundTask!.id;
+      store[id] = [...new Set([...(store[id] ?? []), s.claudeSessionId!])];
+    }
+    await this.ctx.globalState.update(CLOSED_TASK_SESSIONS_KEY, store);
+  }
+
+  /** True once the session reported done and has not been re-prompted. */
+  isFinished(id: string): boolean {
+    return this.finished.has(id);
+  }
+
+  /** Persist that autopilot already acted on this session's `done`. */
+  async markAutopilotHandled(id: string): Promise<void> {
+    await this.updateRepoState((st) => {
+      const cur = st.sessions.find((x) => x.id === id);
+      if (cur?.boundTask) cur.boundTask = { ...cur.boundTask, autopilotHandled: true };
+    });
   }
 
   /** True if the session has produced output within the activity window. */
@@ -389,6 +496,7 @@ export class SessionManager {
       ...(opts?.prompt ? { initialPrompt: opts.prompt } : {}),
       ...(opts?.permissionMode ? { permissionMode: opts.permissionMode } : {}),
       ...(opts?.effort != null ? { effortOverride: opts.effort } : {}),
+      ...(opts?.boundTask ? { boundTask: opts.boundTask } : {}),
     };
     await this.updateRepoState((st) => {
       st.sessions.push(session);
@@ -734,6 +842,7 @@ export class SessionManager {
   }
 
   async close(id: string): Promise<void> {
+    await this.rememberClosedBound(this.list().filter((s) => s.id === id));
     const term = this.terminals.get(id);
     term?.dispose();
     this.terminals.delete(id);
@@ -759,6 +868,7 @@ export class SessionManager {
       if (scoped && !this.isOpen(s.id)) toRemove.add(s.id);
     }
     if (toRemove.size === 0) return 0;
+    await this.rememberClosedBound(this.list().filter((s) => toRemove.has(s.id)));
     for (const id of toRemove) await this.mcp.delete(id);
     await this.updateRepoState((st) => {
       st.sessions = st.sessions.filter((s) => !toRemove.has(s.id));
@@ -773,6 +883,9 @@ export class SessionManager {
   async cleanupWorktree(worktreePath: string): Promise<void> {
     const want = normalizeWtPath(worktreePath);
     const toRemove = new Set<string>();
+    await this.rememberClosedBound(
+      this.list().filter((s) => normalizeWtPath(s.worktreePath) === want),
+    );
     for (const s of this.list()) {
       if (normalizeWtPath(s.worktreePath) === want) {
         const term = this.terminals.get(s.id);
@@ -994,9 +1107,11 @@ export class SessionManager {
       repoKey,
       notifyPort: this.notify.port,
       extraPrompts,
+      boundTask: session.boundTask,
     });
     if (mcp) {
       args.push('--mcp-config', mcp.configPath);
+      if (mcp.settingsPath) args.push('--settings', mcp.settingsPath);
       if (mcp.promptPath) args.push('--append-system-prompt-file', mcp.promptPath);
     } else {
       // No MCP prompt file — pass user prompts directly.
@@ -1022,6 +1137,8 @@ export class SessionManager {
       clearInterval(this.blinkTimer);
       this.blinkTimer = undefined;
     }
+    clearTimeout(this.liveRefreshTimer);
+    this._onLiveChange.dispose();
     for (const timer of this.titleFallbackTimers.values()) clearTimeout(timer);
     this.titleFallbackTimers.clear();
     this.notify.dispose();

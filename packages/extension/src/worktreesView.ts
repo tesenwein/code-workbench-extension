@@ -57,6 +57,7 @@ function render(st){
   (st.items||[]).forEach(function(w){
     var row=document.createElement('div');
     row.className='row'+(w.active?' active':'');
+    row.setAttribute('data-path',w.path);
     row.addEventListener('click',function(){ vscode.postMessage({type:'open',path:w.path}); });
 
     var lead=document.createElement('div'); lead.className='lead';
@@ -101,7 +102,20 @@ function render(st){
   add.addEventListener('click',function(){ vscode.postMessage({type:'create'}); });
   root.appendChild(add);
 }
-window.addEventListener('message',function(e){ if(e.data&&e.data.type==='state') render(e.data); });
+window.addEventListener('message',function(e){
+  var d=e.data; if(!d) return;
+  if(d.type==='state') render(d);
+  else if(d.type==='reveal'){
+    var rows=root.querySelectorAll('.row');
+    for(var i=0;i<rows.length;i++){
+      if(rows[i].getAttribute('data-path')===d.path){
+        rows[i].scrollIntoView({block:'nearest'});
+        rows[i].classList.add('flash');
+        (function(r){ setTimeout(function(){ r.classList.remove('flash'); },1600); })(rows[i]);
+      }
+    }
+  }
+});
 vscode.postMessage({type:'ready'});
 `;
 
@@ -121,6 +135,16 @@ export class WorktreesProvider implements vscode.WebviewViewProvider {
     private getColor: (worktreePath: string) => WorktreeColor,
     private getNote: (worktreePath: string) => string | undefined = () => undefined,
   ) {}
+
+  /** Bring the view forward and flash the row for `worktreePath`. */
+  reveal(worktreePath: string): void {
+    if (!this.view) {
+      void vscode.commands.executeCommand('codeWorkbench.worktrees.focus');
+      return;
+    }
+    this.view.show(true);
+    void this.view.webview.postMessage({ type: 'reveal', path: worktreePath });
+  }
 
   refresh(): void {
     // Schedule once and ignore further calls until it fires: guarantees at most

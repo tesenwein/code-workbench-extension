@@ -35,6 +35,19 @@ export interface Release {
   assets: ReleaseAsset[];
 }
 
+/** True when VS Code installed this extension from a gallery (Marketplace or
+ *  Open VSX) — it then updates it itself, and the GitHub self-updater must stay
+ *  out of the way. `__metadata` is injected by VS Code into the installed
+ *  manifest; a sideloaded VSIX reports `source: 'vsix'`, which is NOT a store
+ *  install even if the same extension is also published. */
+export function isStoreInstall(packageJSON: unknown): boolean {
+  const meta = (packageJSON as { __metadata?: { source?: string; publisherId?: string } } | null)
+    ?.__metadata;
+  if (!meta) return false;
+  if (meta.source) return meta.source === 'gallery';
+  return Boolean(meta.publisherId);
+}
+
 /** Numeric-segment comparison; returns >0 when `a` is newer than `b`. */
 export function compareVersions(a: string, b: string): number {
   const parse = (v: string): number[] =>
@@ -223,6 +236,21 @@ export async function checkForUpdates(
 
 /** Registers the manual command and runs a throttled background check. */
 export function registerUpdateCommand(ctx: vscode.ExtensionContext): void {
+  // Store installs are updated by VS Code itself: hide the sideload updater's
+  // title-bar buttons and register only a command that says so.
+  if (isStoreInstall(ctx.extension.packageJSON)) {
+    void vscode.commands.executeCommand('setContext', 'codeWorkbench.storeInstall', true);
+    const managed = () =>
+      void vscode.window.showInformationMessage(
+        'Code Workbench was installed from an extension marketplace — VS Code updates it automatically.',
+      );
+    ctx.subscriptions.push(
+      vscode.commands.registerCommand('codeWorkbench.checkForUpdates', managed),
+      vscode.commands.registerCommand('codeWorkbench.checkForUpdatesAvailable', managed),
+    );
+    return;
+  }
+
   // A prior run may have found an update; the context key doesn't survive a
   // reload, so replay the persisted state before any new check.
   // Awaited (not fire-and-forget) so a command invoked right after activation

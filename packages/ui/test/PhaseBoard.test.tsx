@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { PhaseBoard } from '../src/components/PhaseBoard';
+import { PhaseBoard, columnFor } from '../src/components/PhaseBoard';
 import type { PhaseModelMap, TasksApi, WorkspaceTask } from '../src/types';
 
 function task(overrides: Partial<WorkspaceTask> & { id: string; title: string }): WorkspaceTask {
@@ -175,23 +175,23 @@ describe('PhaseBoard', () => {
       task({ id: 'p3', title: 'Running', status: 'in-progress' }),
     ];
 
-    it('counts only startable tasks and passes both id sets to the host', async () => {
+    it('counts startable and in-progress tasks and passes both id sets to the host', async () => {
       const api = mockApi(COLUMN_TASKS);
       render(<PhaseBoard api={api} />);
 
       await screen.findByText('Open one');
-      const bulk = within(column('Plan')).getByRole('button', { name: 'Start all Plan (2)' });
+      const bulk = within(column('Plan')).getByRole('button', { name: 'Start all Plan (3)' });
       await userEvent.click(bulk);
 
       expect(api.confirmBulkStart).toHaveBeenCalledWith('plan', ['p1', 'p2'], ['p3']);
     });
 
-    it('hides the footer button in a column with nothing startable', async () => {
+    it('offers a restart-only footer button when every task is in progress', async () => {
       const api = mockApi([task({ id: 'p3', title: 'Running', status: 'in-progress' })]);
       render(<PhaseBoard api={api} />);
 
       await screen.findByText('Running');
-      expect(screen.queryByRole('button', { name: /Start all/ })).toBeNull();
+      expect(screen.getByRole('button', { name: 'Start all Plan (1)' })).toBeTruthy();
     });
 
     it('hides the footer button when the host offers no bulk start', async () => {
@@ -236,5 +236,34 @@ describe('PhaseBoard', () => {
       await waitFor(() => expect(api.list).toHaveBeenCalledTimes(2));
       expect(screen.queryByText(/failed to start/)).toBeNull();
     });
+  });
+});
+
+describe('codeHealthLine', () => {
+  it('extracts the memo line and flags nothing when absent', async () => {
+    const { codeHealthLine } = await import('../src/components/PhaseBoard');
+    expect(codeHealthLine('notes\n\nCode health: +3 duplicates, ±0 type escapes')).toBe(
+      '+3 duplicates, ±0 type escapes',
+    );
+    expect(codeHealthLine('no health here')).toBeNull();
+    expect(codeHealthLine(undefined)).toBeNull();
+  });
+});
+
+describe('columnFor shipped tasks', () => {
+  const shipped = (updated: string): WorkspaceTask =>
+    ({
+      id: 's',
+      title: 'S',
+      status: 'done',
+      prUrl: 'https://example.com/pr/1',
+      updated,
+      tags: [],
+    }) as unknown as WorkspaceTask;
+  const now = Date.parse('2026-02-01T00:00:00Z');
+
+  it('keeps a recently shipped task in Ship and drops it after a week', () => {
+    expect(columnFor(shipped('2026-01-30T00:00:00Z'), [], now)).toBe('ship');
+    expect(columnFor(shipped('2026-01-01T00:00:00Z'), [], now)).toBeNull();
   });
 });
