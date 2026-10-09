@@ -183,7 +183,8 @@
     "./dead-code-detect.mjs": "./dead-code-detect.mjs",
     "./clone-detect.mjs": "./clone-detect.mjs",
     "./type-escape-detect.mjs": "./type-escape-detect.mjs",
-    "./arch-search.mjs": "./arch-search.mjs"
+    "./arch-search.mjs": "./arch-search.mjs",
+    "./cw-hook.mjs": "./cw-hook.mjs"
   },
   "dependencies": {
     "@xenova/transformers": "^2.17.2",

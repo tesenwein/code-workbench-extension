@@ -1,0 +1,33 @@
+{
+  "slug": "task-context-prefetch",
+  "name": "Task Context Prefetch",
+  "description": "Before a phase session spawns, startTaskPhase / startTaskPhaseBatch (commands/taskFlow.ts) call deps.prefetchContext(worktree, task), wired in extension.ts to taskContext.buildTaskContext. It searches arch cards (scanHost.searchArchCards, top 3, expanded via archHost.readAllArchCards) and code symbols (scanHost.searchCode, top 5) with title + first 300 chars of the description, each under a 5s timeout (failure → less context), and renders at most ~2 KB via the pure formatTaskContext. phasePrompt(phase, task, context?) / phasePromptBulk(phase, tasks, contexts?) append it as \"## Context (prefetched, verify before relying on it)\" before the procedure. Toggle: codeWorkbench.taskFlow.prefetchContext (default true).",
+  "files": [
+    "packages/extension/src/taskContext.ts",
+    "packages/extension/src/commands/taskFlow.ts",
+    "packages/extension/src/extension.ts",
+    "packages/mcp-core/phase-prompts.cjs",
+    "packages/extension/test/taskContext.test.ts"
+  ],
+  "guidelines": [
+    "Prefetch is best-effort: never let a search failure or timeout block a phase start.",
+    "Keep the rendered context under CONTEXT_MAX_CHARS."
+  ],
+  "anti_patterns": [
+    "Do not inline unbounded search output into a prompt."
+  ],
+  "decisions": [],
+  "tags": [
+    "prefetch",
+    "context",
+    "arch wiki",
+    "phase prompt"
+  ],
+  "dependsOn": [
+    "tasks-view",
+    "shared-scan-service",
+    "arch-view"
+  ],
+  "updatedAt": "2026-10-09T10:01:54.123Z",
+  "createdAt": "2026-10-09T10:01:54.123Z"
+}

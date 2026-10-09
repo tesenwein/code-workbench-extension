@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { PaneHeader } from './primitives';
-import type { WorkspaceTask, NewWorkspaceTask, TasksApi, TaskPhase } from '../types';
+import type { ActiveSession, WorkspaceTask, NewWorkspaceTask, TasksApi, TaskPhase } from '../types';
 import {
   isGroupBy,
   isStatusFilter,
@@ -48,6 +48,9 @@ interface TasksPanelProps {
   /** Page mode: bump to open a blank new-task editor in the detail column
    *  (e.g. the host's "New task" command). */
   newTaskNonce?: number;
+  /** Live sessions bound to tasks (host-computed). Drives the "running in"
+   *  chip and the "Active session" status filter. */
+  activeSessions?: ActiveSession[];
 }
 
 export function TasksPanel({
@@ -66,6 +69,7 @@ export function TasksPanel({
   openTaskId,
   openTaskNonce,
   newTaskNonce,
+  activeSessions,
 }: TasksPanelProps) {
   const [tasks, setTasks] = useState<WorkspaceTask[]>([]);
   const [loading, setLoading] = useState(false);
@@ -166,6 +170,10 @@ export function TasksPanel({
     () => (api.openInEditor ? (id: string) => void api.openInEditor!(id) : undefined),
     [api],
   );
+  const focusSession = useMemo(
+    () => (api.focusSession ? (id: string) => void api.focusSession!(id) : undefined),
+    [api],
+  );
   const startPhase = useCallback(
     async (id: string, phase: TaskPhase) => {
       if (!api.startPhase) return;
@@ -258,14 +266,24 @@ export function TasksPanel({
   }, []);
 
   const childMap = useMemo(() => buildChildMap(tasks), [tasks]);
+  const sessionByTask = useMemo(
+    () => new Map((activeSessions ?? []).map((s) => [s.taskId, s])),
+    [activeSessions],
+  );
   const rootTasks = useMemo(() => {
     const roots = tasks.filter((t) => !t.parentId);
     // The sidebar always hides done tasks; page mode filters by status.
     const status = pageMode ? statusFilter : 'active';
     return roots.filter((t) =>
-      status === 'all' ? true : status === 'active' ? t.status !== 'done' : t.status === status,
+      status === 'all'
+        ? true
+        : status === 'active'
+          ? t.status !== 'done'
+          : status === 'session'
+            ? sessionByTask.has(t.id)
+            : t.status === status,
     );
-  }, [tasks, pageMode, statusFilter]);
+  }, [tasks, pageMode, statusFilter, sessionByTask]);
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
@@ -402,6 +420,7 @@ export function TasksPanel({
                   }}
                 >
                   <option value="active">Active</option>
+                  <option value="session">Active session</option>
                   <option value="all">All (incl. done)</option>
                   <option value="open">Open</option>
                   <option value="in-progress">In progress</option>
@@ -500,6 +519,8 @@ export function TasksPanel({
                           onCreateSubtask={handleCreateSubtask}
                           onOpenTask={pageMode ? setSelectedId : onOpenTask}
                           onOpenInEditor={pageMode ? undefined : openInEditor}
+                          session={sessionByTask.get(task.id)}
+                          onFocusSession={focusSession}
                         />
                       ))}
                     </React.Fragment>
@@ -539,6 +560,7 @@ export function TasksPanel({
                   onOpenInEditor={openInEditor}
                   onOpenTask={setSelectedId}
                   onStartPhase={api.startPhase ? startPhase : undefined}
+                  loadUsage={api.taskUsage}
                   onClose={() => setSelectedId(null)}
                 />
               ) : (

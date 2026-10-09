@@ -86,6 +86,75 @@ export function readFirstUserMessage(sessionId: string): string | undefined {
   return undefined;
 }
 
+export interface TokenUsage {
+  input: number;
+  output: number;
+  cacheRead: number;
+  cacheCreate: number;
+}
+
+export const EMPTY_USAGE: TokenUsage = { input: 0, output: 0, cacheRead: 0, cacheCreate: 0 };
+
+export function addUsage(a: TokenUsage, b: TokenUsage): TokenUsage {
+  return {
+    input: a.input + b.input,
+    output: a.output + b.output,
+    cacheRead: a.cacheRead + b.cacheRead,
+    cacheCreate: a.cacheCreate + b.cacheCreate,
+  };
+}
+
+/** Sum the `usage` blocks of assistant turns in a transcript's JSONL text. A
+ *  turn can be written several times while it streams, so the LAST entry per
+ *  message id wins instead of double-counting. */
+export function sumTranscriptUsage(raw: string): TokenUsage {
+  const byMessage = new Map<string, TokenUsage>();
+  let anon = 0;
+  for (const line of raw.split('\n')) {
+    if (!line.includes('"usage"')) continue;
+    let e: {
+      type?: string;
+      message?: { id?: string; usage?: Record<string, unknown> };
+    };
+    try {
+      e = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    const u = e.type === 'assistant' ? e.message?.usage : undefined;
+    if (!u) continue;
+    const n = (k: string): number => (typeof u[k] === 'number' ? (u[k] as number) : 0);
+    byMessage.set(e.message?.id ?? `anon-${anon++}`, {
+      input: n('input_tokens'),
+      output: n('output_tokens'),
+      cacheRead: n('cache_read_input_tokens'),
+      cacheCreate: n('cache_creation_input_tokens'),
+    });
+  }
+  let total = EMPTY_USAGE;
+  for (const u of byMessage.values()) total = addUsage(total, u);
+  return total;
+}
+
+const usageCache = new Map<string, { mtimeMs: number; size: number; usage: TokenUsage }>();
+
+/** Token usage of a Claude session, read from its transcript and cached by
+ *  file mtime+size. Undefined when no transcript exists yet. */
+export function readSessionUsage(sessionId: string): TokenUsage | undefined {
+  const file = findClaudeTranscriptPath(sessionId);
+  if (!file) return undefined;
+  try {
+    const st = fs.statSync(file);
+    const hit = usageCache.get(file);
+    if (hit && hit.mtimeMs === st.mtimeMs && hit.size === st.size) return hit.usage;
+    const usage = sumTranscriptUsage(fs.readFileSync(file, 'utf8'));
+    usageCache.set(file, { mtimeMs: st.mtimeMs, size: st.size, usage });
+    return usage;
+  } catch {
+    return undefined;
+  }
+}
+
 /** POSIX single-quote escape: wrap in '…', escaping embedded ' as '\''. */
 export function shellQuote(s: string): string {
   return `'${s.replace(/'/g, `'\\''`)}'`;

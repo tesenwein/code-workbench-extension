@@ -8,6 +8,7 @@ const {
   parseTask,
   sortTasks,
   siblingCmp,
+  parseFindingLocation,
 } = require('../task-format.cjs');
 
 /** A fully-populated task, used as the round-trip fixture. */
@@ -24,6 +25,9 @@ function makeTask(overrides = {}) {
     dueDate: null,
     epic: 'auth-revamp',
     phase: 'implement',
+    autoRun: false,
+    prUrl: null,
+    issueNumber: null,
     tags: ['bug', 'frontend'],
     description: 'A longer description\nwith two lines.',
     memo: 'agent notes here',
@@ -32,6 +36,32 @@ function makeTask(overrides = {}) {
     ...overrides,
   };
 }
+
+describe('autoRun', () => {
+  it('round-trips true and defaults to false', () => {
+    expect(parseTask(serializeTask(makeTask({ autoRun: true }))).autoRun).toBe(true);
+    expect(parseTask(serializeTask(makeTask())).autoRun).toBe(false);
+  });
+
+  it('is omitted from the file when off', () => {
+    expect(serializeTask(makeTask())).not.toContain('autoRun');
+  });
+});
+
+describe('prUrl', () => {
+  it('round-trips and defaults to null', () => {
+    const url = 'https://github.com/o/r/pull/7';
+    expect(parseTask(serializeTask(makeTask({ prUrl: url }))).prUrl).toBe(url);
+    expect(parseTask(serializeTask(makeTask())).prUrl).toBeNull();
+  });
+});
+
+describe('issueNumber', () => {
+  it('round-trips and defaults to null', () => {
+    expect(parseTask(serializeTask(makeTask({ issueNumber: 42 }))).issueNumber).toBe(42);
+    expect(parseTask(serializeTask(makeTask())).issueNumber).toBeNull();
+  });
+});
 
 describe('worktreeKey', () => {
   it('collapses a path to its lowercased last segment', () => {
@@ -218,5 +248,42 @@ describe('siblingCmp', () => {
     const earlierNull = t({ order: null, created: '2026-01-01T00:00:00.000Z' });
     const laterNull = t({ order: null, created: '2026-01-02T00:00:00.000Z' });
     expect(siblingCmp(earlierNull, laterNull)).toBeLessThan(0);
+  });
+});
+
+describe('parseFindingLocation', () => {
+  it('reads the usual "file:line, what is wrong" shape', () => {
+    expect(parseFindingLocation('src/app.ts:42, null deref when x is empty')).toEqual({
+      file: 'src/app.ts',
+      line: 42,
+    });
+  });
+
+  it('handles columns, ranges, backticks and #L anchors', () => {
+    expect(parseFindingLocation('`packages/a/b.tsx:10:5` bad')).toEqual({
+      file: 'packages/a/b.tsx',
+      line: 10,
+      column: 5,
+    });
+    expect(parseFindingLocation('see lib/x.py:7-12 for details').line).toBe(7);
+    expect(parseFindingLocation('(src/y.ts#L33)')).toEqual({ file: 'src/y.ts', line: 33 });
+  });
+
+  it('handles Windows drive paths', () => {
+    expect(parseFindingLocation('C:\\dev\\proj\\a.ts:9, oops')).toEqual({
+      file: 'C:\\dev\\proj\\a.ts',
+      line: 9,
+    });
+  });
+
+  it('ignores URLs, versions and text without a location', () => {
+    expect(parseFindingLocation('see http://example.com:8080/path')).toBeNull();
+    expect(parseFindingLocation('bump to 1.2.3 please')).toBeNull();
+    expect(parseFindingLocation('')).toBeNull();
+    expect(parseFindingLocation(undefined)).toBeNull();
+  });
+
+  it('takes the first location when several are named', () => {
+    expect(parseFindingLocation('a.ts:1 and b.ts:2').file).toBe('a.ts');
   });
 });

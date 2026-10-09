@@ -29,18 +29,18 @@ Working with Claude Code across several branches means juggling worktrees, termi
 | 🌳 **Worktree-first**       | Create, switch, and prune Git worktrees per repo — each with branch, ahead/behind, and uncommitted count. Start a worktree from a branch, task, or GitHub issue.                                                                                                |
 | 🤖 **Claude sessions**      | Per-worktree Claude, Claude Yolo (`--dangerously-skip-permissions`), or plain shell, each with a pickable tab icon.                                                                                                                                             |
 | ✅ **Shared task board**    | Markdown-backed tasks with priority, status, subtasks, and due dates — kept in sync by the bundled tasks MCP server. Edit in the sidebar or a full-page Task Board.                                                                                             |
-| 🔄 **Task phase flow**      | Drive a task through Plan → Implement → Review → Fix on the **Phase Board**: one column per phase, and a Start button that spawns a Claude session bound to that task, on the model that phase calls for.                                                       |
+| 🔄 **Task phase flow**      | Drive a task through Plan → Implement → Review → Fix → Ship on the **Phase Board**: one column per phase, and a Start button that spawns a Claude session bound to that task, on the model that phase calls for.                                                |
 | 🔔 **Notifications MCP**    | Toast notifications from Claude sessions (`notify_done`, `notify_needs_input`, `notify_info`) plus tab renaming.                                                                                                                                                |
 | 🔎 **Semantic code search** | AST-backed hybrid search (`search_code`) so Claude finds symbols by intent, plus file outlines and symbol source lookup — with a results page showing code snippets.                                                                                            |
 | 🗺️ **Architecture wiki**    | Git-tracked component cards (`arch` MCP) capturing guidelines, anti-patterns, and decisions — with drift auditing and semantic card search.                                                                                                                     |
 | 🧹 **Code health**          | Duplicate detection (exact/renamed/structural), dead-code scanning (unused exports/locals, commented code), and type-safety escape hatch detection (`as`/`any`/`!`/`@ts-ignore`) — full editor-tab pages with clickable snippets and per-repo acknowledgements. |
 | 🧩 **Bundled skills**       | Ships `cw-*` Claude Code skills (`cw-work`, `cw-plan`, `cw-implement`, `cw-review`, `cw-fix`, `cw-arch`, `cw-dead-code`, `cw-duplicate-cleanup`, `cw-type-safety`, …), installable per-user or per-worktree and auto-synced when updated.                       |
 | 🎨 **Theme-aware UI**       | Webview panels derive their palette from the active VS Code theme, tinted per-worktree, with high-contrast support.                                                                                                                                             |
-| 🌐 **Language**             | Set the natural language Claude replies in (and, independently, the language for code comments) in **Settings → Language** — locale/sprache. Applies to sessions started after the change; identifiers, commit messages, and PR titles stay English.          |
+| 🌐 **Language**             | Set the natural language Claude replies in (and, independently, the language for code comments) in **Settings → Language** — locale/sprache. Applies to sessions started after the change; identifiers, commit messages, and PR titles stay English.            |
 
 ## 💻 Installation
 
-Code Workbench isn't on the Marketplace yet — install it from the packaged `.vsix`:
+Releases are published to the VS Code Marketplace and Open VSX once the release pipeline has store credentials configured (see `CONTRIBUTING.md`) — if “Code Workbench” shows up in the Extensions view, install it there and VS Code keeps it updated. Otherwise (or for a specific build), install the packaged `.vsix`:
 
 1. **Download** the latest `code-workbench-*.vsix` from the [**GitHub Releases**](https://github.com/tesenwein/code-workbench-extension/releases/latest) page (under **Assets**).
 2. In VS Code, open the Command Palette (`Cmd/Ctrl + Shift + P`) and run **Extensions: Install from VSIX…**, then pick the file you downloaded.
@@ -60,7 +60,7 @@ You'll also need the [`claude` CLI](https://docs.claude.com/en/docs/claude-code)
 
 ## 🔄 Task phase flow
 
-A task can be driven through four phases, each run by its own Claude session bound to that one task:
+A task can be driven through five phases, each run by its own Claude session bound to that one task:
 
 | Phase         | Default model | What the session does                                                                                                                     |
 | ------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
@@ -68,12 +68,15 @@ A task can be driven through four phases, each run by its own Claude session bou
 | **Implement** | `sonnet`      | Works the `plan-step` subtasks in order until lint, typecheck, and tests pass.                                                            |
 | **Review**    | `sonnet`      | Reviews the branch diff and files each finding as a `review-finding` subtask.                                                             |
 | **Fix**       | `sonnet`      | Fixes the `review-finding` subtasks, then re-runs the checks.                                                                             |
+| **Ship**      | `sonnet`      | Commits (Conventional Commits), pushes, opens or reuses the PR, waits for CI, records the PR URL on the task and marks it done.           |
 
 Open the **Phase Board** from the Tasks view toolbar (or **Code Workbench: Open Phase Board**). It shows one column per phase — plus **Unstarted** for tasks not yet in the flow — with a task count per column and a Start button on every card.
 
 The task's `phase` field names the phase to run **next**, so the column a card sits in is exactly the phase its Start button launches. Each session hands off by setting `phase` on the task when it finishes, which moves the card to the next column. The board is the state machine, not the chat transcript: close a session and reopen the task later and nothing is lost.
 
-To run a phase by hand instead, use the bundled skills — `/cw-plan`, `/cw-implement <taskId>`, `/cw-review <taskId>`, `/cw-fix <taskId>`. They follow the same procedure the board's Start button injects, because both are generated from `packages/mcp-core/phase-prompts.cjs`.
+**Autopilot.** Tick **Run through** on a card (or in the task detail) and the extension starts the next phase for you whenever a phase session reports done and has advanced `phase`. It stops — with a notice — when the session asks for input, finishes without handing off (blocked), Review files high-priority findings, or the task is done.
+
+To run a phase by hand instead, use the bundled skills — `/cw-plan`, `/cw-implement <taskId>`, `/cw-review <taskId>`, `/cw-fix <taskId>`, `/cw-ship <taskId>`. They follow the same procedure the board's Start button injects, because both are generated from `packages/mcp-core/phase-prompts.cjs`.
 
 ### Choosing the model per phase
 

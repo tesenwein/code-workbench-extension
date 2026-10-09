@@ -15,8 +15,24 @@
   "icon": "media/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tesenwein/code-workbench-monorepo.git",
+    "url": "https://github.com/tesenwein/code-workbench-extension.git",
     "directory": "packages/extension"
+  },
+  "bugs": {
+    "url": "https://github.com/tesenwein/code-workbench-extension/issues"
+  },
+  "homepage": "https://github.com/tesenwein/code-workbench-extension#readme",
+  "keywords": [
+    "claude",
+    "claude code",
+    "git worktree",
+    "tasks",
+    "ai agent",
+    "mcp"
+  ],
+  "galleryBanner": {
+    "color": "#1e1b18",
+    "theme": "dark"
   },
   "activationEvents": [
     "workspaceContains:.git",
@@ -381,12 +397,12 @@
         },
         {
           "command": "codeWorkbench.checkForUpdates",
-          "when": "view == codeWorkbench.brand && !codeWorkbench.updateAvailable",
+          "when": "view == codeWorkbench.brand && !codeWorkbench.storeInstall && !codeWorkbench.updateAvailable",
           "group": "navigation@0"
         },
         {
           "command": "codeWorkbench.checkForUpdatesAvailable",
-          "when": "view == codeWorkbench.brand && codeWorkbench.updateAvailable",
+          "when": "view == codeWorkbench.brand && !codeWorkbench.storeInstall && codeWorkbench.updateAvailable",
           "group": "navigation@0"
         },
         {
@@ -538,6 +554,31 @@
           "type": "boolean",
           "default": true,
           "description": "Inject the bundled notifications MCP server so Claude can surface 'done', 'needs input', and progress events as VS Code notifications, and rename session tabs."
+        },
+        "codeWorkbench.taskFlow.prefetchContext": {
+          "type": "boolean",
+          "default": true,
+          "description": "Before a phase session starts, search the architecture wiki and code for the task and add the top cards and symbols to its prompt as a bounded Context section."
+        },
+        "codeWorkbench.reviewDiagnostics.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show open review-finding subtasks as diagnostics (inline and in the Problems panel) at the file:line named in their description."
+        },
+        "codeWorkbench.codeHealth.scanOnPhaseDone": {
+          "type": "boolean",
+          "default": true,
+          "description": "Snapshot the dead-code, duplicate and type-escape scans when an Implement or Fix phase starts, re-scan when it reports done, and record the delta in the task memo (\"Code health: +3 duplicates, ...\")."
+        },
+        "codeWorkbench.github.syncIssues": {
+          "type": "boolean",
+          "default": false,
+          "description": "Opt in: post task status and phase changes as comments on the GitHub issue a task was created from, and close the issue when the task is done. Requires the GitHub CLI (gh); writes to GitHub."
+        },
+        "codeWorkbench.hooks.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Run Claude Code hooks in workbench sessions that enforce the board rules: file edits need an in-progress task, and a phase session cannot stop without handing off or noting a blocker."
         },
         "codeWorkbench.mcp.arch.enabled": {
           "type": "boolean",

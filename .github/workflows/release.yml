@@ -2,6 +2,8 @@ name: Release
 
 # Runs when develop is merged into main. Bumps the extension version,
 # builds the VSIX, and publishes a GitHub Release with the VSIX attached.
+# When the VSCE_PAT / OVSX_PAT secrets exist it also publishes to the VS Code
+# Marketplace / Open VSX (see CONTRIBUTING.md); without them those steps skip.
 # The version-bump commit is pushed with the built-in GITHUB_TOKEN, whose
 # pushes do not re-trigger workflows, so there is no release loop.
 on:
@@ -19,6 +21,10 @@ jobs:
   release:
     name: Version & Release
     runs-on: ubuntu-latest
+    env:
+      # Secrets are not readable in step `if:`, so surface them as env.
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      OVSX_PAT: ${{ secrets.OVSX_PAT }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -62,3 +68,22 @@ jobs:
             release/extension/*.vsix \
             --title "v${{ steps.bump.outputs.version }}" \
             --generate-notes
+
+      # The GitHub VSIX keeps the `terminalDataWriteEvent` proposed API (it
+      # powers the live-activity blink for sideloaded installs), but the
+      # Marketplace and Open VSX reject extensions that enable proposals. The
+      # store build strips it; the code already feature-detects the event.
+      - name: Build store VSIX (no proposed APIs)
+        if: env.VSCE_PAT != '' || env.OVSX_PAT != ''
+        run: |
+          cd packages/extension
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));delete p.enabledApiProposals;fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n')"
+          npx @vscode/vsce package --no-dependencies --out "$RUNNER_TEMP/store.vsix"
+
+      - name: Publish to VS Code Marketplace
+        if: env.VSCE_PAT != ''
+        run: npx @vscode/vsce publish --no-dependencies --packagePath "$RUNNER_TEMP/store.vsix" --pat "$VSCE_PAT"
+
+      - name: Publish to Open VSX
+        if: env.OVSX_PAT != ''
+        run: npx ovsx publish "$RUNNER_TEMP/store.vsix" --pat "$OVSX_PAT"

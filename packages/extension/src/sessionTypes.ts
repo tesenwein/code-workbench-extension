@@ -152,6 +152,23 @@ export interface SavedSession {
   permissionMode?: ClaudePermissionMode;
   /** Per-session effort override, taking precedence over the worktree pref. */
   effortOverride?: ClaudeEffort;
+  /** Board task + phase this session was spawned to run (see startTaskPhase).
+   *  Lets a notify event from the session be mapped back to its task. */
+  boundTask?: BoundTask;
+}
+
+/** Live state a session's hooks last reported. */
+export interface SessionLiveState {
+  state: 'running' | 'waiting' | 'idle';
+  lastTool: string;
+  /** ms epoch of the report */
+  at: number;
+}
+
+/** The task + phase a phase session is bound to. */
+export interface BoundTask {
+  id: string;
+  phase: TaskPhase;
 }
 
 /** Default codicon for a session kind. Shell tabs get the terminal glyph;

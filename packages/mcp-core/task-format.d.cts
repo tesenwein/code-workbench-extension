@@ -1,6 +1,6 @@
 export type TaskPriority = "high" | "medium" | "low";
 export type TaskStatus = "open" | "in-progress" | "done";
-export type TaskPhase = "plan" | "implement" | "review" | "fix";
+export type TaskPhase = "plan" | "implement" | "review" | "fix" | "ship";
 
 export interface Task {
   id: string;
@@ -17,6 +17,13 @@ export interface Task {
   epic: string | null;
   /** Workflow phase this (root) task is being driven through, or null. */
   phase: TaskPhase | null;
+  /** Opt-in "run through": the extension starts the next phase automatically
+   *  when a phase session reports done and advanced `phase`. */
+  autoRun: boolean;
+  /** URL of the pull request opened by the Ship phase, or null. */
+  prUrl: string | null;
+  /** GitHub issue number this task mirrors, or null. */
+  issueNumber: number | null;
   tags: string[];
   description: string;
   memo: string;
@@ -48,3 +55,8 @@ export function siblingCmp<T extends Pick<Task, "order" | "created">>(
   a: T,
   b: T,
 ): number;
+
+/** Where a review-finding description points: the first `path:line[:col]` in it. */
+export function parseFindingLocation(
+  description: string | null | undefined,
+): { file: string; line: number; column?: number } | null;

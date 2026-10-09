@@ -93,7 +93,9 @@ describe('TasksPanel', () => {
     // Detail pane appears with an editable title field…
     const pane = document.querySelector('.task-detail-pane');
     expect(pane).not.toBeNull();
-    expect(within(pane as HTMLElement).getByPlaceholderText('What needs doing?')).toHaveValue('Root task A');
+    expect(within(pane as HTMLElement).getByPlaceholderText('What needs doing?')).toHaveValue(
+      'Root task A',
+    );
     // …and the file was never opened.
     expect(openInEditor).not.toHaveBeenCalled();
 
@@ -206,5 +208,42 @@ describe('TasksPanel', () => {
     expect(subRow).not.toBeNull();
     await user.click(within(subRow as HTMLElement).getByTitle('Open task file in editor'));
     expect(openInEditor).toHaveBeenCalledWith('sub-1');
+  });
+
+  describe('active sessions', () => {
+    const other = task({ id: 'other-1', title: 'Idle task' });
+    const sessions = [{ taskId: 'root-1', sessionId: 'sess-1', phase: 'implement' as const }];
+
+    it('shows a running-in chip that focuses the session', async () => {
+      const user = userEvent.setup();
+      const focusSession = vi.fn(async () => {});
+      render(
+        <TasksPanel
+          api={mockApi([ROOT, other], { focusSession })}
+          activeWorktree={null}
+          worktrees={[]}
+          activeSessions={sessions}
+        />,
+      );
+      await user.click(await screen.findByTitle('Focus the session running this task'));
+      expect(focusSession).toHaveBeenCalledWith('sess-1');
+    });
+
+    it('filters to tasks with an active session', async () => {
+      const user = userEvent.setup();
+      render(
+        <TasksPanel
+          api={mockApi([ROOT, other])}
+          activeWorktree={null}
+          worktrees={[]}
+          pageMode
+          activeSessions={sessions}
+        />,
+      );
+      await screen.findByText('Idle task');
+      await user.selectOptions(screen.getByTitle('Filter by status'), 'session');
+      expect(screen.getByText('Root task A')).toBeInTheDocument();
+      expect(screen.queryByText('Idle task')).not.toBeInTheDocument();
+    });
   });
 });

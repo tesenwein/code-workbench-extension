@@ -290,6 +290,7 @@ export async function handle(req) {
         title: String(args.title ?? "").slice(0, 200),
         message: args.message ? String(args.message).slice(0, 2000) : "",
         ts: Date.now(),
+        sessionId: SESSION_ID,
         token: NOTIFY_TOKEN,
       });
       const text = delivered

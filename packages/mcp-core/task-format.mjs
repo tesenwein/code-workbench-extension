@@ -16,4 +16,5 @@ export {
   parseTask,
   sortTasks,
   siblingCmp,
+  parseFindingLocation,
 } from "./task-format.cjs";

@@ -175,23 +175,23 @@ describe('PhaseBoard', () => {
       task({ id: 'p3', title: 'Running', status: 'in-progress' }),
     ];
 
-    it('counts only startable tasks and passes both id sets to the host', async () => {
+    it('counts startable and in-progress tasks and passes both id sets to the host', async () => {
       const api = mockApi(COLUMN_TASKS);
       render(<PhaseBoard api={api} />);
 
       await screen.findByText('Open one');
-      const bulk = within(column('Plan')).getByRole('button', { name: 'Start all Plan (2)' });
+      const bulk = within(column('Plan')).getByRole('button', { name: 'Start all Plan (3)' });
       await userEvent.click(bulk);
 
       expect(api.confirmBulkStart).toHaveBeenCalledWith('plan', ['p1', 'p2'], ['p3']);
     });
 
-    it('hides the footer button in a column with nothing startable', async () => {
+    it('offers a restart-only footer button when every task is in progress', async () => {
       const api = mockApi([task({ id: 'p3', title: 'Running', status: 'in-progress' })]);
       render(<PhaseBoard api={api} />);
 
       await screen.findByText('Running');
-      expect(screen.queryByRole('button', { name: /Start all/ })).toBeNull();
+      expect(screen.getByRole('button', { name: 'Start all Plan (1)' })).toBeTruthy();
     });
 
     it('hides the footer button when the host offers no bulk start', async () => {
@@ -236,5 +236,16 @@ describe('PhaseBoard', () => {
       await waitFor(() => expect(api.list).toHaveBeenCalledTimes(2));
       expect(screen.queryByText(/failed to start/)).toBeNull();
     });
+  });
+});
+
+describe('codeHealthLine', () => {
+  it('extracts the memo line and flags nothing when absent', async () => {
+    const { codeHealthLine } = await import('../src/components/PhaseBoard');
+    expect(codeHealthLine('notes\n\nCode health: +3 duplicates, ±0 type escapes')).toBe(
+      '+3 duplicates, ±0 type escapes',
+    );
+    expect(codeHealthLine('no health here')).toBeNull();
+    expect(codeHealthLine(undefined)).toBeNull();
   });
 });

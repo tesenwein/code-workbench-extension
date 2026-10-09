@@ -92,6 +92,45 @@ export const scanTypeEscapes = (
   categories?: string[],
 ): Promise<TypeEscapeItem[]> => runScan(ctx, repoPath, 'type-escapes', categories);
 
+/** Fingerprints of every finding, per scan feature — the unit the code-health
+ *  gate diffs. Content-based, so unrelated edits don't churn them. */
+export interface HealthSnapshot {
+  duplicates: string[];
+  deadCode: string[];
+  typeEscapes: string[];
+}
+
+/**
+ * Run all three scans and keep only their fingerprints. Unlike the on-demand
+ * scans this never persists a findings file, so a background gate run cannot
+ * clobber what the Tools panels show.
+ */
+export async function scanHealthSnapshot(
+  ctx: vscode.ExtensionContext,
+  repoPath: string,
+): Promise<HealthSnapshot> {
+  const run = async <F extends ScanFeature>(feature: F): Promise<ScanResults[F]> => {
+    const { script, run: scan } = SCAN_FEATURES[feature];
+    return scan({
+      nodeBin,
+      env: detectorEnv,
+      scriptPath: detectorPath(ctx, script),
+      root: repoPath,
+      excludeDirs: await readExcludeDirs(repoPath, feature),
+    });
+  };
+  const [dups, dead, escapes] = await Promise.all([
+    run('duplicates'),
+    run('dead-code'),
+    run('type-escapes'),
+  ]);
+  return {
+    duplicates: dups.map((d) => d.fingerprint),
+    deadCode: dead.map((d) => d.fingerprint),
+    typeEscapes: escapes.map((d) => d.fingerprint),
+  };
+}
+
 /**
  * Hybrid code search over AST-extracted symbols — the AST half of the
  * QuickBar `search-code` command. Ranks by identifier-aware BM25 with an

@@ -9,6 +9,8 @@ export interface NotifyMessage {
   title: string;
   message?: string;
   ts?: number;
+  /** Workbench session that sent it (CODE_WORKBENCH_SESSION_ID). */
+  sessionId?: string;
 }
 
 export interface SetTitleMessage {
@@ -17,7 +19,19 @@ export interface SetTitleMessage {
   title: string;
 }
 
-type IncomingMessage = NotifyMessage | SetTitleMessage;
+/** Live state reported by the per-session Claude Code hooks (cw-hook.mjs). */
+export type ActivityState = 'running' | 'waiting' | 'idle';
+
+export interface ActivityMessage {
+  type: 'activity';
+  sessionId: string;
+  state: ActivityState;
+  tool?: string;
+  taskId?: string;
+  ts?: number;
+}
+
+type IncomingMessage = NotifyMessage | SetTitleMessage | ActivityMessage;
 
 const DEFAULT_BODY_BY_KIND: Record<NotifyKind, string> = {
   done: 'Task finished',
@@ -33,6 +47,16 @@ export class NotifyServer {
     title: string;
   }>();
   readonly onTitle = this._onTitle.event;
+  private _onActivity = new vscode.EventEmitter<{
+    sessionId: string;
+    state: ActivityState;
+    tool: string;
+  }>();
+  /** Fires on each hook activity report (tool starts, waiting, idle). */
+  readonly onActivity = this._onActivity.event;
+  private _onNotify = new vscode.EventEmitter<{ sessionId: string; kind: NotifyKind }>();
+  /** Fires for every notification that names its originating session. */
+  readonly onNotify = this._onNotify.event;
 
   get port(): number {
     return this._port;
@@ -61,6 +85,8 @@ export class NotifyServer {
     this.server = null;
     this._port = 0;
     this._onTitle.dispose();
+    this._onNotify.dispose();
+    this._onActivity.dispose();
   }
 
   private handleConnection(sock: net.Socket): void {
@@ -93,6 +119,16 @@ export class NotifyServer {
       });
       return;
     }
+    if (msg.type === 'activity') {
+      if (msg.sessionId && ['running', 'waiting', 'idle'].includes(msg.state)) {
+        this._onActivity.fire({
+          sessionId: msg.sessionId,
+          state: msg.state,
+          tool: String(msg.tool ?? ''),
+        });
+      }
+      return;
+    }
     if (msg.type !== 'notification') return;
     const title = String(msg.title ?? '').trim();
     const message = String(msg.message ?? '').trim();
@@ -100,6 +136,7 @@ export class NotifyServer {
     // Fall back to a kind-appropriate default so we never show a bare "Claude:".
     const body =
       parts.length > 0 ? parts.join(' — ') : (DEFAULT_BODY_BY_KIND[msg.kind] ?? 'Notification');
+    if (msg.sessionId) this._onNotify.fire({ sessionId: msg.sessionId, kind: msg.kind });
     if (msg.kind === 'needs_input') {
       void vscode.window.showWarningMessage(`Claude: ${body}`);
     } else {

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { columnFor } from '../PhaseBoard';
-import type { WorkspaceTask, NewWorkspaceTask, TaskPhase } from '../../types';
+import type { WorkspaceTask, NewWorkspaceTask, TaskPhase, TaskUsageSummary } from '../../types';
 import {
   worktreeKey,
   PRIORITY_COLORS,
@@ -25,10 +25,13 @@ export function PhaseStepper({
   task,
   subtasks,
   onStartPhase,
+  onToggleAutoRun,
 }: {
   task: WorkspaceTask;
   subtasks: WorkspaceTask[];
   onStartPhase: (id: string, phase: TaskPhase) => Promise<void>;
+  /** Toggle autopilot ("run through"). Omitted → the toggle is hidden. */
+  onToggleAutoRun?: (on: boolean) => Promise<void>;
 }) {
   const [starting, setStarting] = useState<TaskPhase | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -73,16 +76,62 @@ export function PhaseStepper({
           {starting === pendingPhase ? 'Starting…' : `Start ${PHASE_LABELS[pendingPhase]}`}
         </button>
       )}
+      {onToggleAutoRun && (
+        <label
+          className="task-phase-autorun"
+          title="Start the next phase automatically when a phase session finishes and hands off. Stops on needs-input, a blocked phase, or high-priority review findings."
+        >
+          <input
+            type="checkbox"
+            checked={!!task.autoRun}
+            onChange={(e) => {
+              setError(null);
+              onToggleAutoRun(e.target.checked).catch((err) =>
+                setError(err instanceof Error ? err.message : String(err)),
+              );
+            }}
+          />
+          Run through
+        </label>
+      )}
       {error && <div className="task-phase-error">{error}</div>}
     </div>
   );
 }
 
-
 // ── TaskDetailPane ────────────────────────────────────────────────────────────
 
 /** Full-width task editor for page mode — replaces "open the .md file" as the
  *  primary way to work on a task. Always editable; subtasks inline below. */
+/** "Tokens: 12.3k" line under the phase stepper; hidden while loading or empty. */
+function TaskUsageLine({
+  taskId,
+  updated,
+  loadUsage,
+}: {
+  taskId: string;
+  /** Re-fetch whenever the task changes (sessions touch it as they work). */
+  updated: string;
+  loadUsage: (id: string) => Promise<TaskUsageSummary | null>;
+}) {
+  const [usage, setUsage] = useState<TaskUsageSummary | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    loadUsage(taskId)
+      .then((u) => !cancelled && setUsage(u))
+      .catch(() => !cancelled && setUsage(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [taskId, updated, loadUsage]);
+  if (!usage) return null;
+  return (
+    <div className="task-usage" title={usage.detail}>
+      Tokens used by bound sessions: {usage.label}
+    </div>
+  );
+}
+
 export function TaskDetailPane({
   task,
   subtasks,
@@ -94,6 +143,7 @@ export function TaskDetailPane({
   onOpenInEditor,
   onOpenTask,
   onStartPhase,
+  loadUsage,
   onClose,
 }: {
   task: WorkspaceTask;
@@ -110,6 +160,8 @@ export function TaskDetailPane({
   /** Start (or restart) a phase for this task — spawns a bound Claude session.
    *  Omitted entirely when the host can't spawn sessions (the stepper hides). */
   onStartPhase?: (id: string, phase: TaskPhase) => Promise<void>;
+  /** Fetch aggregated token usage for this task. Omitted → no usage line. */
+  loadUsage?: (id: string) => Promise<TaskUsageSummary | null>;
   onClose: () => void;
 }) {
   const [addingSubtask, setAddingSubtask] = useState(false);
@@ -160,7 +212,24 @@ export function TaskDetailPane({
           </button>
         </div>
         {onStartPhase && !task.parentId && (
-          <PhaseStepper task={task} subtasks={subtasks} onStartPhase={onStartPhase} />
+          <PhaseStepper
+            task={task}
+            subtasks={subtasks}
+            onStartPhase={onStartPhase}
+            onToggleAutoRun={(on) => onUpdate(task.id, { autoRun: on })}
+          />
+        )}
+        {task.issueNumber && <div className="task-usage">GitHub issue #{task.issueNumber}</div>}
+        {task.prUrl && (
+          <div className="task-usage">
+            Pull request:{' '}
+            <a href={task.prUrl} title={task.prUrl}>
+              {task.prUrl.replace(/^https?:\/\//, '')}
+            </a>
+          </div>
+        )}
+        {loadUsage && !task.parentId && (
+          <TaskUsageLine taskId={task.id} updated={task.updated} loadUsage={loadUsage} />
         )}
         <TaskEditForm
           key={task.id}

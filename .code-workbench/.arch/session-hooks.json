@@ -1,0 +1,39 @@
+{
+  "slug": "session-hooks",
+  "name": "Session Hooks",
+  "description": "Claude Code hooks that enforce board rules deterministically instead of via prompt text. mcp-core/cw-hook.mjs is a CLI (bundled to dist/mcp-server/cw-hook.mjs) taking --event PreToolUse|Stop|SessionStart plus --repo-key/--worktree/--task-id/--phase on argv (hooks do not inherit the MCP server env). It reads the hook payload from stdin and prints the contract JSON. PreToolUse denies Edit/Write/MultiEdit/NotebookEdit when no task is in-progress (bound task if CODE_WORKBENCH task id given, else any in-progress task unassigned or in the session's worktree; .code-workbench and scratchpad paths allowed). Stop blocks a phase-bound session whose task is still in-progress without a handoff or a \"blocked\" memo, once (stop_hook_active). SessionStart injects the bound-task reminder. McpConfigBuilder.writeHookSettings (mcp.ts) writes session-<id>.settings.json with the hooks block; SessionManager.buildLaunch passes --settings. Toggle: codeWorkbench.hooks.enabled. All hook failures fail open.",
+  "files": [
+    "packages/mcp-core/cw-hook.mjs",
+    "packages/mcp-core/test/cw-hook.test.mjs",
+    "packages/extension/src/mcp.ts",
+    "packages/extension/src/sessions.ts",
+    "packages/extension/src/workbenchPrompt.ts",
+    "packages/extension/esbuild.mjs"
+  ],
+  "guidelines": [
+    "Keep decide* functions pure (payload, tasks, ctx) so they stay unit-testable; I/O lives in main().",
+    "Pass hook context via argv, never env.",
+    "Every error path in a hook must allow — a broken hook must not wedge a session."
+  ],
+  "anti_patterns": [
+    "Do not add prompt rules a hook can enforce.",
+    "Do not make the Stop hook block more than once per stop (honor stop_hook_active)."
+  ],
+  "decisions": [],
+  "tags": [
+    "hooks",
+    "PreToolUse",
+    "Stop",
+    "SessionStart",
+    "enforcement",
+    "settings"
+  ],
+  "dependsOn": [
+    "mcp-config",
+    "mcp-core",
+    "session-manager",
+    "task-store"
+  ],
+  "updatedAt": "2026-10-09T09:55:37.112Z",
+  "createdAt": "2026-10-09T09:55:37.112Z"
+}

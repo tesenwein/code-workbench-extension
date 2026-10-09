@@ -1,6 +1,6 @@
 /* Phase Board — the task-bound phase flow as a kanban board.
  *
- * One column per stage of Plan → Implement → Review → Fix. A task's `phase`
+ * One column per stage of Plan → Implement → Review → Fix → Ship. A task's `phase`
  * field names the phase to run NEXT, so the column a card sits in is exactly
  * the phase its Start button launches: the board is the state machine, and
  * the button is the only way to advance it. A root task with no explicit
@@ -42,13 +42,14 @@ const STATUS_LABELS: Record<WorkspaceTask['status'], string> = {
 
 type ColumnKey = TaskPhase;
 
-const COLUMNS: ColumnKey[] = ['plan', 'implement', 'review', 'fix'];
+const COLUMNS: ColumnKey[] = ['plan', 'implement', 'review', 'fix', 'ship'];
 
 const COLUMN_LABELS: Record<ColumnKey, string> = {
   plan: 'Plan',
   implement: 'Implement',
   review: 'Review',
   fix: 'Fix',
+  ship: 'Ship',
 };
 
 const COLUMN_HINTS: Record<ColumnKey, string> = {
@@ -56,6 +57,7 @@ const COLUMN_HINTS: Record<ColumnKey, string> = {
   implement: 'Works the plan-step subtasks until lint, typecheck and tests pass.',
   review: 'Reviews the diff and files review-finding subtasks.',
   fix: 'Fixes the review-finding subtasks, then re-runs the checks.',
+  ship: 'Commits, pushes, opens the PR, waits for CI and marks the task done.',
 };
 
 /** Which column a task belongs in — `null` for anything the board ignores
@@ -68,9 +70,16 @@ export function columnFor(task: WorkspaceTask, children: WorkspaceTask[]): Colum
   // Done wins over a lingering `phase`: marking a task done from the Task
   // Board doesn't clear `phase`, and a done task must never keep a live
   // "Start <phase>" card on the board.
-  if (task.status === 'done') return null;
+  // The one exception: a shipped task stays visible in Ship, carrying its PR link.
+  if (task.status === 'done') return task.prUrl ? 'ship' : null;
   if (task.phase) return task.phase;
   return children.some((c) => c.tags?.includes('plan-step')) ? 'implement' : 'plan';
+}
+
+/** The "Code health: ..." line the host's gate writes into the memo, if any. */
+export function codeHealthLine(memo: string | undefined): string | null {
+  const m = memo?.match(/^Code health: (.+)$/m);
+  return m ? m[1] : null;
 }
 
 interface SubtaskProgress {
@@ -91,6 +100,7 @@ function TaskCard({
   model,
   starting,
   onStart,
+  onToggleAutoRun,
   onOpen,
 }: {
   task: WorkspaceTask;
@@ -100,11 +110,13 @@ function TaskCard({
   model: string;
   starting: boolean;
   onStart: () => void;
+  onToggleAutoRun: (on: boolean) => void;
   onOpen?: (id: string) => void;
 }) {
   const planSteps = subtaskProgress(subtasks, 'plan-step');
   const findings = subtaskProgress(subtasks, 'review-finding');
   const phase = column;
+  const health = codeHealthLine(task.memo);
 
   return (
     <div className="phase-card">
@@ -132,6 +144,31 @@ function TaskCard({
         </span>
         {task.worktree && <span className="phase-card-chip">{task.worktree}</span>}
         {task.epic && <span className="phase-card-chip">{task.epic}</span>}
+        {health && (
+          <span
+            className={`phase-card-chip ${/\+\d/.test(health) ? 'phase-card-health-bad' : ''}`}
+            title={`Code health delta of the last phase: ${health}`}
+          >
+            health {/\+\d/.test(health) ? '▲' : '✓'}
+          </span>
+        )}
+        {task.prUrl && (
+          <a
+            className="phase-card-chip phase-card-pr"
+            href={task.prUrl}
+            title={`Open pull request ${task.prUrl}`}
+          >
+            PR
+          </a>
+        )}
+        {task.autoRun && (
+          <span
+            className="phase-card-chip phase-card-autopilot"
+            title="Autopilot: the next phase starts automatically"
+          >
+            autopilot
+          </span>
+        )}
         {planSteps && (
           <span className="phase-card-chip" title="plan-step subtasks done / total">
             steps {planSteps.done}/{planSteps.total}
@@ -144,16 +181,31 @@ function TaskCard({
         )}
       </div>
 
-      <button
-        type="button"
-        className="task-action-btn phase-card-start"
-        disabled={starting}
-        onClick={onStart}
-        title={`Spawn a${model ? ` ${model}` : ''} Claude session running the ${COLUMN_LABELS[phase]} phase for this task`}
-      >
-        {starting ? 'Starting…' : `Start ${COLUMN_LABELS[phase]}`}
-        {model && <span className="phase-card-model">{model}</span>}
-      </button>
+      {task.status !== 'done' && (
+        <button
+          type="button"
+          className="task-action-btn phase-card-start"
+          disabled={starting}
+          onClick={onStart}
+          title={`Spawn a${model ? ` ${model}` : ''} Claude session running the ${COLUMN_LABELS[phase]} phase for this task`}
+        >
+          {starting ? 'Starting…' : `Start ${COLUMN_LABELS[phase]}`}
+          {model && <span className="phase-card-model">{model}</span>}
+        </button>
+      )}
+      {task.status !== 'done' && (
+        <label
+          className="phase-card-autorun"
+          title="Start the next phase automatically when this one finishes and hands off"
+        >
+          <input
+            type="checkbox"
+            checked={!!task.autoRun}
+            onChange={(e) => onToggleAutoRun(e.target.checked)}
+          />
+          Run through
+        </label>
+      )}
     </div>
   );
 }
@@ -256,6 +308,19 @@ export function PhaseBoard({ api, reloadKey = 0, phaseModels, onOpenTask }: Phas
     [api],
   );
 
+  const toggleAutoRun = useCallback(
+    async (task: WorkspaceTask, on: boolean) => {
+      try {
+        await api.update(task.id, { autoRun: on });
+        setTasks(await api.list());
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      }
+    },
+    [api],
+  );
+
   const startColumn = useCallback(
     async (column: ColumnKey, items: WorkspaceTask[]) => {
       const confirmBulkStart = api.confirmBulkStart;
@@ -326,6 +391,7 @@ export function PhaseBoard({ api, reloadKey = 0, phaseModels, onOpenTask }: Phas
                         model={modelFor(task, column)}
                         starting={starting === task.id}
                         onStart={() => void start(task, column)}
+                        onToggleAutoRun={(on) => void toggleAutoRun(task, on)}
                         onOpen={onOpenTask}
                       />
                     ))

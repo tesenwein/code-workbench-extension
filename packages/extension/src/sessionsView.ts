@@ -6,7 +6,7 @@ import {
   sessionIconId,
   type SavedSession,
 } from './sessionTypes';
-import { claudeConversationExists } from './sessionLaunch';
+import { claudeConversationExists, type TokenUsage } from './sessionLaunch';
 import type { SessionManager } from './sessions';
 import { makeNonce, panelHtml, WORKTREE_DOT } from './panelTheme';
 import { runItemCommand, type ItemCommands } from './sidebarMessages';
@@ -43,6 +43,7 @@ const SVG = {
   icon:'<rect x="2.6" y="3.4" width="10.8" height="9.2" rx="1.6"/><circle cx="5.9" cy="6.6" r="1.1"/><path d="M3 11.6 6.3 8.2l2.2 2 2.2-2.6 2.6 3"/>',
   x:'<path d="M4.2 4.2 11.8 11.8"/><path d="M11.8 4.2 4.2 11.8"/>',
   branch:'<circle cx="5" cy="4" r="1.7"/><circle cx="5" cy="12" r="1.7"/><circle cx="11" cy="6.5" r="1.7"/><path d="M5 5.7v4.6M5 8.5h3.2a2.6 2.6 0 0 0 2.6-2.6"/>',
+  task:'<rect x="3" y="2.6" width="10" height="10.8" rx="1.6"/><path d="M5.6 6.2h4.8M5.6 8.6h4.8M5.6 11h2.6"/>',
   plus:'<path d="M8 3.4v9.2"/><path d="M3.4 8h9.2"/>'
 };
 function svg(n){ return '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">'+SVG[n]+'</svg>'; }
@@ -96,11 +97,33 @@ function sessionRow(s,accent){
   var meta=document.createElement('div'); meta.className='meta';
   var k=document.createElement('span'); k.textContent=s.kind; meta.appendChild(k);
   if(s.isOpen){ meta.appendChild(sep()); var lv=document.createElement('span'); lv.className='sess'; lv.textContent='live'; meta.appendChild(lv); }
+  if(s.state){
+    meta.appendChild(sep());
+    var st=document.createElement('span'); st.className='st st-'+s.state;
+    st.textContent=s.state==='running'&&s.lastTool?'running · '+s.lastTool:s.state;
+    st.title=s.state==='waiting'?'waiting for your input':s.state==='running'?'running'+(s.lastTool?' '+s.lastTool:''):'idle';
+    meta.appendChild(st);
+  }
+  if(s.taskId){
+    meta.appendChild(sep());
+    var tc=document.createElement('span'); tc.className='chip task-chip';
+    tc.textContent='#'+s.taskId.slice(0,8)+(s.taskPhase?' · '+s.taskPhase:'');
+    tc.title='Open task '+s.taskId.slice(0,8);
+    tc.addEventListener('click',function(e){ e.stopPropagation(); vscode.postMessage({type:'openTask',taskId:s.taskId}); });
+    meta.appendChild(tc);
+  }
+  if(s.tokens){
+    meta.appendChild(sep());
+    var tk=document.createElement('span'); tk.className='tok'; tk.textContent=s.tokens.label;
+    tk.title=s.tokens.detail; meta.appendChild(tk);
+  }
   body.appendChild(meta); row.appendChild(body);
 
   var acts=document.createElement('div'); acts.className='acts';
   acts.appendChild(btn('pencil','','Rename session',function(){ vscode.postMessage({type:'rename',id:s.id}); }));
   acts.appendChild(btn('icon','clay','Change tab icon',function(){ vscode.postMessage({type:'setIcon',id:s.id}); }));
+  if(s.taskId){ acts.appendChild(btn('task','clay','Open task',function(){ vscode.postMessage({type:'openTask',taskId:s.taskId}); })); }
+  acts.appendChild(btn('branch','','Reveal worktree',function(){ vscode.postMessage({type:'revealWorktree',id:s.id}); }));
   acts.appendChild(btn('x','danger','Close session',function(){ vscode.postMessage({type:'close',id:s.id}); }));
   row.appendChild(acts);
   root.appendChild(row);
@@ -160,6 +183,7 @@ export class SessionsProvider implements vscode.WebviewViewProvider {
     private extensionUri: vscode.Uri,
   ) {
     mgr.onDidChange(() => this.post());
+    mgr.onLiveChange(() => this.post());
     mgr.onBlink(() => {
       void this.view?.webview.postMessage({
         type: 'blink',
@@ -219,9 +243,24 @@ export class SessionsProvider implements vscode.WebviewViewProvider {
           isOpen: this.mgr.isOpen(s.id),
           isActive: this.mgr.isActive(s.id),
           selected: s.id === selectedId,
+          ...this.liveFields(s),
         })),
     }));
     return { groups: groupArr, blink: this.mgr.getBlinkPhase() };
+  }
+
+  /** Hook-reported state, bound-task chip data and token usage for one row. */
+  private liveFields(s: SavedSession): Record<string, unknown> {
+    const live = this.mgr.getLiveState(s.id);
+    const open = this.mgr.isOpen(s.id);
+    const usage = open ? this.mgr.getUsage(s.id) : undefined;
+    return {
+      ...(live ? { state: live.state, lastTool: live.lastTool } : {}),
+      ...(s.boundTask ? { taskId: s.boundTask.id, taskPhase: s.boundTask.phase } : {}),
+      ...(usage && usageTotal(usage) > 0
+        ? { tokens: { label: formatTokens(usageTotal(usage)), detail: usageDetail(usage) } }
+        : {}),
+    };
   }
 
   private lastJson = '';
@@ -235,7 +274,7 @@ export class SessionsProvider implements vscode.WebviewViewProvider {
     void this.view.webview.postMessage({ type: 'state', ...state });
   }
 
-  private onMessage(m: { type?: string; id?: string; model?: string }): void {
+  private onMessage(m: { type?: string; id?: string; model?: string; taskId?: string }): void {
     if (m?.type === 'ready') {
       this.lastJson = '';
       this.post();
@@ -246,10 +285,33 @@ export class SessionsProvider implements vscode.WebviewViewProvider {
       void vscode.commands.executeCommand('codeWorkbench.sessions.new', model);
       return;
     }
+    if (m?.type === 'openTask' && m.taskId) {
+      void vscode.commands.executeCommand('codeWorkbench.tasks.openTaskInPage', m.taskId);
+      return;
+    }
     const session = this.cache.find((s) => s.id === m?.id);
     if (!session) return;
+    if (m?.type === 'revealWorktree') {
+      void vscode.commands.executeCommand('codeWorkbench.worktrees.reveal', session.worktreePath);
+      return;
+    }
     runItemCommand(SESSION_ITEM_COMMANDS, m?.type, { session });
   }
+}
+
+export function usageTotal(u: TokenUsage): number {
+  return u.input + u.output + u.cacheRead + u.cacheCreate;
+}
+
+/** Compact count: 950, 12.3k, 4.5M. */
+export function formatTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+  return String(n);
+}
+
+export function usageDetail(u: TokenUsage): string {
+  return `input ${u.input.toLocaleString()} · output ${u.output.toLocaleString()} · cache read ${u.cacheRead.toLocaleString()} · cache write ${u.cacheCreate.toLocaleString()}`;
 }
 
 /** Per-session message type → command id. */

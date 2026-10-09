@@ -6,9 +6,9 @@
 export type TaskPriority = 'high' | 'medium' | 'low';
 export type TaskStatus = 'open' | 'in-progress' | 'done';
 /** Workflow phase a (root) task is being driven through by a bound Claude
- *  session — Plan → Implement → Review → Fix. Undefined/null means the task
+ *  session — Plan → Implement → Review → Fix → Ship. Undefined/null means the task
  *  isn't in the flow. */
-export type TaskPhase = 'plan' | 'implement' | 'review' | 'fix';
+export type TaskPhase = 'plan' | 'implement' | 'review' | 'fix' | 'ship';
 
 /** Resolved phase→model for each worktree, keyed by worktree key (lowercased
  *  basename). `fallback` covers unassigned tasks, which run in the active
@@ -38,6 +38,12 @@ export interface WorkspaceTask {
   dueDate?: string | null;
   epic?: string | null;
   phase?: TaskPhase | null;
+  /** Opt-in autopilot: auto-start the next phase after a phase hands off. */
+  autoRun?: boolean;
+  /** Pull request opened by the Ship phase. */
+  prUrl?: string | null;
+  /** GitHub issue this task mirrors. */
+  issueNumber?: number | null;
   tags?: string[];
 }
 
@@ -120,6 +126,21 @@ export interface ScanPaneApi<T extends ScanItem> {
 }
 
 /** Task CRUD calls the TasksPanel needs from its host. */
+/** Pre-formatted token usage for display (the host owns the formatting). */
+export interface TaskUsageSummary {
+  /** Compact total, e.g. "12.3k". */
+  label: string;
+  /** Full breakdown for a tooltip. */
+  detail: string;
+}
+
+/** A live workbench session running a phase for a task (host-computed). */
+export interface ActiveSession {
+  taskId: string;
+  sessionId: string;
+  phase: TaskPhase;
+}
+
 export interface TasksApi {
   list: () => Promise<WorkspaceTask[]>;
   create: (task: NewWorkspaceTask) => Promise<WorkspaceTask>;
@@ -129,11 +150,16 @@ export interface TasksApi {
    *  that can't surface a file editor (e.g. the Electron app) omit it and the
    *  panel hides the "open in editor" affordance. */
   openInEditor?: (id: string) => Promise<void>;
-  /** Start a phase (Plan/Implement/Review/Fix) for a root task: spawns a
+  /** Start a phase (Plan/Implement/Review/Fix/Ship) for a root task: spawns a
    *  bound Claude session and sets the task's `phase`. Optional — hosts that
    *  can't spawn sessions (e.g. the Electron app) omit it and the panel hides
    *  the phase stepper. */
   startPhase?: (id: string, phase: TaskPhase) => Promise<void>;
+  /** Focus the terminal of a live session (the "running in" chip). Optional. */
+  focusSession?: (sessionId: string) => Promise<void>;
+  /** Aggregated Claude token usage over every session bound to the task, or
+   *  null when none. Optional — hosts without session tracking omit it. */
+  taskUsage?: (id: string) => Promise<TaskUsageSummary | null>;
   /** Confirm with the user (host-native modal), then start `phase` for every
    *  startable task in a column at once. `inProgressIds` are offered as an
    *  opt-in; the resolved value reports which starts settled how, and is empty

@@ -100,6 +100,7 @@ const panelCss = () => `
   }
   .row:hover { border-color:var(--clay-line); background:var(--bg-2); }
   .row:active { transform:translateY(.5px); }
+  .row.flash { border-color:var(--clay-bright); background:var(--bg-2); }
   .row.active {
     border-color:var(--clay-line);
     background:linear-gradient(90deg,var(--clay-ghost),var(--bg-1) 62%);
@@ -175,6 +176,12 @@ const panelCss = () => `
   .meta .dirty { color:var(--warn); }
   .meta .ab { color:var(--clay-bright); }
   .meta .sess { color:var(--clay-bright); }
+  .meta .st-running { color:var(--ok); }
+  .meta .st-waiting { color:var(--warn); font-weight:600; }
+  .meta .st-idle { color:var(--fg-3); }
+  .meta .task-chip { color:var(--clay-bright); cursor:pointer; }
+  .meta .task-chip:hover { text-decoration:underline; }
+  .meta .tok { color:var(--fg-2); }
   .meta .due { color:var(--fg-2); }
   .meta .due.overdue { color:var(--warn); font-weight:600; }
 

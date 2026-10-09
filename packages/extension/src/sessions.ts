@@ -14,11 +14,13 @@ import {
   claudeModel,
   sessionIconId,
   worktreeTerminalColor,
+  type BoundTask,
   type ClaudeEffort,
   type ClaudeModel,
   type ClaudePermissionMode,
   type SavedSession,
   type SessionKind,
+  type SessionLiveState,
   type SessionProfile,
   type WorktreeColor,
   type WorktreePrefs,
@@ -27,8 +29,12 @@ import {
   buildBanner,
   claudeConversationExists,
   cryptoRandom,
+  EMPTY_USAGE,
+  addUsage,
   readFirstUserMessage,
+  readSessionUsage,
   shellQuote,
+  type TokenUsage,
 } from './sessionLaunch';
 
 export * from './sessionTypes';
@@ -48,6 +54,8 @@ export interface CreateSessionOptions {
    *  (e.g. so a Plan-phase session can force 'max' regardless of the user's
    *  usual setting). */
   effort?: ClaudeEffort;
+  /** Task + phase this session runs; recorded so notify events map to the task. */
+  boundTask?: BoundTask;
 }
 
 // Legacy workspaceState keys — read only, for one-shot migration into the
@@ -105,12 +113,23 @@ export class SessionManager {
   private terminals = new Map<string, vscode.Terminal>();
   private mcp: McpConfigBuilder;
   private notify = new NotifyServer();
+  /** Done / needs-input / info notifications from sessions' MCP notify tools. */
+  get onNotify() {
+    return this.notify.onNotify;
+  }
   private _onDidChange = new vscode.EventEmitter<void>();
   readonly onDidChange = this._onDidChange.event;
   /** Fires on each blink tick. Consumers should refresh ONLY the active
    *  session rows, not the whole tree — otherwise idle rows flicker too. */
   private _onBlink = new vscode.EventEmitter<void>();
   readonly onBlink = this._onBlink.event;
+  /** Latest hook-reported state per session (see cw-hook.mjs). In-memory only:
+   *  a stale "running" must not survive an extension-host restart. */
+  private liveState = new Map<string, SessionLiveState>();
+  private liveRefreshTimer: NodeJS.Timeout | undefined;
+  private _onLiveChange = new vscode.EventEmitter<void>();
+  /** Coalesced: fires when a session's hook-reported state/tool changed. */
+  readonly onLiveChange = this._onLiveChange.event;
   /** Wall-clock timestamp of the most recent terminal write per session. */
   private lastActivity = new Map<string, number>();
   /** Current phase of the blink toggle. Flipped on each interval tick. */
@@ -137,6 +156,21 @@ export class SessionManager {
     this.mcp = new McpConfigBuilder(ctx);
     this.notifyReady = this.notify.start().catch(() => {
       /* notifications unavailable — sessions still work */
+    });
+    this.notify.onActivity(({ sessionId, state, tool }) => {
+      const prev = this.liveState.get(sessionId);
+      this.liveState.set(sessionId, {
+        state,
+        lastTool: tool || prev?.lastTool || '',
+        at: Date.now(),
+      });
+      // Tool events arrive in bursts; coalesce the tree refresh.
+      // Its own event: live-state churn must not trigger the structural refresh
+      // (task panel re-list, worktree badges) that onDidChange drives.
+      this.liveRefreshTimer ??= setTimeout(() => {
+        this.liveRefreshTimer = undefined;
+        this._onLiveChange.fire();
+      }, 250);
     });
     this.notify.onTitle(({ sessionId, title }) => {
       void this.applyRemoteTitle(sessionId, title);
@@ -249,6 +283,29 @@ export class SessionManager {
   }
 
   /** True if the session has produced output within the activity window. */
+  /** Hook-reported live state, or undefined when the session never reported
+   *  one (hooks off / non-Claude session) or its terminal is closed. */
+  getLiveState(id: string): SessionLiveState | undefined {
+    return this.isOpen(id) ? this.liveState.get(id) : undefined;
+  }
+
+  /** Token usage of one Claude session (from its transcript). */
+  getUsage(id: string): TokenUsage | undefined {
+    const claudeId = this.list().find((s) => s.id === id)?.claudeSessionId;
+    return claudeId ? readSessionUsage(claudeId) : undefined;
+  }
+
+  /** Usage summed over every session ever bound to `taskId`, closed ones included. */
+  getTaskUsage(taskId: string): TokenUsage {
+    let total = EMPTY_USAGE;
+    for (const s of this.list()) {
+      if (s.boundTask?.id !== taskId) continue;
+      const u = this.getUsage(s.id);
+      if (u) total = addUsage(total, u);
+    }
+    return total;
+  }
+
   isActive(id: string): boolean {
     const ts = this.lastActivity.get(id);
     return ts !== undefined && Date.now() - ts <= ACTIVITY_WINDOW_MS;
@@ -389,6 +446,7 @@ export class SessionManager {
       ...(opts?.prompt ? { initialPrompt: opts.prompt } : {}),
       ...(opts?.permissionMode ? { permissionMode: opts.permissionMode } : {}),
       ...(opts?.effort != null ? { effortOverride: opts.effort } : {}),
+      ...(opts?.boundTask ? { boundTask: opts.boundTask } : {}),
     };
     await this.updateRepoState((st) => {
       st.sessions.push(session);
@@ -994,9 +1052,11 @@ export class SessionManager {
       repoKey,
       notifyPort: this.notify.port,
       extraPrompts,
+      boundTask: session.boundTask,
     });
     if (mcp) {
       args.push('--mcp-config', mcp.configPath);
+      if (mcp.settingsPath) args.push('--settings', mcp.settingsPath);
       if (mcp.promptPath) args.push('--append-system-prompt-file', mcp.promptPath);
     } else {
       // No MCP prompt file — pass user prompts directly.
@@ -1022,6 +1082,8 @@ export class SessionManager {
       clearInterval(this.blinkTimer);
       this.blinkTimer = undefined;
     }
+    clearTimeout(this.liveRefreshTimer);
+    this._onLiveChange.dispose();
     for (const timer of this.titleFallbackTimers.values()) clearTimeout(timer);
     this.titleFallbackTimers.clear();
     this.notify.dispose();

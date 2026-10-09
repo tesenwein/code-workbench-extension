@@ -1,4 +1,4 @@
-/* Task-bound phase flow: Plan -> Implement -> Review -> Fix.
+/* Task-bound phase flow: Plan -> Implement -> Review -> Fix -> Ship.
  *
  * Generalizes the pattern in commands/codeReview.ts (a Claude session with a
  * fixed model + prompt) to any task on the board: each phase spawns a session
@@ -8,7 +8,7 @@
  * the session and reopening the task later loses nothing.
  *
  * The prompts and per-phase model live in mcp-core/phase-prompts, shared with
- * the bundled `/cw-implement`, `/cw-review`, `/cw-fix` skills so a phase run by
+ * the bundled `/cw-implement`, `/cw-review`, `/cw-fix`, `/cw-ship` skills so a phase run by
  * hand and a phase run from the board follow the same procedure. */
 
 import * as vscode from 'vscode';
@@ -18,6 +18,8 @@ import { worktreeKey } from '@code-workbench/mcp-core/task-format';
 import { PHASE_META, phasePrompt, phasePromptBulk } from '@code-workbench/mcp-core/phase-prompts';
 import type { Task } from '@code-workbench/mcp-core/task-format';
 import { listTasks, updateTask } from '../tasks';
+import { formatTokens, usageDetail, usageTotal } from '../sessionsView';
+import { decideNextPhase, describeStop } from '../phaseAutopilot';
 import { listWorktrees } from '../git';
 
 /** Resolve a task's `worktree` (a lowercased-basename key, NOT a path — see
@@ -45,6 +47,15 @@ export interface TaskFlowDeps {
   getRepoKey: () => string | undefined;
   getRepoRoot: () => string | undefined;
   ensureActiveWorktree: () => Promise<string | undefined>;
+  /** Prefetch arch cards / code hits for a task in `wt`, rendered for the
+   *  prompt. Omitted (or '' result) → the prompt carries no context section. */
+  prefetchContext?: (wt: string, task: Task) => Promise<string>;
+  /** Fired (not awaited) right before a phase session spawns — the code-health
+   *  gate snapshots its baseline here. */
+  onPhaseStart?: (wt: string, taskId: string, phase: TaskPhase) => void;
+  /** Awaited when a bound session reports done, BEFORE autopilot decides, so
+   *  whatever it records (code-health memo line) is visible to the next phase. */
+  onPhaseDone?: (wt: string, taskId: string, phase: TaskPhase) => Promise<void>;
 }
 
 /** Why a phase failed to start. `no-worktree` is a benign abort (the user
@@ -86,14 +97,32 @@ export async function startTaskPhase(
   // `phase:null` ("no plan exists yet") and offer to re-plan a planned
   // task. Status is the honest signal that a session is live.
   if (task.status === 'open') await updateTask(key, task.id, { status: 'in-progress' });
+  deps.onPhaseStart?.(wt, task.id, phase);
   await deps.sessionMgr.create('claude', wt, undefined, {
     title: `${spec.label}: ${task.title}`.slice(0, 80),
     icon: spec.icon,
     // Settings can override the phase's built-in model, globally or per worktree.
     model: deps.sessionMgr.resolvePhaseModel(wt, phase),
-    prompt: phasePrompt(phase, task),
+    prompt: phasePrompt(phase, task, await deps.prefetchContext?.(wt, task)),
     ...(spec.effort != null ? { effort: spec.effort } : {}),
+    boundTask: { id: task.id, phase },
   });
+}
+
+/** Prefetch context for each task of a batch (sequentially: the searches share
+ *  one warm worker, and each result is already size-capped). */
+async function prefetchAll(
+  deps: TaskFlowDeps,
+  wt: string,
+  tasks: Task[],
+): Promise<Record<string, string>> {
+  const out: Record<string, string> = {};
+  if (!deps.prefetchContext) return out;
+  for (const t of tasks) {
+    const text = await deps.prefetchContext(wt, t);
+    if (text) out[t.id] = text;
+  }
+  return out;
 }
 
 /** Outcome of a bulk start: one entry per task we actually tried to start.
@@ -124,12 +153,17 @@ async function startTaskPhaseBatch(
   for (const t of tasks) {
     if (t.status === 'open') await updateTask(key, t.id, { status: 'in-progress' });
   }
+  // One baseline per task would mean N full scans over one shared tree; only a
+  // lone task gets gated (the same rule as binding a session to it).
+  if (tasks.length === 1) deps.onPhaseStart?.(wt, tasks[0].id, phase);
   await deps.sessionMgr.create('claude', wt, undefined, {
     title: title.slice(0, 80),
     icon: spec.icon,
     model: deps.sessionMgr.resolvePhaseModel(wt, phase),
-    prompt: phasePromptBulk(phase, tasks),
+    prompt: phasePromptBulk(phase, tasks, await prefetchAll(deps, wt, tasks)),
     ...(spec.effort != null ? { effort: spec.effort } : {}),
+    // A multi-task batch has no single task to track, so only bind a lone one.
+    ...(tasks.length === 1 ? { boundTask: { id: tasks[0].id, phase } } : {}),
   });
 }
 
@@ -188,6 +222,69 @@ export async function startTaskPhaseBulk(
   return result;
 }
 
+/** Autopilot: when a phase session reports done/needs_input, re-read its task
+ *  and — if the task opted in via `autoRun` and the session handed off — start
+ *  the next phase. The decision itself lives in phaseAutopilot.ts. */
+export function registerAutopilot(ctx: vscode.ExtensionContext, deps: TaskFlowDeps): void {
+  // Each session gets one verdict: a later chat turn in the same terminal must
+  // not re-trigger a phase that has since been started or advanced.
+  const handled = new Set<string>();
+  ctx.subscriptions.push(
+    deps.sessionMgr.onNotify(({ sessionId, kind }) => {
+      if (kind === 'info' || handled.has(sessionId)) return;
+      const session = deps.sessionMgr.list().find((s) => s.id === sessionId);
+      const bound = session?.boundTask;
+      const key = deps.getRepoKey();
+      const repoRoot = deps.getRepoRoot();
+      if (!session || !bound || !key || !repoRoot) return;
+      // needs_input is not final: the session continues once the user answers.
+      if (kind === 'done') handled.add(sessionId);
+      void (async () => {
+        if (kind === 'done') {
+          await deps.onPhaseDone?.(session.worktreePath, bound.id, bound.phase).catch(() => {});
+        }
+        const all = await listTasks(key);
+        const task = all.find((t) => t.id === bound.id);
+        if (!task?.autoRun) return;
+        const decision = decideNextPhase({
+          task,
+          subtasks: all.filter((t) => t.parentId === task.id),
+          event: kind,
+          ranPhase: bound.phase,
+        });
+        if ('stop' in decision) {
+          if (decision.stop !== 'autorun-off') {
+            void vscode.window.showInformationMessage(
+              `Autopilot stopped for "${task.title}": ${describeStop(decision.stop)}.`,
+            );
+          }
+          return;
+        }
+        // Guard double-start: another live session already runs this phase.
+        const dup = deps.sessionMgr
+          .list()
+          .some(
+            (s) =>
+              s.id !== sessionId &&
+              deps.sessionMgr.isOpen(s.id) &&
+              s.boundTask?.id === task.id &&
+              s.boundTask.phase === decision.start,
+          );
+        if (dup) return;
+        void vscode.window.showInformationMessage(
+          `Autopilot: starting ${PHASE_META[decision.start].label} for "${task.title}"`,
+        );
+        try {
+          await startTaskPhase(deps, key, repoRoot, task.id, decision.start);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err ?? '');
+          void vscode.window.showErrorMessage(`Autopilot could not start the next phase: ${msg}`);
+        }
+      })();
+    }),
+  );
+}
+
 export function registerTaskFlowCommand(ctx: vscode.ExtensionContext, deps: TaskFlowDeps): void {
   ctx.subscriptions.push(
     vscode.commands.registerCommand(
@@ -209,6 +306,24 @@ export function registerTaskFlowCommand(ctx: vscode.ExtensionContext, deps: Task
         }
       },
     ),
+    // Live sessions bound to a task, for the Tasks panel's "running in" chip.
+    vscode.commands.registerCommand('codeWorkbench.tasks.activeSessions', () =>
+      deps.sessionMgr
+        .list()
+        .filter((s) => s.boundTask && deps.sessionMgr.isOpen(s.id))
+        .map((s) => ({
+          taskId: s.boundTask!.id,
+          sessionId: s.id,
+          phase: s.boundTask!.phase,
+        })),
+    ),
+    // Aggregated token usage for the task detail pane (null when nothing ran).
+    vscode.commands.registerCommand('codeWorkbench.tasks.usage', (taskId?: string) => {
+      if (!taskId) return null;
+      const u = deps.sessionMgr.getTaskUsage(taskId);
+      const total = usageTotal(u);
+      return total > 0 ? { label: formatTokens(total), detail: usageDetail(u) } : null;
+    }),
     vscode.commands.registerCommand(
       'codeWorkbench.tasks.startPhaseBulk',
       async (

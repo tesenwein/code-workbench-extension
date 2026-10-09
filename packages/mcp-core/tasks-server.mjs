@@ -175,9 +175,24 @@ export const TOOLS = [
         },
         phase: {
           type: "string",
-          enum: ["plan", "implement", "review", "fix"],
+          enum: ["plan", "implement", "review", "fix", "ship"],
           description:
-            "Workflow phase to start this task in, if it's driven by the Code Workbench phase flow (Plan → Implement → Review → Fix). Root tasks created by a planning skill or workflow should set this — e.g. 'implement' once a plan is approved — so the Phase Board files it correctly.",
+            "Workflow phase to start this task in, if it's driven by the Code Workbench phase flow (Plan → Implement → Review → Fix → Ship). Root tasks created by a planning skill or workflow should set this — e.g. 'implement' once a plan is approved — so the Phase Board files it correctly.",
+        },
+        prUrl: {
+          type: "string",
+          description:
+            "URL of the pull request opened for this task (set by the Ship phase).",
+        },
+        issueNumber: {
+          type: "number",
+          description:
+            "GitHub issue number this task mirrors; status changes are synced to it when the user enabled issue sync.",
+        },
+        autoRun: {
+          type: "boolean",
+          description:
+            "Opt in to autopilot: the extension starts the next phase automatically when a phase session finishes and hands off. Defaults to false.",
         },
       },
       required: ["title"],
@@ -219,9 +234,9 @@ export const TOOLS = [
           type: "string",
           // "" is a legal value: the Review/Fix procedures clear the phase with
           // it, so it must pass schema validation, not just the handler.
-          enum: ["plan", "implement", "review", "fix", ""],
+          enum: ["plan", "implement", "review", "fix", "ship", ""],
           description:
-            'Workflow phase this task is in (set by the Code Workbench phase flow — Plan → Implement → Review → Fix). Advance it when your phase\'s work is handed off to the next one. Pass an empty string to clear it.',
+            'Workflow phase this task is in (set by the Code Workbench phase flow — Plan → Implement → Review → Fix → Ship). Advance it when your phase\'s work is handed off to the next one. Pass an empty string to clear it.',
         },
         worktree: {
           type: "string",
@@ -251,6 +266,16 @@ export const TOOLS = [
           type: "array",
           items: { type: "string" },
           description: "Replace the full tags array.",
+        },
+        prUrl: {
+          type: "string",
+          description:
+            "Pull request URL for this task (pass empty string to clear).",
+        },
+        autoRun: {
+          type: "boolean",
+          description:
+            "Toggle autopilot (auto-start the next phase after a phase session hands off).",
         },
       },
       required: ["id"],
@@ -511,6 +536,12 @@ export async function handle(req) {
           epic: args.epic || null,
           tags: Array.isArray(args.tags) ? args.tags.map(String) : [],
           phase: args.phase && VALID_PHASES.has(args.phase) ? args.phase : null,
+          autoRun: args.autoRun === true,
+          prUrl: args.prUrl || null,
+          issueNumber:
+            Number.isInteger(args.issueNumber) && args.issueNumber > 0
+              ? args.issueNumber
+              : null,
         });
         return {
           content: [
@@ -556,7 +587,7 @@ export async function handle(req) {
             content: [
               {
                 type: "text",
-                text: `Error: invalid phase "${args.phase}". Use plan, implement, review, or fix.`,
+                text: `Error: invalid phase "${args.phase}". Use plan, implement, review, fix, or ship.`,
               },
             ],
           };
@@ -595,6 +626,8 @@ export async function handle(req) {
             patch.worktree =
               args.worktree === "" ? null : worktreeKey(args.worktree);
           if (args.parallel != null) patch.parallel = args.parallel === true;
+          if (args.autoRun != null) patch.autoRun = args.autoRun === true;
+          if (args.prUrl != null) patch.prUrl = args.prUrl === "" ? null : String(args.prUrl);
           if (args.order != null)
             patch.order = typeof args.order === "number" ? args.order : null;
           if (args.epic != null)
