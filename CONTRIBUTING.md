@@ -18,10 +18,14 @@ on your `PATH` for Claude sessions.
 - Base your work on **`develop`** and open PRs against `develop`.
 - `main` is the release branch — merging into it bumps the version, builds the
   `.vsix`, and cuts a GitHub Release (`.github/workflows/release.yml`).
-- The same workflow publishes to the VS Code Marketplace and Open VSX when the
+- A follow-up job (`.github/workflows/publish-stores.yml`) publishes the release tag to the VS Code Marketplace and Open VSX when the
   repository secrets `VSCE_PAT` (Azure DevOps PAT with Marketplace _Manage_ scope
   for publisher `tesenwein`) and `OVSX_PAT` (open-vsx.org token) exist. Each
-  store step is skipped when its secret is missing. The store build strips
+  store step is skipped when its secret is missing. If a store publish fails,
+  re-run the failed job (or run `publish-stores.yml` with the release tag) —
+  it builds from the tag, so the version is not bumped again, and an
+  already-published version is skipped. `vsce` is a lockfile-pinned dev
+  dependency; `ovsx` is pinned to an exact version in the workflow. The store build strips
   `enabledApiProposals`, which the stores reject.
 - Use [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`,
   `refactor:`, `chore:`, `docs:`, `test:`, `style:`, `perf:`.

@@ -32,27 +32,40 @@ export function formatTaskContext(
   root: string,
   cap = CONTEXT_MAX_CHARS,
 ): string {
-  const lines: string[] = [];
+  // Each section is a header plus entries; a header is only kept together
+  // with at least its first entry, so truncation never leaves an orphan.
+  const sections: string[][] = [];
   if (cards.length) {
-    lines.push('Architecture cards (arch_get <slug> for the full card):');
-    for (const c of cards.slice(0, MAX_CARDS)) {
-      const files = c.files.slice(0, 3).join(', ');
-      lines.push(
-        `- ${c.slug} — ${c.name}: ${oneLine(c.description, 160)}${files ? ` [${files}]` : ''}`,
-      );
-    }
+    sections.push([
+      'Architecture cards (arch_get <slug> for the full card):',
+      ...cards.slice(0, MAX_CARDS).map((c) => {
+        const files = c.files.slice(0, 3).join(', ');
+        return `- ${c.slug} — ${c.name}: ${oneLine(c.description, 160)}${files ? ` [${files}]` : ''}`;
+      }),
+    ]);
   }
   if (symbols.length) {
-    lines.push('Code symbols:');
-    for (const s of symbols.slice(0, MAX_SYMBOLS)) {
-      const rel = path.isAbsolute(s.file) ? path.relative(root, s.file) : s.file;
-      lines.push(`- ${rel}:${s.startLine} ${s.kind} ${s.name}`);
-    }
+    sections.push([
+      'Code symbols:',
+      ...symbols.slice(0, MAX_SYMBOLS).map((s) => {
+        const rel = path.isAbsolute(s.file) ? path.relative(root, s.file) : s.file;
+        return `- ${rel}:${s.startLine} ${s.kind} ${s.name}`;
+      }),
+    ]);
   }
   let out = '';
-  for (const line of lines) {
-    if (out.length + line.length + 1 > cap) break;
-    out += (out ? '\n' : '') + line;
+  const fits = (line: string): boolean => out.length + line.length + 1 <= cap;
+  for (const [header, ...entries] of sections) {
+    // Entries that fit, as a prefix; the header needs room for the first one.
+    let used = out.length + (out ? 1 : 0) + header.length;
+    const kept: string[] = [];
+    for (const e of entries) {
+      if (used + 1 + e.length > cap) break;
+      used += 1 + e.length;
+      kept.push(e);
+    }
+    if (kept.length === 0 || !fits(header)) break;
+    out += (out ? '\n' : '') + [header, ...kept].join('\n');
   }
   return out;
 }

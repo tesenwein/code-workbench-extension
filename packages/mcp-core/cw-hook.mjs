@@ -14,14 +14,28 @@
 
 import net from "node:net";
 import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { isCliEntry } from "./cli-entry.mjs";
 import { listTasks } from "./task-store.mjs";
 import { worktreeKey } from "./task-format.mjs";
 
 const EDIT_TOOLS = new Set(["Edit", "Write", "MultiEdit", "NotebookEdit"]);
 // Board files and the session scratchpad are never "work on a task".
-const ALWAYS_ALLOWED_PATH = /(^|[\\/])(\.code-workbench|scratchpad)[\\/]/;
-const BLOCKED_NOTE = /block/i;
+// The scratchpad lives under a `claude-<uid>` temp root, so repo source that
+// merely has a `scratchpad/` directory is still guarded.
+const SCRATCHPAD_PATH = /[\\/]claude-[^\\/]+[\\/](?:.+[\\/])?scratchpad[\\/]/;
+// A blocker note must be explicit — "code block"/"unblocked" must not match.
+const BLOCKED_NOTE = /^\s*blocked:/im;
+
+function isAlwaysAllowed(filePath, worktree) {
+  if (!filePath) return false;
+  const p = path.resolve(String(filePath));
+  const under = (root) => p.startsWith(path.resolve(root) + path.sep);
+  if (worktree && under(path.join(worktree, ".code-workbench"))) return true;
+  if (under(path.join(os.homedir(), ".code-workbench"))) return true;
+  return SCRATCHPAD_PATH.test(p);
+}
 
 const deny = (reason) => ({
   hookSpecificOutput: {
@@ -35,7 +49,7 @@ const deny = (reason) => ({
 export function decidePreToolUse(payload, tasks, ctx) {
   if (!EDIT_TOOLS.has(payload?.tool_name)) return null;
   const filePath = payload.tool_input?.file_path ?? payload.tool_input?.notebook_path ?? "";
-  if (ALWAYS_ALLOWED_PATH.test(String(filePath))) return null;
+  if (isAlwaysAllowed(filePath, ctx.worktree)) return null;
 
   if (ctx.taskId) {
     const bound = tasks.find((t) => t.id === ctx.taskId);
@@ -172,9 +186,15 @@ async function main() {
   } catch {
     return;
   }
-  const tasks = await listTasks(args["repo-key"]);
   const activity = activityFor(args.event, payload);
   if (activity && args["notify-port-file"]) await sendActivity(args, activity);
+  // Only the deciders that read the board pay for a full store read.
+  const needsTasks =
+    args.event === "Stop" ||
+    args.event === "SessionStart" ||
+    (args.event === "PreToolUse" && EDIT_TOOLS.has(payload?.tool_name));
+  if (!needsTasks) return;
+  const tasks = await listTasks(args["repo-key"]);
   const result = decide(payload, tasks, {
     taskId: args["task-id"] || "",
     phase: args.phase || "",

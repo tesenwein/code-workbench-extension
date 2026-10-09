@@ -169,6 +169,9 @@ export interface SessionLiveState {
 export interface BoundTask {
   id: string;
   phase: TaskPhase;
+  /** Set once autopilot has acted on this session's `done`, so a resumed
+   *  session's later turns never re-trigger it (persisted across restarts). */
+  autopilotHandled?: boolean;
 }
 
 /** Default codicon for a session kind. Shell tabs get the terminal glyph;

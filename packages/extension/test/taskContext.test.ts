@@ -33,4 +33,14 @@ describe('formatTaskContext', () => {
     expect(out.length).toBeLessThanOrEqual(300);
     expect(formatTaskContext([card(1)], [], '/repo').length).toBeLessThanOrEqual(CONTEXT_MAX_CHARS);
   });
+
+  it('never leaves a section header without an entry at the cap boundary', () => {
+    const cards = [card(1)];
+    const cardOnly = formatTaskContext(cards, [], '/repo');
+    // Room for the cards section plus the symbols header, but not its first entry.
+    const cap = cardOnly.length + 1 + 'Code symbols:'.length;
+    const out = formatTaskContext(cards, [sym(1)], '/repo', cap);
+    expect(out).toBe(cardOnly);
+    expect(out).not.toContain('Code symbols:');
+  });
 });

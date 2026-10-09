@@ -28,6 +28,17 @@ function task(over: Partial<Task> = {}): Task {
 const finding = (over: Partial<Task> = {}) => task({ id: 'f', tags: ['review-finding'], ...over });
 
 describe('decideNextPhase', () => {
+  it('never starts Ship unattended', () => {
+    expect(
+      decideNextPhase({
+        task: task({ phase: 'ship' }),
+        subtasks: [],
+        event: 'done',
+        ranPhase: 'fix',
+      }),
+    ).toEqual({ stop: 'ship-needs-confirmation' });
+  });
+
   it('starts the handed-off phase', () => {
     expect(
       decideNextPhase({ task: task(), subtasks: [], event: 'done', ranPhase: 'implement' }),

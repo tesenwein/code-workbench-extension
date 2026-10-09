@@ -41,8 +41,14 @@ describe('decidePreToolUse', () => {
   });
 
   it('allows board files and the scratchpad regardless', () => {
-    for (const f of ['/repo/.code-workbench/x.json', '/tmp/claude/scratchpad/a.txt']) {
+    for (const f of ['/r/.code-workbench/x.json', '/tmp/claude-503/proj/s/scratchpad/a.txt']) {
       expect(decidePreToolUse(edit(f), [], { worktree: '/r' })).toBeNull();
+    }
+  });
+
+  it('still guards repo source that merely has a scratchpad or .code-workbench dir', () => {
+    for (const f of ['/r/src/scratchpad/x.ts', '/r/src/.code-workbench/x.ts']) {
+      expect(denied(decidePreToolUse(edit(f), [], { worktree: '/r' }))).toBe(true);
     }
   });
 
@@ -67,6 +73,12 @@ describe('decideStop', () => {
     expect(decideStop({}, [task({ status: 'done' })], ctx)).toBeNull();
     expect(decideStop({}, [task({ memo: 'Blocked: no creds' })], ctx)).toBeNull();
     expect(decideStop({}, [task()], {})).toBeNull();
+  });
+
+  it('ignores incidental "block" wording in the memo', () => {
+    expect(decideStop({}, [task({ memo: 'fixed a code block, unblocked CI' })], ctx)?.decision).toBe(
+      'block',
+    );
   });
 
   it('never loops once stop_hook_active is set', () => {

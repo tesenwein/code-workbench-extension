@@ -13,12 +13,13 @@
 
 import * as vscode from 'vscode';
 import type { SessionManager } from '../sessions';
+import type { SavedSession } from '../sessionTypes';
 import type { TaskPhase } from '@code-workbench/mcp-core/task-format';
 import { worktreeKey } from '@code-workbench/mcp-core/task-format';
 import { PHASE_META, phasePrompt, phasePromptBulk } from '@code-workbench/mcp-core/phase-prompts';
 import type { Task } from '@code-workbench/mcp-core/task-format';
 import { listTasks, updateTask } from '../tasks';
-import { formatTokens, usageDetail, usageTotal } from '../sessionsView';
+import { formatTokens, usageDetail, usageTotal } from '../sessionLaunch';
 import { decideNextPhase, describeStop } from '../phaseAutopilot';
 import { listWorktrees } from '../git';
 
@@ -50,9 +51,9 @@ export interface TaskFlowDeps {
   /** Prefetch arch cards / code hits for a task in `wt`, rendered for the
    *  prompt. Omitted (or '' result) → the prompt carries no context section. */
   prefetchContext?: (wt: string, task: Task) => Promise<string>;
-  /** Fired (not awaited) right before a phase session spawns — the code-health
-   *  gate snapshots its baseline here. */
-  onPhaseStart?: (wt: string, taskId: string, phase: TaskPhase) => void;
+  /** Awaited right before a phase session spawns — the code-health gate
+   *  snapshots its baseline here, so it must finish before the agent edits. */
+  onPhaseStart?: (wt: string, taskId: string, phase: TaskPhase) => void | Promise<void>;
   /** Awaited when a bound session reports done, BEFORE autopilot decides, so
    *  whatever it records (code-health memo line) is visible to the next phase. */
   onPhaseDone?: (wt: string, taskId: string, phase: TaskPhase) => Promise<void>;
@@ -81,36 +82,56 @@ export async function startTaskPhase(
   repoRoot: string,
   taskId: string,
   phase: TaskPhase,
+  /** Run here instead of resolving the task's worktree (autopilot: the tree the
+   *  previous phase session ran in, never the currently active one). */
+  worktreeOverride?: string,
 ): Promise<void> {
   const tasks = await listTasks(key);
   const task = tasks.find((t) => t.id === taskId);
   if (!task)
     throw new TaskFlowError('task-not-found', 'Task not found — it may have been deleted.');
 
-  const wt = await resolveTaskWorktree(repoRoot, task.worktree, deps.ensureActiveWorktree);
+  const wt =
+    worktreeOverride ??
+    (await resolveTaskWorktree(repoRoot, task.worktree, deps.ensureActiveWorktree));
   if (!wt) throw new TaskFlowError('no-worktree', 'No worktree to run this phase in.');
 
   const spec = PHASE_META[phase];
+  // Build the prompt (which may search for context) BEFORE flipping status, so
+  // the board never shows a task as running while its session is still being prepared.
+  const prompt = phasePrompt(phase, task, await deps.prefetchContext?.(wt, task));
   // Never write `phase` here: it names the phase to run NEXT, and only a
   // phase session that actually finished its work may advance it. Writing
   // the phase we are launching would make `phase:'plan'` mean the same as
   // `phase:null` ("no plan exists yet") and offer to re-plan a planned
   // task. Status is the honest signal that a session is live.
   if (task.status === 'open') await updateTask(key, task.id, { status: 'in-progress' });
-  deps.onPhaseStart?.(wt, task.id, phase);
+  await deps.onPhaseStart?.(wt, task.id, phase);
   await deps.sessionMgr.create('claude', wt, undefined, {
     title: `${spec.label}: ${task.title}`.slice(0, 80),
     icon: spec.icon,
     // Settings can override the phase's built-in model, globally or per worktree.
     model: deps.sessionMgr.resolvePhaseModel(wt, phase),
-    prompt: phasePrompt(phase, task, await deps.prefetchContext?.(wt, task)),
+    prompt,
     ...(spec.effort != null ? { effort: spec.effort } : {}),
     boundTask: { id: task.id, phase },
   });
 }
 
-/** Prefetch context for each task of a batch (sequentially: the searches share
- *  one warm worker, and each result is already size-capped). */
+/** Progress toast while a phase session is prepared (context prefetch can take seconds). */
+function withPreparing<T>(work: () => Promise<T>): Thenable<T> {
+  return vscode.window.withProgress(
+    { location: vscode.ProgressLocation.Notification, title: 'Preparing phase session…' },
+    work,
+  );
+}
+
+/** Overall budget for a batch's prefetch: searches run concurrently, and
+ *  whatever has not finished by the deadline is simply left out. */
+const PREFETCH_BUDGET_MS = 8000;
+
+/** Prefetch context for every task of a batch, concurrently and under one
+ *  shared deadline (each result is already size-capped). */
 async function prefetchAll(
   deps: TaskFlowDeps,
   wt: string,
@@ -118,11 +139,22 @@ async function prefetchAll(
 ): Promise<Record<string, string>> {
   const out: Record<string, string> = {};
   if (!deps.prefetchContext) return out;
-  for (const t of tasks) {
-    const text = await deps.prefetchContext(wt, t);
-    if (text) out[t.id] = text;
-  }
-  return out;
+  const prefetch = deps.prefetchContext;
+  const all = Promise.all(
+    tasks.map(async (t) => {
+      const text = await prefetch(wt, t).catch(() => '');
+      if (text) out[t.id] = text;
+    }),
+  );
+  let timer: NodeJS.Timeout | undefined;
+  await Promise.race([
+    all,
+    new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, PREFETCH_BUDGET_MS);
+    }),
+  ]);
+  clearTimeout(timer);
+  return { ...out };
 }
 
 /** Outcome of a bulk start: one entry per task we actually tried to start.
@@ -148,6 +180,9 @@ async function startTaskPhaseBatch(
     tasks.length === 1
       ? `${spec.label}: ${tasks[0].title}`
       : `${spec.label}: ${tasks.length} tasks`;
+  // Prefetch under one deadline BEFORE flipping status, so the board never
+  // shows tasks as running while their session is still being prepared.
+  const prompt = phasePromptBulk(phase, tasks, await prefetchAll(deps, wt, tasks));
   // Flip status before spawning, for the same reason as the single-task path:
   // status — not `phase` — is what says a session is live on this task.
   for (const t of tasks) {
@@ -155,12 +190,12 @@ async function startTaskPhaseBatch(
   }
   // One baseline per task would mean N full scans over one shared tree; only a
   // lone task gets gated (the same rule as binding a session to it).
-  if (tasks.length === 1) deps.onPhaseStart?.(wt, tasks[0].id, phase);
+  if (tasks.length === 1) await deps.onPhaseStart?.(wt, tasks[0].id, phase);
   await deps.sessionMgr.create('claude', wt, undefined, {
     title: title.slice(0, 80),
     icon: spec.icon,
     model: deps.sessionMgr.resolvePhaseModel(wt, phase),
-    prompt: phasePromptBulk(phase, tasks, await prefetchAll(deps, wt, tasks)),
+    prompt,
     ...(spec.effort != null ? { effort: spec.effort } : {}),
     // A multi-task batch has no single task to track, so only bind a lone one.
     ...(tasks.length === 1 ? { boundTask: { id: tasks[0].id, phase } } : {}),
@@ -211,6 +246,13 @@ export async function startTaskPhaseBulk(
   }
 
   for (const [wt, tasks] of byWorktree) {
+    // Ship commits and PRs the whole working tree, so tasks sharing one cannot
+    // be shipped as a batch — each would swallow the others' changes.
+    if (phase === 'ship' && tasks.length > 1) {
+      const error = 'Ship one task at a time — these tasks share a worktree.';
+      result.failed.push(...tasks.map((t) => ({ id: t.id, error })));
+      continue;
+    }
     try {
       await startTaskPhaseBatch(deps, key, wt, tasks, phase);
       result.succeeded.push(...tasks.map((t) => t.id));
@@ -232,13 +274,18 @@ export function registerAutopilot(ctx: vscode.ExtensionContext, deps: TaskFlowDe
   ctx.subscriptions.push(
     deps.sessionMgr.onNotify(({ sessionId, kind }) => {
       if (kind === 'info' || handled.has(sessionId)) return;
+      if (deps.sessionMgr.list().find((s) => s.id === sessionId)?.boundTask?.autopilotHandled)
+        return;
       const session = deps.sessionMgr.list().find((s) => s.id === sessionId);
       const bound = session?.boundTask;
       const key = deps.getRepoKey();
       const repoRoot = deps.getRepoRoot();
       if (!session || !bound || !key || !repoRoot) return;
       // needs_input is not final: the session continues once the user answers.
-      if (kind === 'done') handled.add(sessionId);
+      if (kind === 'done') {
+        handled.add(sessionId);
+        void deps.sessionMgr.markAutopilotHandled(sessionId);
+      }
       void (async () => {
         if (kind === 'done') {
           await deps.onPhaseDone?.(session.worktreePath, bound.id, bound.phase).catch(() => {});
@@ -253,11 +300,9 @@ export function registerAutopilot(ctx: vscode.ExtensionContext, deps: TaskFlowDe
           ranPhase: bound.phase,
         });
         if ('stop' in decision) {
-          if (decision.stop !== 'autorun-off') {
-            void vscode.window.showInformationMessage(
-              `Autopilot stopped for "${task.title}": ${describeStop(decision.stop)}.`,
-            );
-          }
+          void vscode.window.showInformationMessage(
+            `Autopilot stopped for "${task.title}": ${describeStop(decision.stop)}.`,
+          );
           return;
         }
         // Guard double-start: another live session already runs this phase.
@@ -275,7 +320,7 @@ export function registerAutopilot(ctx: vscode.ExtensionContext, deps: TaskFlowDe
           `Autopilot: starting ${PHASE_META[decision.start].label} for "${task.title}"`,
         );
         try {
-          await startTaskPhase(deps, key, repoRoot, task.id, decision.start);
+          await startTaskPhase(deps, key, repoRoot, task.id, decision.start, session.worktreePath);
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err ?? '');
           void vscode.window.showErrorMessage(`Autopilot could not start the next phase: ${msg}`);
@@ -294,7 +339,7 @@ export function registerTaskFlowCommand(ctx: vscode.ExtensionContext, deps: Task
         const repoRoot = deps.getRepoRoot();
         if (!taskId || !phase || !key || !repoRoot || !(phase in PHASE_META)) return;
         try {
-          await startTaskPhase(deps, key, repoRoot, taskId, phase);
+          await withPreparing(() => startTaskPhase(deps, key, repoRoot, taskId, phase));
         } catch (err) {
           if (err instanceof TaskFlowError) {
             // A missing worktree means the user backed out of the picker — the
@@ -306,17 +351,25 @@ export function registerTaskFlowCommand(ctx: vscode.ExtensionContext, deps: Task
         }
       },
     ),
-    // Live sessions bound to a task, for the Tasks panel's "running in" chip.
-    vscode.commands.registerCommand('codeWorkbench.tasks.activeSessions', () =>
-      deps.sessionMgr
-        .list()
-        .filter((s) => s.boundTask && deps.sessionMgr.isOpen(s.id))
-        .map((s) => ({
-          taskId: s.boundTask!.id,
-          sessionId: s.id,
-          phase: s.boundTask!.phase,
-        })),
-    ),
+    // Live, unfinished sessions bound to a task, for the Tasks panel's "running
+    // in" chip. One per task — the newest — so a stale earlier-phase terminal
+    // never shadows the current run; sessions that reported done are over even
+    // though their terminal usually stays open.
+    vscode.commands.registerCommand('codeWorkbench.tasks.activeSessions', () => {
+      const newest = new Map<string, SavedSession>();
+      for (const s of deps.sessionMgr.list()) {
+        if (!s.boundTask || !deps.sessionMgr.isOpen(s.id) || deps.sessionMgr.isFinished(s.id)) {
+          continue;
+        }
+        const cur = newest.get(s.boundTask.id);
+        if (!cur || s.created > cur.created) newest.set(s.boundTask.id, s);
+      }
+      return [...newest.values()].map((s) => ({
+        taskId: s.boundTask!.id,
+        sessionId: s.id,
+        phase: s.boundTask!.phase,
+      }));
+    }),
     // Aggregated token usage for the task detail pane (null when nothing ran).
     vscode.commands.registerCommand('codeWorkbench.tasks.usage', (taskId?: string) => {
       if (!taskId) return null;
@@ -335,7 +388,9 @@ export function registerTaskFlowCommand(ctx: vscode.ExtensionContext, deps: Task
         const key = deps.getRepoKey();
         const repoRoot = deps.getRepoRoot();
         if (!ids?.length || !phase || !key || !repoRoot || !(phase in PHASE_META)) return empty;
-        return startTaskPhaseBulk(deps, key, repoRoot, ids, phase, includeInProgress);
+        return withPreparing(() =>
+          startTaskPhaseBulk(deps, key, repoRoot, ids, phase, includeInProgress),
+        );
       },
     ),
   );

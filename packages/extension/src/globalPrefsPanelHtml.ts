@@ -514,6 +514,11 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
           </select>
         </div>`,
         ).join('')}
+        <div class="field toggle" style="margin-top:18px;">
+          <input id="prefetchContext" type="checkbox" />
+          <label for="prefetchContext" class="tlabel">Prefetch context into phase prompts</label>
+          <span class="tnote">top arch cards and code symbols for the task</span>
+        </div>
       </section>
 
       <section id="sec-binary">
@@ -592,6 +597,7 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
   const effortHintEl = document.getElementById('effortHint');
   const yoloEl = document.getElementById('yolo');
   const openOnStartupEl = document.getElementById('openOnStartup');
+  const prefetchContextEl = document.getElementById('prefetchContext');
   const yoloArgsValueEl = document.getElementById('yoloArgsValue');
   const claudeCommandEl = document.getElementById('claudeCommand');
   const yoloArgsEl = document.getElementById('yoloArgs');
@@ -670,6 +676,7 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
       : '';
     yoloEl.checked = !!state.defaults.yolo;
     openOnStartupEl.checked = !!state.openOnStartup;
+    prefetchContextEl.checked = state.prefetchContext !== false;
     yoloArgsValueEl.textContent = state.claudeYoloArgs;
     if (document.activeElement !== claudeCommandEl) claudeCommandEl.value = state.claudeCommand;
     if (document.activeElement !== yoloArgsEl) yoloArgsEl.value = state.claudeYoloArgs;
@@ -716,6 +723,9 @@ export function renderGlobalPrefsHtml(state: GlobalPrefs): string {
     state.defaults.yolo = yoloEl.checked;
     render();
     vscode.postMessage({ type: 'setYolo', value: state.defaults.yolo });
+  });
+  prefetchContextEl.addEventListener('change', () => {
+    vscode.postMessage({ type: 'setPrefetchContext', value: prefetchContextEl.checked });
   });
   openOnStartupEl.addEventListener('change', () => {
     state.openOnStartup = openOnStartupEl.checked;

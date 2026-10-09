@@ -1,0 +1,68 @@
+name: Publish to stores
+
+# Publishes an existing release tag to the VS Code Marketplace and Open VSX.
+# Called by release.yml after a release, and runnable by hand (Actions → Run
+# workflow, tag input) to retry a failed publish. Builds from the tag, so it
+# never bumps the version; an already-published version is skipped, which makes
+# re-runs idempotent. Each store is skipped when its secret is missing.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: Release tag to publish (e.g. v1.2.3)
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish (e.g. v1.2.3)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Marketplace / Open VSX
+    runs-on: ubuntu-latest
+    env:
+      # Secrets are not readable in step `if:`, so surface them as env.
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      OVSX_PAT: ${{ secrets.OVSX_PAT }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        if: env.VSCE_PAT != '' || env.OVSX_PAT != ''
+        run: pnpm install --frozen-lockfile
+
+      # The GitHub VSIX keeps the `terminalDataWriteEvent` proposed API (it
+      # powers the live-activity blink for sideloaded installs), but the
+      # Marketplace and Open VSX reject extensions that enable proposals. The
+      # store build strips it; the code already feature-detects the event.
+      - name: Build store VSIX (no proposed APIs)
+        if: env.VSCE_PAT != '' || env.OVSX_PAT != ''
+        run: |
+          cd packages/extension
+          npm run build
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));delete p.enabledApiProposals;fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n')"
+          pnpm exec vsce package --no-dependencies --out "$RUNNER_TEMP/store.vsix"
+
+      # vsce is a lockfile-pinned devDependency; ovsx is pinned to an exact version.
+      - name: Publish to VS Code Marketplace
+        if: env.VSCE_PAT != ''
+        run: cd packages/extension && pnpm exec vsce publish --skip-duplicate --no-dependencies --packagePath "$RUNNER_TEMP/store.vsix" --pat "$VSCE_PAT"
+
+      - name: Publish to Open VSX
+        if: env.OVSX_PAT != ''
+        run: npx --yes ovsx@1.2.0 publish "$RUNNER_TEMP/store.vsix" --skip-duplicate --pat "$OVSX_PAT"

@@ -19,7 +19,7 @@ export const WORKBENCH_SYSTEM_PROMPT =
   'nothing, re-query with synonyms before falling back to grep.\n' +
   'Use find_duplicates to detect copy-paste — exact, renamed, and structural near-duplicate clone groups.\n\n' +
   '## Task management (cw-tasks)\n' +
-  'Tasks in the workbench are a SHARED, persistent board — both you and the user read and write them. Call task_list first to see what exists; a hook blocks file edits while no task is in-progress, so find or task_create the matching task and set it "in-progress" before editing, and "done" when complete.\n' +
+  'Tasks in the workbench are a SHARED, persistent board — both you and the user read and write them. Call task_list first to see what exists.\n' +
   '- Use task_create to record any new piece of work you identify, including follow-ups discovered mid-work.\n' +
   '- PHASE BOARD: file even small, ad-hoc work on the phase board — pass phase: "implement" to task_create. It is fine to skip the Plan phase, but the task must enter the board at Implement so, once done, it flows into Review and Fix where the user can review and correct the work manually. Do not do board-worthy work off the board.\n' +
   '- SUBTASKS: when working on an in-progress task, create follow-up steps as subtasks via parentId.\n' +
@@ -42,3 +42,10 @@ export const WORKBENCH_SYSTEM_PROMPT =
   '  to the user rather than silently picking one.\n\n' +
   '## Refactors\n' +
   'When the user asks for a refactor, use the /refactor skill: survey the target path, persist the plan as a top-level cw-tasks task with subtasks (task_create + parentId), then execute the subtasks in order — marking each in-progress before starting and done only when finished and lint/typecheck/tests pass (no end-to-end app runs).\n';
+
+/** Board rules appended per session: a guard hook enforces them when wired,
+ *  otherwise the prompt has to spell them out. */
+export const HOOK_RULES_PROMPT =
+  'A hook blocks file edits while no task is in-progress: find or task_create the matching task and set it "in-progress" before editing, and "done" when complete.';
+export const NO_HOOK_RULES_PROMPT =
+  'ALWAYS call task_list at the start of the session. Before editing any file, ensure a matching task exists on the board (task_create if none) and set it "in-progress"; set it "done" when complete. Never start work off the board.';

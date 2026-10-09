@@ -70,6 +70,9 @@ const BOTTOM_GROUP_KEY = 'codeWorkbench.bottomGroupColumn';
  *  All worktrees of the same repo share one bucket, so switching worktrees
  *  doesn't fragment state across folder-identity workspaceState buckets. */
 const REPOS_KEY = 'codeWorkbench.repos.v1';
+/** taskId → Claude session ids of bound sessions that have since been closed,
+ *  so a task's token total survives its sessions' removal from the panel. */
+const CLOSED_TASK_SESSIONS_KEY = 'codeWorkbench.taskClosedSessions.v1';
 
 /** Canonical form of a worktree path for equality checks. Sessions, prefs and
  *  `git worktree list` output can each render the same path slightly
@@ -149,6 +152,10 @@ export class SessionManager {
    *  checks against `git worktree list` output match exactly. */
   private currentWorktreePath: string | undefined;
 
+  /** Sessions that reported notify_done and have not been prompted since. Their
+   *  terminals usually stay open, but the run they were bound to is over. */
+  private finished = new Set<string>();
+
   /** Resolves once the notify TCP server is listening (port assigned). */
   private notifyReady: Promise<void>;
 
@@ -157,7 +164,17 @@ export class SessionManager {
     this.notifyReady = this.notify.start().catch(() => {
       /* notifications unavailable — sessions still work */
     });
+    this.notify.onNotify(({ sessionId, kind }) => {
+      if (kind !== 'done' || this.finished.has(sessionId)) return;
+      this.finished.add(sessionId);
+      this._onDidChange.fire();
+    });
     this.notify.onActivity(({ sessionId, state, tool }) => {
+      // A user prompt (running, no tool) resumes a finished session; tool
+      // events right after notify_done must not.
+      if (state === 'running' && !tool && this.finished.delete(sessionId)) {
+        this._onDidChange.fire();
+      }
       const prev = this.liveState.get(sessionId);
       this.liveState.set(sessionId, {
         state,
@@ -282,7 +299,6 @@ export class SessionManager {
     }
   }
 
-  /** True if the session has produced output within the activity window. */
   /** Hook-reported live state, or undefined when the session never reported
    *  one (hooks off / non-Claude session) or its terminal is closed. */
   getLiveState(id: string): SessionLiveState | undefined {
@@ -295,17 +311,51 @@ export class SessionManager {
     return claudeId ? readSessionUsage(claudeId) : undefined;
   }
 
-  /** Usage summed over every session ever bound to `taskId`, closed ones included. */
+  /** Usage summed over every session ever bound to `taskId`, closed ones included
+   *  (their transcripts stay on disk; only the Claude session ids are remembered). */
   getTaskUsage(taskId: string): TokenUsage {
-    let total = EMPTY_USAGE;
+    const claudeIds = new Set(
+      this.ctx.globalState.get<Record<string, string[]>>(CLOSED_TASK_SESSIONS_KEY, {})[taskId],
+    );
     for (const s of this.list()) {
-      if (s.boundTask?.id !== taskId) continue;
-      const u = this.getUsage(s.id);
+      if (s.boundTask?.id === taskId && s.claudeSessionId) claudeIds.add(s.claudeSessionId);
+    }
+    let total = EMPTY_USAGE;
+    for (const id of claudeIds) {
+      const u = readSessionUsage(id);
       if (u) total = addUsage(total, u);
     }
     return total;
   }
 
+  /** Remember the Claude session ids of bound sessions about to be removed. */
+  private async rememberClosedBound(sessions: SavedSession[]): Promise<void> {
+    const bound = sessions.filter((s) => s.boundTask && s.claudeSessionId);
+    if (bound.length === 0) return;
+    const store = {
+      ...this.ctx.globalState.get<Record<string, string[]>>(CLOSED_TASK_SESSIONS_KEY, {}),
+    };
+    for (const s of bound) {
+      const id = s.boundTask!.id;
+      store[id] = [...new Set([...(store[id] ?? []), s.claudeSessionId!])];
+    }
+    await this.ctx.globalState.update(CLOSED_TASK_SESSIONS_KEY, store);
+  }
+
+  /** True once the session reported done and has not been re-prompted. */
+  isFinished(id: string): boolean {
+    return this.finished.has(id);
+  }
+
+  /** Persist that autopilot already acted on this session's `done`. */
+  async markAutopilotHandled(id: string): Promise<void> {
+    await this.updateRepoState((st) => {
+      const cur = st.sessions.find((x) => x.id === id);
+      if (cur?.boundTask) cur.boundTask = { ...cur.boundTask, autopilotHandled: true };
+    });
+  }
+
+  /** True if the session has produced output within the activity window. */
   isActive(id: string): boolean {
     const ts = this.lastActivity.get(id);
     return ts !== undefined && Date.now() - ts <= ACTIVITY_WINDOW_MS;
@@ -792,6 +842,7 @@ export class SessionManager {
   }
 
   async close(id: string): Promise<void> {
+    await this.rememberClosedBound(this.list().filter((s) => s.id === id));
     const term = this.terminals.get(id);
     term?.dispose();
     this.terminals.delete(id);
@@ -817,6 +868,7 @@ export class SessionManager {
       if (scoped && !this.isOpen(s.id)) toRemove.add(s.id);
     }
     if (toRemove.size === 0) return 0;
+    await this.rememberClosedBound(this.list().filter((s) => toRemove.has(s.id)));
     for (const id of toRemove) await this.mcp.delete(id);
     await this.updateRepoState((st) => {
       st.sessions = st.sessions.filter((s) => !toRemove.has(s.id));
@@ -831,6 +883,9 @@ export class SessionManager {
   async cleanupWorktree(worktreePath: string): Promise<void> {
     const want = normalizeWtPath(worktreePath);
     const toRemove = new Set<string>();
+    await this.rememberClosedBound(
+      this.list().filter((s) => normalizeWtPath(s.worktreePath) === want),
+    );
     for (const s of this.list()) {
       if (normalizeWtPath(s.worktreePath) === want) {
         const term = this.terminals.get(s.id);

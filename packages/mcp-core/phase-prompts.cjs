@@ -96,7 +96,7 @@ const PHASE_PROCEDURES = {
     "",
     "Review the work done for this task: `git status --short`, `git diff`, `git diff --staged`, and this branch's commits vs its base (resolve origin/HEAD, else develop, else main/master). Read surrounding files for context. Look for correctness bugs, logic errors, missing error handling, type-safety escapes, security issues, and needless complexity.",
     "",
-    'If the task\'s memo contains a "Code health:" line with a positive count (e.g. "+2 duplicates"), the phase that just ran introduced new dead code, duplicates, or type escapes: file one "review-finding" subtask per regression (find them with find_duplicates / detect_dead_code / detect_type_escapes with diff_only) instead of ignoring the line.',
+    'If the task\'s memo contains a "Code health:" line with a positive count (e.g. "+2 duplicates", or "+2/-2 type escapes" — new findings count even when others were removed), the phase that just ran introduced new dead code, duplicates, or type escapes: file one "review-finding" subtask per regression (find them with find_duplicates / detect_dead_code / detect_type_escapes with diff_only) instead of ignoring the line.',
     "",
     "You may NOT fix: change no code, not even a one-line typo or an obviously-correct rename. Every finding leaves this phase as a subtask, and the Fix phase applies it. A review that edits its own findings is a review nobody checked.",
     "",
@@ -124,9 +124,9 @@ const PHASE_PROCEDURES = {
     "",
     "Ship the finished work: this task has been implemented, reviewed, and fixed. Change no code beyond what committing requires — if a check fails or you find a real problem, that is a blocker (see above), not something to patch here.",
     "",
-    "1. Inspect `git status --short` and `git diff`. Run the project's lint, typecheck, and test scripts one last time; a failure blocks shipping.",
+    "1. Work out which files THIS task changed (from its memo, subtask descriptions and `git log`), then inspect `git status --short` and `git diff` for them. The worktree may be shared with other tasks: commit and PR ONLY this task's files. If the tree holds changes you cannot attribute to this task, leave them alone; if the task's own changes cannot be separated from them, that is a blocker. Run the project's lint, typecheck, and test scripts one last time; a failure blocks shipping.",
     "2. Make sure you are on a feature branch, not the default branch (develop/main/master). If you are on the default branch, create a branch named after the task first.",
-    "3. Group the changes into logical Conventional Commits (`<type>: <short imperative description>`, types feat/fix/refactor/chore/docs/test/style/perf, no trailing period; a body only when the why is non-obvious). Stage files explicitly — never `git add -A` over unrelated or secret files.",
+    "3. Group this task's changes into logical Conventional Commits (`<type>: <short imperative description>`, types feat/fix/refactor/chore/docs/test/style/perf, no trailing period; a body only when the why is non-obvious). Stage files explicitly — never `git add -A` over unrelated or secret files.",
     "4. Push the branch (`git push -u origin <branch>`).",
     "5. If an open PR already exists for this branch (`gh pr view --json url,state`), reuse it; otherwise `gh pr create` against the repo's default base branch, with the task title as the PR title and a body built from the task's memo and description.",
     "6. Wait for CI with a bounded watch (`gh pr checks --watch`, give up after about 15 minutes). If a check fails, record which one in the memo and treat it as a blocker.",
@@ -187,6 +187,9 @@ function phasePrompt(phase, task, context) {
 function phasePromptBulk(phase, tasks, contexts) {
   assertPhase(phase);
   if (tasks.length === 1) return phasePrompt(phase, tasks[0], contexts?.[tasks[0].id]);
+  // Ship commits and opens a PR for the working tree; batching would attribute
+  // every task's changes to whichever task ships first.
+  if (phase === "ship") throw new Error("Ship runs one task at a time.");
   // Stable-sort by `order` (nulls last) so the batch runs in the planner's
   // intended sequence no matter how the caller ordered it.
   tasks = tasks

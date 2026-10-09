@@ -668,8 +668,8 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     getRepoKey: () => repoKey,
     getRepoRoot: () => repoRoot,
     ensureActiveWorktree,
-    onPhaseStart: (wt: string, taskId: string, phase: string) => {
-      if (repoKey && healthGateOn(phase)) void captureHealthBaseline(ctx, repoKey, wt, taskId);
+    onPhaseStart: async (wt: string, taskId: string, phase: string) => {
+      if (repoKey && healthGateOn(phase)) await captureHealthBaseline(ctx, repoKey, wt, taskId);
     },
     onPhaseDone: async (wt: string, taskId: string, phase: string) => {
       if (repoKey && healthGateOn(phase)) await recordHealthDelta(ctx, repoKey, wt, taskId);
@@ -690,6 +690,17 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     getActiveWorktree: () => sessionMgr.getActiveWorktree() ?? undefined,
     afterMutation: refreshTaskSurfaces,
   }).refresh;
+  // Unassigned findings resolve against the active worktree, so a switch must
+  // republish them (onDidChange fires for many reasons; only act on a real change).
+  let lastActiveWorktree = sessionMgr.getActiveWorktree();
+  ctx.subscriptions.push(
+    sessionMgr.onDidChange(() => {
+      const active = sessionMgr.getActiveWorktree();
+      if (active === lastActiveWorktree) return;
+      lastActiveWorktree = active;
+      refreshDiagnostics();
+    }),
+  );
 
   refreshIssueSync = registerIssueSync(ctx, {
     getRepoKey: () => repoKey,

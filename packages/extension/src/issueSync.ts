@@ -8,6 +8,8 @@
 
 import * as vscode from 'vscode';
 import { execFile } from 'child_process';
+import * as fsp from 'fs/promises';
+import * as path from 'path';
 import { promisify } from 'util';
 import type { Task } from '@code-workbench/mcp-core/task-format';
 import { listTasks } from './tasks';
@@ -15,6 +17,8 @@ import { listTasks } from './tasks';
 const pExecFile = promisify(execFile);
 
 export interface IssueAction {
+  /** Identifies this exact transition (task, from → to), so windows can claim it. */
+  key: string;
   issue: number;
   kind: 'comment' | 'close';
   body: string;
@@ -37,8 +41,10 @@ export function planIssueSync(
     next.set(t.id, stamp);
     const before = prev.get(t.id);
     if (!before || (before.status === stamp.status && before.phase === stamp.phase)) continue;
+    const key = `${t.id}.${before.status}-${before.phase ?? 'none'}.${stamp.status}-${stamp.phase ?? 'none'}`;
     if (stamp.status === 'done' && before.status !== 'done') {
       actions.push({
+        key,
         issue: t.issueNumber,
         kind: 'close',
         body: `Completed in Code Workbench: ${t.title}${t.prUrl ? `\n\nPull request: ${t.prUrl}` : ''}`,
@@ -46,6 +52,7 @@ export function planIssueSync(
     } else {
       const phase = stamp.phase ? `, next phase: ${stamp.phase}` : '';
       actions.push({
+        key,
         issue: t.issueNumber,
         kind: 'comment',
         body: `Code Workbench status: ${stamp.status}${phase}`,
@@ -53,6 +60,34 @@ export function planIssueSync(
     }
   }
   return { actions, next };
+}
+
+/** How long a claim blocks the same transition: long enough to cover every
+ *  window reacting to one change, short enough that a genuine repeat
+ *  (open → done → open → done) is still posted. */
+const CLAIM_TTL_MS = 60_000;
+
+/** Cross-window dedupe: every VS Code window watches the shared task store and
+ *  sees the same transition, but only the one that creates the claim file
+ *  (O_EXCL, atomic) may post to the issue. Errors mean "do not post". */
+export async function claimTransition(dir: string, key: string): Promise<boolean> {
+  const file = path.join(dir, `${key.replace(/[^\w.-]/g, '_')}.claim`);
+  await fsp.mkdir(dir, { recursive: true });
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      await (await fsp.open(file, 'wx')).close();
+      return true;
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== 'EEXIST') return false;
+      const age = await fsp.stat(file).then(
+        (st) => Date.now() - st.mtimeMs,
+        () => 0,
+      );
+      if (age <= CLAIM_TTL_MS) return false;
+      await fsp.rm(file, { force: true });
+    }
+  }
+  return false;
 }
 
 export function registerIssueSync(
@@ -73,7 +108,9 @@ export function registerIssueSync(
     }
     const { actions, next } = planIssueSync(stamps, await listTasks(key));
     stamps = next;
+    const claimDir = path.join(ctx.globalStorageUri.fsPath, 'issue-sync', key);
     for (const a of actions) {
+      if (!(await claimTransition(claimDir, a.key).catch(() => false))) continue;
       const args =
         a.kind === 'close'
           ? ['issue', 'close', String(a.issue), '--comment', a.body]
@@ -86,9 +123,14 @@ export function registerIssueSync(
     }
   };
 
+  // Serialize runs: a slow listTasks/gh call must not overlap the next debounce
+  // and plan from the same stale stamps.
+  let inflight: Promise<void> = Promise.resolve();
   const refresh = () => {
     clearTimeout(timer);
-    timer = setTimeout(() => void run().catch(() => undefined), 2000);
+    timer = setTimeout(() => {
+      inflight = inflight.then(run).catch(() => undefined);
+    }, 2000);
   };
   ctx.subscriptions.push({ dispose: () => clearTimeout(timer) });
   refresh();

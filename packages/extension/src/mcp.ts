@@ -1,7 +1,11 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { WORKBENCH_SYSTEM_PROMPT } from './workbenchPrompt';
+import {
+  HOOK_RULES_PROMPT,
+  NO_HOOK_RULES_PROMPT,
+  WORKBENCH_SYSTEM_PROMPT,
+} from './workbenchPrompt';
 import { resolveNodeRuntime } from './nodeRuntime';
 import type { BoundTask } from './sessionTypes';
 
@@ -183,15 +187,16 @@ export class McpConfigBuilder {
       await fsp.writeFile(this.portPath(args.sessionId), String(args.notifyPort) + '\n', 'utf8');
     }
 
+    const settingsPath = await this.writeHookSettings(args, cfg);
+
     let promptPath: string | undefined;
     const extras = (args.extraPrompts ?? []).map((p) => p.trim()).filter(Boolean);
     if (mcpServers[CODE_MCP_KEY] || extras.length > 0) {
       promptPath = this.promptPath(args.sessionId);
-      const body = [WORKBENCH_SYSTEM_PROMPT, ...extras].join('\n\n');
+      const rules = settingsPath ? HOOK_RULES_PROMPT : NO_HOOK_RULES_PROMPT;
+      const body = [WORKBENCH_SYSTEM_PROMPT, rules, ...extras].join('\n\n');
       await fsp.writeFile(promptPath, body, 'utf8');
     }
-
-    const settingsPath = await this.writeHookSettings(args, cfg);
 
     return { configPath, promptPath, ...(settingsPath ? { settingsPath } : {}) };
   }

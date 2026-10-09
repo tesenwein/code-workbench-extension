@@ -87,35 +87,47 @@ export function registerReviewDiagnostics(
       .getConfiguration('codeWorkbench')
       .get<boolean>('reviewDiagnostics.enabled', true);
 
+  // Overlapping publishes: only the newest one may touch the collection.
+  let seq = 0;
+
   const publish = async () => {
-    collection.clear();
-    known.clear();
+    const gen = ++seq;
     const key = deps.getRepoKey();
     const repoRoot = deps.getRepoRoot();
-    if (!enabled() || !key || !repoRoot) return;
+    if (!enabled() || !key || !repoRoot) {
+      collection.clear();
+      known.clear();
+      return;
+    }
     const tasks = await listTasks(key);
     const trees = await listWorktrees(repoRoot).catch(() => []);
+    if (gen !== seq) return;
     const active = deps.getActiveWorktree();
     const items = findingDiagnostics(tasks, (parent) => {
       if (!parent.worktree) return active ?? repoRoot;
       return trees.find((w) => worktreeKey(w.path) === parent.worktree)?.path;
     });
+    const nextKnown = new Map<string, { taskId: string; parentId: string }>();
     const byFile = new Map<string, vscode.Diagnostic[]>();
     for (const f of items) {
       const pos = new vscode.Position(f.line, f.column);
-      // Whole line: the finding names a line, not an exact span.
+      // Whole line (VS Code clamps the end): the finding names a line, not a span.
       const d = new vscode.Diagnostic(
-        new vscode.Range(pos, pos),
+        new vscode.Range(pos, new vscode.Position(f.line, Number.MAX_SAFE_INTEGER)),
         f.message,
         severityOf(f.severity),
       );
       d.source = SOURCE;
       d.code = f.taskId.slice(0, 8);
-      known.set(f.taskId.slice(0, 8), { taskId: f.taskId, parentId: f.parentId });
+      nextKnown.set(f.taskId.slice(0, 8), { taskId: f.taskId, parentId: f.parentId });
       const list = byFile.get(f.file) ?? [];
       list.push(d);
       byFile.set(f.file, list);
     }
+    // Everything is computed; swap the published set in one synchronous step.
+    collection.clear();
+    known.clear();
+    for (const [code, ids] of nextKnown) known.set(code, ids);
     for (const [file, diags] of byFile) collection.set(vscode.Uri.file(file), diags);
   };
 

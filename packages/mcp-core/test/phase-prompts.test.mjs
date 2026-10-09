@@ -128,3 +128,9 @@ describe("code-health gate", () => {
     expect(phasePrompt("fix", TASK)).not.toContain('"Code health:"');
   });
 });
+
+describe("ship batching", () => {
+  it("refuses a multi-task Ship prompt", () => {
+    expect(() => phasePromptBulk("ship", [TASK, { ...TASK, id: "other" }])).toThrow(/one task/i);
+  });
+});

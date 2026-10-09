@@ -189,11 +189,6 @@ export const TOOLS = [
           description:
             "GitHub issue number this task mirrors; status changes are synced to it when the user enabled issue sync.",
         },
-        autoRun: {
-          type: "boolean",
-          description:
-            "Opt in to autopilot: the extension starts the next phase automatically when a phase session finishes and hands off. Defaults to false.",
-        },
       },
       required: ["title"],
     },
@@ -271,11 +266,6 @@ export const TOOLS = [
           type: "string",
           description:
             "Pull request URL for this task (pass empty string to clear).",
-        },
-        autoRun: {
-          type: "boolean",
-          description:
-            "Toggle autopilot (auto-start the next phase after a phase session hands off).",
         },
       },
       required: ["id"],
@@ -536,7 +526,6 @@ export async function handle(req) {
           epic: args.epic || null,
           tags: Array.isArray(args.tags) ? args.tags.map(String) : [],
           phase: args.phase && VALID_PHASES.has(args.phase) ? args.phase : null,
-          autoRun: args.autoRun === true,
           prUrl: args.prUrl || null,
           issueNumber:
             Number.isInteger(args.issueNumber) && args.issueNumber > 0
@@ -626,7 +615,6 @@ export async function handle(req) {
             patch.worktree =
               args.worktree === "" ? null : worktreeKey(args.worktree);
           if (args.parallel != null) patch.parallel = args.parallel === true;
-          if (args.autoRun != null) patch.autoRun = args.autoRun === true;
           if (args.prUrl != null) patch.prUrl = args.prUrl === "" ? null : String(args.prUrl);
           if (args.order != null)
             patch.order = typeof args.order === "number" ? args.order : null;

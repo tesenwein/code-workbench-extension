@@ -6,7 +6,7 @@ import {
   sessionIconId,
   type SavedSession,
 } from './sessionTypes';
-import { claudeConversationExists, type TokenUsage } from './sessionLaunch';
+import { claudeConversationExists, formatTokens, usageDetail, usageTotal } from './sessionLaunch';
 import type { SessionManager } from './sessions';
 import { makeNonce, panelHtml, WORKTREE_DOT } from './panelTheme';
 import { runItemCommand, type ItemCommands } from './sidebarMessages';
@@ -297,21 +297,6 @@ export class SessionsProvider implements vscode.WebviewViewProvider {
     }
     runItemCommand(SESSION_ITEM_COMMANDS, m?.type, { session });
   }
-}
-
-export function usageTotal(u: TokenUsage): number {
-  return u.input + u.output + u.cacheRead + u.cacheCreate;
-}
-
-/** Compact count: 950, 12.3k, 4.5M. */
-export function formatTokens(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
-  return String(n);
-}
-
-export function usageDetail(u: TokenUsage): string {
-  return `input ${u.input.toLocaleString()} · output ${u.output.toLocaleString()} · cache read ${u.cacheRead.toLocaleString()} · cache write ${u.cacheCreate.toLocaleString()}`;
 }
 
 /** Per-session message type → command id. */
