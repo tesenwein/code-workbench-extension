@@ -191,17 +191,19 @@ function TaskCard({
         </button>
       )}
       {task.status !== 'done' && (
-        <label
-          className="phase-card-autorun"
-          title="Start the next phase automatically when this one finishes and hands off"
+        <button
+          type="button"
+          className="task-action-btn phase-card-start phase-card-autopilot-btn"
+          disabled={starting}
+          onClick={() => onToggleAutoRun(!task.autoRun)}
+          title={
+            task.autoRun
+              ? 'Turn autopilot off: stop after the current phase'
+              : 'Turn autopilot on: each phase starts the next one automatically, through Implement → Review → Fix'
+          }
         >
-          <input
-            type="checkbox"
-            checked={!!task.autoRun}
-            onChange={(e) => onToggleAutoRun(e.target.checked)}
-          />
-          Run through
-        </label>
+          {task.autoRun ? 'Autopilot off' : 'Autopilot on'}
+        </button>
       )}
     </div>
   );
@@ -231,8 +233,6 @@ export function PhaseBoard({ api, reloadKey = 0, phaseModels, onOpenTask }: Phas
    * load effect never touches `bulkError`, so it survives that reload and is
    * cleared only by the next bulk click or an all-success batch. */
   const [bulkError, setBulkError] = useState<string | null>(null);
-  /** Per-column "Run through" choice for the Start all button. */
-  const [bulkAutoRun, setBulkAutoRun] = useState<Partial<Record<ColumnKey, boolean>>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -321,7 +321,7 @@ export function PhaseBoard({ api, reloadKey = 0, phaseModels, onOpenTask }: Phas
   );
 
   const startColumn = useCallback(
-    async (column: ColumnKey, items: WorkspaceTask[]) => {
+    async (column: ColumnKey, items: WorkspaceTask[], autopilot: boolean) => {
       const confirmBulkStart = api.confirmBulkStart;
       if (!confirmBulkStart) return;
       const startableIds = items.filter((t) => t.status === 'open').map((t) => t.id);
@@ -331,9 +331,9 @@ export function PhaseBoard({ api, reloadKey = 0, phaseModels, onOpenTask }: Phas
       setBulkStarting(column);
       setBulkError(null);
       try {
-        // "Run through" for the whole batch: flag every task before starting, so
-        // the autopilot picks each one up when its phase hands off.
-        if (bulkAutoRun[column]) {
+        // Autopilot for the whole batch: flag every task before starting, so each
+        // one continues to the next phase when its session hands off.
+        if (autopilot) {
           await Promise.all(
             [...startableIds, ...inProgressIds]
               .filter((id) => !items.find((t) => t.id === id)?.autoRun)
@@ -356,7 +356,7 @@ export function PhaseBoard({ api, reloadKey = 0, phaseModels, onOpenTask }: Phas
         setBulkStarting(null);
       }
     },
-    [api, bulkAutoRun],
+    [api],
   );
 
   if (!api.startPhase) {
@@ -411,31 +411,26 @@ export function PhaseBoard({ api, reloadKey = 0, phaseModels, onOpenTask }: Phas
                       type="button"
                       className="task-action-btn phase-column-start"
                       disabled={bulkStarting !== null}
-                      onClick={() => void startColumn(column, items)}
-                      title={
-                        startable > 0
-                          ? `Spawn one Claude session per startable task in this column, all running the ${COLUMN_LABELS[column]} phase`
-                          : `Restart the ${COLUMN_LABELS[column]} phase for all in-progress tasks in this column`
-                      }
+                      onClick={() => void startColumn(column, items, true)}
+                      title={`Start every task in this column with autopilot on, so each runs on through the remaining phases (until Fix) without further clicks`}
                     >
                       {bulkStarting === column
                         ? 'Starting…'
-                        : `Start all ${COLUMN_LABELS[column]} (${startable + inProgress})`}
+                        : `Start all with autopilot (${startable + inProgress})`}
                     </button>
-                    <label
-                      className="phase-card-autorun"
-                      title="Turn on Run through for every task this starts, so each continues to the next phase automatically"
+                    <button
+                      type="button"
+                      className="task-action-btn phase-column-start phase-column-start-secondary"
+                      disabled={bulkStarting !== null}
+                      onClick={() => void startColumn(column, items, false)}
+                      title={
+                        startable > 0
+                          ? `Spawn one Claude session per startable task in this column, running only the ${COLUMN_LABELS[column]} phase`
+                          : `Restart the ${COLUMN_LABELS[column]} phase for all in-progress tasks in this column`
+                      }
                     >
-                      <input
-                        type="checkbox"
-                        checked={!!bulkAutoRun[column]}
-                        disabled={bulkStarting !== null}
-                        onChange={(e) =>
-                          setBulkAutoRun((prev) => ({ ...prev, [column]: e.target.checked }))
-                        }
-                      />
-                      Run through
-                    </label>
+                      Run this phase only
+                    </button>
                   </footer>
                 )}
               </section>

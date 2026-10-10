@@ -1536,6 +1536,17 @@
 .phase-column-start:hover:not(:disabled) {
   color: var(--fg-0);
 }
+.phase-column-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.phase-column-start-secondary,
+.phase-card-autopilot-btn {
+  font-weight: 400;
+  color: var(--fg-2);
+  background: transparent;
+}
 .phase-column-start:disabled {
   opacity: 0.6;
   cursor: default;
@@ -1635,7 +1646,6 @@
 .phase-card-autopilot {
   color: var(--fg-2);
 }
-.phase-card-autorun,
 .task-phase-autorun {
   display: flex;
   align-items: center;
