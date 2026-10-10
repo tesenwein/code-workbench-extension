@@ -180,9 +180,38 @@ describe('PhaseBoard', () => {
       render(<PhaseBoard api={api} />);
 
       await screen.findByText('Open one');
-      const bulk = within(column('Plan')).getByRole('button', { name: 'Start all Plan (3)' });
+      const bulk = within(column('Plan')).getByRole('button', {
+        name: 'Start all with autopilot (3)',
+      });
       await userEvent.click(bulk);
 
+      expect(api.confirmBulkStart).toHaveBeenCalledWith('plan', ['p1', 'p2'], ['p3']);
+    });
+
+    it('turns autopilot on for every task before starting them', async () => {
+      const api = mockApi(COLUMN_TASKS);
+      render(<PhaseBoard api={api} />);
+
+      await screen.findByText('Open one');
+      await userEvent.click(
+        within(column('Plan')).getByRole('button', { name: /Start all with autopilot/ }),
+      );
+
+      for (const id of ['p1', 'p2', 'p3']) {
+        expect(api.update).toHaveBeenCalledWith(id, { autoRun: true });
+      }
+    });
+
+    it('runs only this phase without touching autopilot', async () => {
+      const api = mockApi(COLUMN_TASKS);
+      render(<PhaseBoard api={api} />);
+
+      await screen.findByText('Open one');
+      await userEvent.click(
+        within(column('Plan')).getByRole('button', { name: 'Run this phase only' }),
+      );
+
+      expect(api.update).not.toHaveBeenCalled();
       expect(api.confirmBulkStart).toHaveBeenCalledWith('plan', ['p1', 'p2'], ['p3']);
     });
 
@@ -191,7 +220,7 @@ describe('PhaseBoard', () => {
       render(<PhaseBoard api={api} />);
 
       await screen.findByText('Running');
-      expect(screen.getByRole('button', { name: 'Start all Plan (1)' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Start all with autopilot (1)' })).toBeTruthy();
     });
 
     it('hides the footer button when the host offers no bulk start', async () => {
