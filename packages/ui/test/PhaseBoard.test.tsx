@@ -162,6 +162,16 @@ describe('PhaseBoard', () => {
     await waitFor(() => expect(within(column('Implement')).getByText('Mover')).toBeTruthy());
   });
 
+  it('renders autopilot as a switch that writes autoRun on toggle', async () => {
+    const api = mockApi([task({ id: 'a1', title: 'Manual' }), task({ id: 'a2', title: 'Auto', autoRun: true })]);
+    render(<PhaseBoard api={api} />);
+    await screen.findByText('Manual');
+    const off = screen.getByRole('switch', { name: 'Autopilot', checked: false });
+    expect(screen.getByRole('switch', { name: 'Autopilot', checked: true })).toBeTruthy();
+    await userEvent.click(off);
+    await waitFor(() => expect(api.update).toHaveBeenCalledWith('a1', { autoRun: true }));
+  });
+
   it('tells the user when the host cannot spawn sessions', () => {
     const api = mockApi([task({ id: 'a1', title: 'X' })], { startPhase: undefined });
     render(<PhaseBoard api={api} />);
