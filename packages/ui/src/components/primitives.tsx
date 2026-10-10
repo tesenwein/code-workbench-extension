@@ -117,3 +117,33 @@ export function AccordionRow({
     </div>
   );
 }
+
+export interface ToggleProps {
+  checked: boolean;
+  onChange: (on: boolean) => void;
+  /** Label rendered next to the switch; also the accessible name. */
+  label: string;
+  title?: string;
+  disabled?: boolean;
+  className?: string;
+}
+
+/** Accessible on/off switch: a visually-hidden checkbox driving a styled track. */
+export function Toggle({ checked, onChange, label, title, disabled, className }: ToggleProps) {
+  return (
+    <label className={`cw-toggle${checked ? ' is-on' : ''}${className ? ` ${className}` : ''}`} title={title}>
+      <input
+        type="checkbox"
+        role="switch"
+        className="cw-toggle-input"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      <span className="cw-toggle-track" aria-hidden="true">
+        <span className="cw-toggle-thumb" />
+      </span>
+      <span className="cw-toggle-label">{label}</span>
+    </label>
+  );
+}

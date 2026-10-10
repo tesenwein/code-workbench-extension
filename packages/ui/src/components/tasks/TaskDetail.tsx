@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { columnFor } from '../PhaseBoard';
+import { Toggle } from '../primitives';
 import type { WorkspaceTask, NewWorkspaceTask, TaskPhase, TaskUsageSummary } from '../../types';
 import {
   worktreeKey,
@@ -77,22 +78,18 @@ export function PhaseStepper({
         </button>
       )}
       {onToggleAutoRun && (
-        <label
+        <Toggle
           className="task-phase-autorun"
+          checked={!!task.autoRun}
+          label="Autopilot"
           title="Start the next phase automatically when a phase session finishes and hands off. Stops on needs-input, a blocked phase, or high-priority review findings."
-        >
-          <input
-            type="checkbox"
-            checked={!!task.autoRun}
-            onChange={(e) => {
-              setError(null);
-              onToggleAutoRun(e.target.checked).catch((err) =>
-                setError(err instanceof Error ? err.message : String(err)),
-              );
-            }}
-          />
-          Run through
-        </label>
+          onChange={(on) => {
+            setError(null);
+            onToggleAutoRun(on).catch((err) =>
+              setError(err instanceof Error ? err.message : String(err)),
+            );
+          }}
+        />
       )}
       {error && <div className="task-phase-error">{error}</div>}
     </div>

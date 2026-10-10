@@ -13,7 +13,7 @@
  * their progress is summarized on the parent's card. */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { PaneHeader } from './primitives';
+import { PaneHeader, Toggle } from './primitives';
 import type { PhaseModelMap, TaskPhase, TasksApi, WorkspaceTask } from '../types';
 
 /* Platform-independent worktree identifier — last path segment, lowercased.
@@ -191,19 +191,18 @@ function TaskCard({
         </button>
       )}
       {task.status !== 'done' && (
-        <button
-          type="button"
-          className="task-action-btn phase-card-start phase-card-autopilot-btn"
+        <Toggle
+          className="phase-card-autopilot-toggle"
+          checked={!!task.autoRun}
           disabled={starting}
-          onClick={() => onToggleAutoRun(!task.autoRun)}
+          onChange={onToggleAutoRun}
+          label="Autopilot"
           title={
             task.autoRun
-              ? 'Turn autopilot off: stop after the current phase'
-              : 'Turn autopilot on: each phase starts the next one automatically, through Implement → Review → Fix'
+              ? 'Autopilot on: each phase starts the next one automatically, through Implement → Review → Fix. Switch off to stop after the current phase.'
+              : 'Autopilot off: switch on so each phase starts the next one automatically, through Implement → Review → Fix'
           }
-        >
-          {task.autoRun ? 'Autopilot off' : 'Autopilot on'}
-        </button>
+        />
       )}
     </div>
   );

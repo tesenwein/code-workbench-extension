@@ -1541,8 +1541,7 @@
   flex-direction: column;
   gap: 6px;
 }
-.phase-column-start-secondary,
-.phase-card-autopilot-btn {
+.phase-column-start-secondary {
   font-weight: 400;
   color: var(--fg-2);
   background: transparent;
@@ -1646,13 +1645,84 @@
 .phase-card-autopilot {
   color: var(--fg-2);
 }
-.task-phase-autorun {
-  display: flex;
+
+/* ── Toggle switch ───────────────────────────────────────────── */
+.cw-toggle {
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 10.5px;
-  color: var(--fg-3);
+  gap: 7px;
+  font-size: 11px;
+  color: var(--fg-2);
   cursor: pointer;
+  user-select: none;
+}
+.cw-toggle.is-on {
+  color: var(--fg-1);
+}
+.cw-toggle:has(.cw-toggle-input:disabled) {
+  opacity: 0.6;
+  cursor: default;
+}
+.cw-toggle-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.cw-toggle-track {
+  position: relative;
+  flex-shrink: 0;
+  width: 26px;
+  height: 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fg-3) 35%, transparent);
+  box-shadow: inset 0 0 0 1px var(--border);
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.cw-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--bg-0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease;
+}
+.cw-toggle.is-on .cw-toggle-track {
+  background: var(--clay);
+  box-shadow: inset 0 0 0 1px var(--clay-deep);
+}
+.cw-toggle.is-on .cw-toggle-thumb {
+  transform: translateX(12px);
+  background: #fff;
+}
+.cw-toggle:hover:not(:has(.cw-toggle-input:disabled)) .cw-toggle-track {
+  box-shadow: inset 0 0 0 1px var(--fg-3);
+}
+.cw-toggle.is-on:hover:not(:has(.cw-toggle-input:disabled)) .cw-toggle-track {
+  background: var(--clay-bright);
+}
+.cw-toggle-input:focus-visible + .cw-toggle-track {
+  outline: 1px solid var(--clay);
+  outline-offset: 2px;
+}
+
+.phase-card-autopilot-toggle {
+  width: 100%;
+  justify-content: center;
+  padding: 3px 0 1px;
+}
+.task-phase-autorun {
+  font-size: 10.5px;
 }
 .phase-card-start {
   display: flex;
